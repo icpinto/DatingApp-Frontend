@@ -1,24 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Signup from "./components/Signup";
+import Login from "./components/Login";
+import MainTabs from "./components/MainTabs";
+import Profile from "./components/Profile";
+import Requests from "./components/Requests";
+import Messages from "./components/Messages";
+import ChatPage from "./components/ChatPage";
+import { WebSocketProvider } from "./components/WebSocketProvider";
+
+
+
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <WebSocketProvider>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/home" element={<MainTabs />} />
+          <Route path="/profile/:userId" element={<Profile />} />
+          <Route path="/requests" element={<Requests />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/conversations/:conversationId" element={<ChatPage />} />
+        </Routes>
+      </div>
+    </Router>
+    </WebSocketProvider>
   );
 }
 
