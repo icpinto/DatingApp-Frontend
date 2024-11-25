@@ -53,8 +53,8 @@ function ProfilePage() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `http://localhost:8080/user/profile/${userId}`,
-        { ...formData, interests: JSON.stringify(formData.interests) },
+        `http://localhost:8080/user/profile`,
+        { ...formData },
         { headers: { Authorization: `${token}` } }
       );
       setProfile(response.data) // Set profile data after successful update
