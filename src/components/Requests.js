@@ -56,7 +56,7 @@ function Requests() {
         Received Requests
       </Typography>
 
-      {requests.length === 0 ? (
+      {(!requests || requests.length === 0)  ? (
         <Typography variant="body1" color="text.secondary">
           No requests found.
         </Typography>
