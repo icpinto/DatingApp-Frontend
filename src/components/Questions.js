@@ -3,28 +3,47 @@ import { Box, Typography, Button, TextField, RadioGroup, FormControlLabel, Radio
 import axios from "axios";
 
 function QuestionsComponent() {
-  const [questions, setQuestions] = useState([]); 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); 
-  const [answers, setAnswers] = useState({}); 
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchQuestions = async () => {
+    const fetchQuestionsAndAnswers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:8080/user/questionnaire", {
-            headers: {
-              Authorization: `${token}`,
-            },
-          });
-        setQuestions(response.data.questions);
+
+        // Fetch questions
+        const questionsResponse = await axios.get("http://localhost:8080/user/questionnaire", {
+          headers: { Authorization: `${token}` },
+        });
+
+        const fetchedQuestions = questionsResponse.data.questions;
+
+        // Fetch user's previous answers
+        const answersResponse = await axios.get("http://localhost:8080/user/questionnaireAnswers", {
+          headers: { Authorization: `${token}` },
+        });
+
+        const previousAnswers = answersResponse.data.answers|| [];
+
+        // Map previous answers into a format we can use
+        const answersMap = {};
+        previousAnswers.forEach((answer) => {
+          answersMap[answer.question_id] =
+            answer.answer_text !== null ? answer.answer_text : answer.answer_value;
+        });
+
+        setQuestions(fetchedQuestions);
+        setAnswers(answersMap);
       } catch (error) {
-        console.error("Error fetching questions:", error);
+        console.error("Error fetching questions or answers:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchQuestions();
+
+    fetchQuestionsAndAnswers();
   }, []);
 
   if (loading) return <Typography>Loading questions...</Typography>;
@@ -37,19 +56,25 @@ function QuestionsComponent() {
     const value = event.target ? event.target.value : newValue;
     setAnswers((prevAnswers) => ({
       ...prevAnswers,
-      [currentQuestion.id]: value,
+      [currentQuestion.ID]: value,
     }));
   };
 
-  // Have to change
+  // Submit the answer to the backend
   const submitAnswer = async () => {
     const answerData = {
-      question_id: currentQuestion.id,
-      answer: answers[currentQuestion.id],
+      question_id: currentQuestion.ID,
+      answer_text: currentQuestion.QuestionType === "multiple_choice" || currentQuestion.QuestionType === "open_text"
+        ? answers[currentQuestion.ID] || null
+        : null,
+      answer_value: currentQuestion.QuestionType === "scale"
+        ? answers[currentQuestion.ID] || null
+        : null,
     };
+
     try {
-      await axios.post("http://localhost:8080/api/answers", answerData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      await axios.post("http://localhost:8080/user/submitQuestionnaire", answerData, {
+        headers: { Authorization: `${localStorage.getItem("token")}` },
       });
     } catch (error) {
       console.error("Error submitting answer:", error);
@@ -58,7 +83,7 @@ function QuestionsComponent() {
 
   // Handle question navigation
   const handleNext = async () => {
-    if (answers[currentQuestion.id]) await submitAnswer(); // Submit answer if one exists
+    if (answers[currentQuestion.ID] !== undefined) await submitAnswer(); // Submit only if there's an answer
     if (currentQuestionIndex < questions.length - 1) setCurrentQuestionIndex((index) => index + 1);
   };
 
@@ -73,21 +98,21 @@ function QuestionsComponent() {
         <Typography variant="h6">{currentQuestion.QuestionText}</Typography>
         
         {/* Render input based on question type */}
-        {currentQuestion.question_type === "multiple_choice" && (
+        {currentQuestion.QuestionType === "multiple_choice" && (
           <RadioGroup
-            name={`question-${currentQuestion.id}`}
-            value={answers[currentQuestion.id] || ""}
+            name={`question-${currentQuestion.ID}`}
+            value={answers[currentQuestion.ID] || ""}
             onChange={handleAnswerChange}
           >
-            {currentQuestion.options.map((option, index) => (
+            {currentQuestion.Options.map((option, index) => (
               <FormControlLabel key={index} value={option} control={<Radio />} label={option} />
             ))}
           </RadioGroup>
         )}
 
-        {currentQuestion.question_type === "scale" && (
+        {currentQuestion.QuestionType === "scale" && (
           <Slider
-            value={answers[currentQuestion.id] || 5}
+            value={answers[currentQuestion.ID] || 5}
             onChange={(e, newValue) => handleAnswerChange(e, newValue)}
             step={1}
             marks
@@ -97,12 +122,12 @@ function QuestionsComponent() {
           />
         )}
 
-        {currentQuestion.question_type === "open_text" && (
+        {currentQuestion.QuestionType === "open_text" && (
           <TextField
             fullWidth
             multiline
             rows={4}
-            value={answers[currentQuestion.id] || ""}
+            value={answers[currentQuestion.ID] || ""}
             onChange={handleAnswerChange}
             placeholder="Type your answer..."
           />
