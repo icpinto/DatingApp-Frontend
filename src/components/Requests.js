@@ -30,7 +30,14 @@ function Requests() {
   // Handle accept request
   const handleAccept = async (id) => {
     try {
-      await axios.post(`/api/requests/${id}/accept`);
+      const token = localStorage.getItem("token");
+      await axios.post(`http://localhost:8080/user/acceptRequest`,
+      { id: parseInt(id, 10) },
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
       setRequests(requests.filter((request) => request.id !== id));
     } catch (err) {
       alert("Failed to accept the request. Please try again.");
@@ -40,7 +47,14 @@ function Requests() {
   // Handle reject request
   const handleReject = async (id) => {
     try {
-      await axios.post(`/api/requests/${id}/reject`);
+      const token = localStorage.getItem("token");
+      await axios.post(`http://localhost:8080/user/rejectRequest`,
+      { id: parseInt(id, 10) },
+      {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
       setRequests(requests.filter((request) => request.id !== id));
     } catch (err) {
       alert("Failed to reject the request. Please try again.");
