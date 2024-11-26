@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { List, ListItem, ListItemText, Typography, Box, CircularProgress } from "@mui/material";
 import axios from "axios";
+import ChatDrawer from "./ChatDrawer"; 
 
 function Messages() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [openDrawer, setOpenDrawer] = useState(false); 
+  const [selectedConversation, setSelectedConversation] = useState(null); 
 
+  // Fetch conversations on component mount
   useEffect(() => {
     const fetchConversations = async () => {
       try {
@@ -18,7 +20,7 @@ function Messages() {
             Authorization: `${token}`,
           },
         });
-        setConversations(response.data); 
+        setConversations(response.data);
         setLoading(false);
       } catch (err) {
         setError("Failed to fetch conversations");
@@ -27,20 +29,29 @@ function Messages() {
     };
 
     fetchConversations();
-    
   }, []);
-  
 
-  if (loading) return <CircularProgress />; 
-  if (error) return <Typography color="error">{error}</Typography>; 
+  // Handle opening the drawer and selecting a conversation
+  const handleOpenDrawer = (conversation) => {
+    setSelectedConversation(conversation);
+    setOpenDrawer(true);
+  };
+
+  // Handle closing the drawer
+  const handleCloseDrawer = () => {
+    setOpenDrawer(false);
+    setSelectedConversation(null);
+  };
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Typography color="error">{error}</Typography>;
 
   return (
     <Box sx={{ padding: 2 }}>
       <Typography variant="h4" gutterBottom>
         Messages
       </Typography>
-      {(!conversations || conversations.length === 0)
- ? (
+      {(!conversations || conversations.length === 0) ? (
         <Typography variant="body1" color="text.secondary">
           No conversations found.
         </Typography>
@@ -50,17 +61,26 @@ function Messages() {
             <ListItem
               key={conversation.id}
               button
-              onClick={() => navigate(`/conversations/${conversation.id}`, {
-                state: { user1_id: conversation.user1_id, user2_id: conversation.user2_id }
-              })}
+              onClick={() => handleOpenDrawer(conversation)}
             >
               <ListItemText
-                primary={conversation.user1_id}
-                secondary={conversation.user2_id}
+                primary={`User 1: ${conversation.user1_id}`}
+                secondary={`User 2: ${conversation.user2_id}`}
               />
             </ListItem>
           ))}
         </List>
+      )}
+
+      {/* Drawer for Chat */}
+      {selectedConversation && (
+        <ChatDrawer
+          conversationId={selectedConversation.id}
+          user1_id={selectedConversation.user1_id}
+          user2_id={selectedConversation.user2_id}
+          open={openDrawer}
+          onClose={handleCloseDrawer}
+        />
       )}
     </Box>
   );

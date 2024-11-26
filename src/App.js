@@ -6,7 +6,6 @@ import MainTabs from "./components/MainTabs";
 import Profile from "./components/Profile";
 import Requests from "./components/Requests";
 import Messages from "./components/Messages";
-import ChatPage from "./components/ChatPage";
 import { WebSocketProvider } from "./components/WebSocketProvider";
 
 
@@ -24,7 +23,6 @@ function App() {
           <Route path="/profile/:userId" element={<Profile />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/messages" element={<Messages />} />
-          <Route path="/conversations/:conversationId" element={<ChatPage />} />
         </Routes>
       </div>
     </Router>
