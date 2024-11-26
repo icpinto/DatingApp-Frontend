@@ -39,7 +39,8 @@ function Messages() {
       <Typography variant="h4" gutterBottom>
         Messages
       </Typography>
-      {conversations.length === 0 ? (
+      {(!conversations || conversations.length === 0)
+ ? (
         <Typography variant="body1" color="text.secondary">
           No conversations found.
         </Typography>

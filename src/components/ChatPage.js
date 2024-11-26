@@ -61,40 +61,49 @@ function ChatPage() {
   if (error) return <Typography color="error">{error}</Typography>; 
 
   return (
-    <Box sx={{ padding: 2 }}>
+        <Box sx={{ padding: 2 }}>
       <Typography variant="h5" gutterBottom>
         Conversation
       </Typography>
-      <List>
-        {conversationMessages.map((message, index) => {
-          const isSender = message.sender_id === sender_id;
-          return (
-            <ListItem
-              key={index}
-              sx={{
-                display: "flex",
-                justifyContent: isSender ? "flex-end" : "flex-start",
-                mb: 1,
-              }}
-            >
-              <Paper
-                elevation={2}
+
+      {/* Check if conversationMessages is null or empty */}
+      {(!conversationMessages || conversationMessages.length === 0) ? (
+        <Typography variant="body1" color="text.secondary">
+          No messages yet. Start the conversation!
+        </Typography>
+      ) : (
+        <List>
+          {conversationMessages.map((message, index) => {
+            const isSender = message.sender_id === sender_id;
+            return (
+              <ListItem
+                key={index}
                 sx={{
-                  padding: 1.5,
-                  maxWidth: "70%",
-                  bgcolor: isSender ? "primary.main" : "grey.300",
-                  color: isSender ? "white" : "black",
-                  borderRadius: "12px",
-                  borderBottomRightRadius: isSender ? 0 : "12px",
-                  borderBottomLeftRadius: isSender ? "12px" : 0,
+                  display: "flex",
+                  justifyContent: isSender ? "flex-end" : "flex-start",
+                  mb: 1,
                 }}
               >
-                <Typography variant="body2">{message.message}</Typography>
-              </Paper>
-            </ListItem>
-          );
-        })}
-      </List>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    padding: 1.5,
+                    maxWidth: "70%",
+                    bgcolor: isSender ? "primary.main" : "grey.300",
+                    color: isSender ? "white" : "black",
+                    borderRadius: "12px",
+                    borderBottomRightRadius: isSender ? 0 : "12px",
+                    borderBottomLeftRadius: isSender ? "12px" : 0,
+                  }}
+                >
+                  <Typography variant="body2">{message.message}</Typography>
+                </Paper>
+              </ListItem>
+            );
+          })}
+        </List>
+      )}
+
       <Box sx={{ display: "flex", mt: 2 }}>
         <TextField
           variant="outlined"
@@ -108,6 +117,7 @@ function ChatPage() {
         </Button>
       </Box>
     </Box>
+
   );
 }
 
