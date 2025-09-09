@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import api from "../../services/api";
 import { useNavigate, Link } from "react-router-dom";
-import { TextField, Button, Box, Snackbar, Alert } from "@mui/material";
+import { TextField, Button, Box, Snackbar, Alert, Paper, Typography } from "@mui/material";
 import "./Auth.css";
 
 function Login() {
@@ -38,8 +38,10 @@ function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-container">
-        <h2>Login</h2>
+      <Paper className="auth-container" elevation={3}>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Login
+        </Typography>
         <Box component="form" onSubmit={handleLogin} noValidate>
           <TextField
             label="Username"
@@ -82,7 +84,7 @@ function Login() {
           <span>Don't have an account? </span>
           <Link to="/signup">Sign up</Link>
         </div>
-      </div>
+      </Paper>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
