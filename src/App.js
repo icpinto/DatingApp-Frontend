@@ -1,12 +1,12 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Signup from "./components/Signup";
-import Login from "./components/Login";
-import MainTabs from "./components/MainTabs";
-import Profile from "./components/Profile";
-import Requests from "./components/Requests";
-import Messages from "./components/Messages";
-import { WebSocketProvider } from "./components/WebSocketProvider";
+import Signup from "./components/auth/Signup";
+import Login from "./components/auth/Login";
+import MainTabs from "./components/tabs/MainTabs";
+import Profile from "./components/profile/Profile";
+import Requests from "./components/requests/Requests";
+import Messages from "./components/chat/Messages";
+import { WebSocketProvider } from "./context/WebSocketProvider";
 
 
 

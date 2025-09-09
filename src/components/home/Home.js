@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Card, CardContent, Typography, Grid, Collapse, Button } from "@mui/material";
+import api from "../../services/api";
 
 function Home() {
   const [activeUsers, setActiveUsers] = useState([]);
@@ -12,7 +12,7 @@ function Home() {
     const fetchActiveUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:8080/user/profiles", {
+        const response = await api.get("/user/profiles", {
           headers: {
             Authorization: `${token}`,
           },
@@ -41,14 +41,14 @@ function Home() {
     } else {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get(`http://localhost:8080/user/profile/${userId}`, {
+        const response = await api.get(`/user/profile/${userId}`, {
           headers: {
             Authorization: `${token}`,
           },
         });
 
-        const requestStatusResponse = await axios.get(
-          `http://localhost:8080/user/checkReqStatus/${userId}`,
+        const requestStatusResponse = await api.get(
+          `/user/checkReqStatus/${userId}`,
           { headers: { Authorization: `${token}` } }
         );
 
@@ -66,8 +66,8 @@ function Home() {
   const handleSendRequest = async (userId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `http://localhost:8080/user/sendRequest`,
+      await api.post(
+        `/user/sendRequest`,
         { receiver_id: parseInt(userId, 10) },
         { headers: { Authorization: `${token}` } }
       );

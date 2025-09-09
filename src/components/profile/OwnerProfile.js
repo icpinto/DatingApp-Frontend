@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, Typography, TextField, Button, MenuItem, Grid, Chip } from "@mui/material";
-import axios from "axios";
-import QuestionsComponent from "./Questions"; 
+import api from "../../services/api";
+import QuestionsComponent from "../questions/Questions";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -22,7 +22,7 @@ function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get(`http://localhost:8080/user/profile/${userId}`, {
+        const response = await api.get(`/user/profile/${userId}`, {
           headers: { Authorization: `${token}` },
         });
         setProfile(response.data); 
@@ -52,8 +52,8 @@ function ProfilePage() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.post(
-        `http://localhost:8080/user/profile`,
+      const response = await api.post(
+        `/user/profile`,
         { ...formData },
         { headers: { Authorization: `${token}` } }
       );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, Typography, Button, Grid, Box, CircularProgress } from "@mui/material";
-import axios from "axios";
+import api from "../../services/api";
 
 function Requests() {
   const [requests, setRequests] = useState([]);
@@ -11,7 +11,7 @@ function Requests() {
     const fetchRequests = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:8080/user/requests", {
+        const response = await api.get("/user/requests", {
           headers: {
             Authorization: `${token}`,
           },
@@ -31,7 +31,7 @@ function Requests() {
   const handleAccept = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`http://localhost:8080/user/acceptRequest`,
+      await api.post(`/user/acceptRequest`,
       { id: parseInt(id, 10) },
       {
         headers: {
@@ -48,7 +48,7 @@ function Requests() {
   const handleReject = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`http://localhost:8080/user/rejectRequest`,
+      await api.post(`/user/rejectRequest`,
       { id: parseInt(id, 10) },
       {
         headers: {
