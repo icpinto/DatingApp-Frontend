@@ -17,7 +17,11 @@ function Home() {
             Authorization: `${token}`,
           },
         });
-        setActiveUsers(response.data);
+        const users = Array.isArray(response.data) ? response.data : [];
+        setActiveUsers(users);
+        if (users.length === 0) {
+          setMessage("No active users found.");
+        }
       } catch (error) {
         setMessage("Failed to load active users. Please try again.");
       }
@@ -75,50 +79,56 @@ function Home() {
       <h2>Active Users</h2>
       {message && <p>{message}</p>}
       <Grid container spacing={3} direction="column">
-        {activeUsers.map((user) => (
-          <Grid item xs={12} key={user.id}>
-            <Card onClick={() => handleToggleExpand(user.user_id)} style={{ cursor: "pointer" }}>
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  {user.username}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.bio || "No bio available"}
-                </Typography>
-              </CardContent>
+        {Array.isArray(activeUsers) && activeUsers.length > 0 ? (
+          activeUsers.map((user) => (
+            <Grid item xs={12} key={user.id}>
+              <Card onClick={() => handleToggleExpand(user.user_id)} style={{ cursor: "pointer" }}>
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    {user.username}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {user.bio || "No bio available"}
+                  </Typography>
+                </CardContent>
 
-              {/* Expanded Profile View */}
-              <Collapse in={expandedUserId === user.user_id} timeout="auto" unmountOnExit>
-                {profileData && expandedUserId === user.user_id && (
-                  <CardContent>
-                    <Typography variant="body1">
-                      <strong>Bio:</strong> {profileData.bio || "No bio available"}
-                    </Typography>
-                    <Typography variant="body1">
-                      <strong>Age:</strong> {profileData.age || "N/A"}
-                    </Typography>
-                    <Typography variant="body1">
-                      <strong>Location:</strong> {profileData.location || "N/A"}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      color={profileData.requestStatus ? "secondary" : "primary"}
-                      style={{ marginTop: "10px" }}
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent collapse toggle
-                        handleSendRequest(user.user_id);
-                      }}
-                      disabled={profileData.requestStatus}
-                    >
-                      {profileData.requestStatus ? "Request Sent" : "Send Request"}
-                    </Button>
-                    {message && <p style={{ marginTop: "10px", color: "green" }}>{message}</p>}
-                  </CardContent>
-                )}
-              </Collapse>
-            </Card>
+                {/* Expanded Profile View */}
+                <Collapse in={expandedUserId === user.user_id} timeout="auto" unmountOnExit>
+                  {profileData && expandedUserId === user.user_id && (
+                    <CardContent>
+                      <Typography variant="body1">
+                        <strong>Bio:</strong> {profileData.bio || "No bio available"}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Age:</strong> {profileData.age || "N/A"}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Location:</strong> {profileData.location || "N/A"}
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color={profileData.requestStatus ? "secondary" : "primary"}
+                        style={{ marginTop: "10px" }}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent collapse toggle
+                          handleSendRequest(user.user_id);
+                        }}
+                        disabled={profileData.requestStatus}
+                      >
+                        {profileData.requestStatus ? "Request Sent" : "Send Request"}
+                      </Button>
+                      {message && <p style={{ marginTop: "10px", color: "green" }}>{message}</p>}
+                    </CardContent>
+                  )}
+                </Collapse>
+              </Card>
+            </Grid>
+          ))
+        ) : (
+          <Grid item xs={12}>
+            <Typography>No active users available.</Typography>
           </Grid>
-        ))}
+        )}
       </Grid>
     </div>
   );
