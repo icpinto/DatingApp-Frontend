@@ -1,5 +1,7 @@
 import { useState } from "react";
 import api from "../../services/api";
+import { Link } from "react-router-dom";
+import "./Auth.css";
 
 function Signup(){
     const [username, setUsername] = useState("")
@@ -24,39 +26,45 @@ function Signup(){
 
 
     return (
-        <div>
-          <h2>Signup</h2>
-          <form onSubmit={handleSignup}>
-            <div>
-              <label>Username:</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
+        <div className="auth-page">
+          <div className="auth-container">
+            <h2>Signup</h2>
+            <form className="auth-form" onSubmit={handleSignup}>
+              <div>
+                <label>Username:</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label>Email:</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label>Password:</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button className="auth-button" type="submit">Sign Up</button>
+            </form>
+            {message && <p>{message}</p>}
+            <div className="auth-switch">
+              <span>Already have an account? </span>
+              <Link to="/">Log in</Link>
             </div>
-            <div>
-              <label>Email:</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label>Password:</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit">Sign Up</button>
-          </form>
-          {message && <p>{message}</p>}
+          </div>
         </div>
       );
 
