@@ -28,7 +28,7 @@ function App() {
             aria-label="toggle light and dark mode"
             onClick={colorMode.toggleColorMode}
             color="inherit"
-            sx={{ position: "fixed", top: 8, right: 8 }}
+            sx={{ position: "fixed", top: 8, right: 8, zIndex: 1200 }}
           >
             {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
