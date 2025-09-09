@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import api from "../../services/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import "./Auth.css";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -26,30 +27,36 @@ function Login() {
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Username:</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
+    <div className="auth-page">
+      <div className="auth-container">
+        <h2>Login</h2>
+        <form className="auth-form" onSubmit={handleLogin}>
+          <div>
+            <label>Username:</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label>Password:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button className="auth-button" type="submit">Log In</button>
+        </form>
+        {message && <p>{message}</p>}
+        <div className="auth-switch">
+          <span>Don't have an account? </span>
+          <Link to="/signup">Sign up</Link>
         </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Log In</button>
-      </form>
-      {message && <p>{message}</p>}
+      </div>
     </div>
   );
 }
