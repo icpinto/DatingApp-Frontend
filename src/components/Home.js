@@ -17,7 +17,11 @@ function Home() {
             Authorization: `${token}`,
           },
         });
-        const users = Array.isArray(response.data) ? response.data : [];
+        const rawUsers = Array.isArray(response.data) ? response.data : [];
+        const currentUserId = Number(localStorage.getItem("user_id"));
+        const users = rawUsers.filter(
+          (user) => user.user_id !== currentUserId && user.id !== currentUserId
+        );
         setActiveUsers(users);
         if (users.length === 0) {
           setMessage("No active users found.");
