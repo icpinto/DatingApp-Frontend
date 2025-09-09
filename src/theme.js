@@ -1,19 +1,24 @@
 import { createTheme } from '@mui/material/styles';
 
-// Custom theme tailored for the dating application
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#e91e63', // Romantic pink
+// Generate light or dark theme with accessible contrast
+const getTheme = (mode) =>
+  createTheme({
+    palette: {
+      mode,
+      primary: {
+        main: mode === 'light' ? '#c2185b' : '#ff4081',
+        contrastText: '#ffffff',
+      },
+      secondary: {
+        main: mode === 'light' ? '#9c27b0' : '#ba68c8',
+        contrastText: '#ffffff',
+      },
+      background: {
+        default: mode === 'light' ? '#fff0f6' : '#121212',
+        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+      },
     },
-    secondary: {
-      main: '#9c27b0', // Complementary purple
-    },
-    background: {
-      default: '#fff0f6', // Soft background color
-    },
-  },
-});
+    contrastThreshold: 4.5,
+  });
 
-export default theme;
-
+export default getTheme;
