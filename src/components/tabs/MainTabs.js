@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Tabs, Tab, Box } from "@mui/material";
-import Home from "./Home";
-import Requests from "./Requests";
-import Messages from "./Messages";
-import OwnerProfile from "./OwnerProfile";
+import Home from "../home/Home";
+import Requests from "../requests/Requests";
+import Messages from "../chat/Messages";
+import OwnerProfile from "../profile/OwnerProfile";
 
 function MainTabs() {
   const [activeTab, setActiveTab] = useState(0); 

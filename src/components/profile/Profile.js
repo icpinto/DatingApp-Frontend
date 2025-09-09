@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../../services/api";
 
 function Profile() {
   const { userId } = useParams(); // Get user ID from URL
@@ -12,7 +12,7 @@ function Profile() {
     const fetchUserProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get(`http://localhost:8080/user/profile/${userId}`, {
+        const response = await api.get(`/user/profile/${userId}`, {
             headers: {
               Authorization: `${token}`,
             },
@@ -20,7 +20,7 @@ function Profile() {
         setUser(response.data); // Set the user data from the API response
 
         // Check if a request has already been sent to this user
-        const requestResponse = await axios.get(`http://localhost:8080/user/checkReqStatus/${userId}`, {
+        const requestResponse = await api.get(`/user/checkReqStatus/${userId}`, {
           headers: {
             Authorization: `${token}`,
           },
@@ -39,8 +39,8 @@ function Profile() {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.post(
-        `http://localhost:8080/user/sendRequest`,
+      await api.post(
+        `/user/sendRequest`,
         { receiver_id: parseInt(userId, 10) },
         {
           headers: {

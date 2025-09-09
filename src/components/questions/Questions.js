@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Button, TextField, RadioGroup, FormControlLabel, Radio, Slider, Grid } from "@mui/material";
-import axios from "axios";
+import api from "../../services/api";
 
 function QuestionsComponent() {
   const [questions, setQuestions] = useState([]);
@@ -14,14 +14,14 @@ function QuestionsComponent() {
         const token = localStorage.getItem("token");
 
         // Fetch questions
-        const questionsResponse = await axios.get("http://localhost:8080/user/questionnaire", {
+        const questionsResponse = await api.get("/user/questionnaire", {
           headers: { Authorization: `${token}` },
         });
 
         const fetchedQuestions = questionsResponse.data.questions;
 
         // Fetch user's previous answers
-        const answersResponse = await axios.get("http://localhost:8080/user/questionnaireAnswers", {
+        const answersResponse = await api.get("/user/questionnaireAnswers", {
           headers: { Authorization: `${token}` },
         });
 
@@ -73,7 +73,7 @@ function QuestionsComponent() {
     };
 
     try {
-      await axios.post("http://localhost:8080/user/submitQuestionnaire", answerData, {
+      await api.post("/user/submitQuestionnaire", answerData, {
         headers: { Authorization: `${localStorage.getItem("token")}` },
       });
     } catch (error) {

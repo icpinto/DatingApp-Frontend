@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, TextField, Button, List, ListItem, Paper, Drawer, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import axios from "axios";
-import { useWebSocket } from "./WebSocketProvider";
+import api from "../../services/api";
+import { useWebSocket } from "../../context/WebSocketProvider";
 
 function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
   const { messages, sendMessage } = useWebSocket();
@@ -19,7 +19,7 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
       const fetchMessages = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await axios.get(`http://localhost:8080/user/conversations/${conversationId}`, {
+          const response = await api.get(`/user/conversations/${conversationId}`, {
             headers: {
               Authorization: `${token}`,
             },

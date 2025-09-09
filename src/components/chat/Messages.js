@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { List, ListItem, ListItemText, Typography, Box, CircularProgress } from "@mui/material";
-import axios from "axios";
-import ChatDrawer from "./ChatDrawer"; 
+import ChatDrawer from "./ChatDrawer";
+import api from "../../services/api";
 
 function Messages() {
   const [conversations, setConversations] = useState([]);
@@ -15,7 +15,7 @@ function Messages() {
     const fetchConversations = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:8080/user/conversations", {
+        const response = await api.get("/user/conversations", {
           headers: {
             Authorization: `${token}`,
           },
