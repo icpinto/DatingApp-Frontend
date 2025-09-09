@@ -44,15 +44,29 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
     }
   }, [conversationId]);
 
-  // Append real-time messages from WebSocket
+  // Append real-time messages from WebSocket without duplicating
   useEffect(() => {
     const filteredMessages = messages.filter(
       (message) => message.conversation_id === conversationId
     );
+
     if (filteredMessages.length > 0) {
-      setConversationMessages((prevMessages) => [...prevMessages, ...filteredMessages]);
+      setConversationMessages((prevMessages) => {
+        const existing = new Set(
+          prevMessages.map((m) => m.id ?? m.timestamp)
+        );
+        const newMessages = filteredMessages.filter(
+          (m) => !existing.has(m.id ?? m.timestamp)
+        );
+        return [...prevMessages, ...newMessages];
+      });
     }
   }, [messages, conversationId]);
+
+  // Clear messages when closing the drawer
+  useEffect(() => {
+    return () => setConversationMessages([]);
+  }, [conversationId]);
 
   // Keep the latest message in view
   useEffect(() => {

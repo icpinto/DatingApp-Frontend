@@ -8,21 +8,36 @@ export const WebSocketProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    ws.current = new WebSocket(`ws://localhost:8080/ws/${token}`);
 
-    ws.current.onopen = () => {
-      console.log("Connected to WebSocket");
-    };
+    // Close any existing connection to avoid stacking listeners
+    if (ws.current) {
+      ws.current.close();
+    }
 
-    ws.current.onmessage = (event) => {
+    const socket = new WebSocket(`ws://localhost:8080/ws/${token}`);
+    ws.current = socket;
+
+    const handleMessage = (event) => {
       const receivedMessage = JSON.parse(event.data);
       setMessages((prevMessages) => [...prevMessages, receivedMessage]);
     };
 
-    ws.current.onerror = (error) => console.error("WebSocket error:", error);
-    ws.current.onclose = () => console.log("WebSocket connection closed.");
+    socket.addEventListener("open", () => {
+      console.log("Connected to WebSocket");
+    });
+    socket.addEventListener("message", handleMessage);
+    socket.addEventListener("error", (error) =>
+      console.error("WebSocket error:", error)
+    );
+    socket.addEventListener("close", () =>
+      console.log("WebSocket connection closed.")
+    );
 
-    return () => ws.current.close(); // Close WebSocket on unmount
+    // Remove listeners and close connection on unmount
+    return () => {
+      socket.removeEventListener("message", handleMessage);
+      socket.close();
+    };
   }, []);
 
   const sendMessage = (messageData) => {
