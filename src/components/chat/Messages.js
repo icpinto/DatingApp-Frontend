@@ -30,7 +30,8 @@ function Messages() {
             Authorization: `${token}`,
           },
         });
-        setConversations(response.data);
+        // Ensure conversations is always an array to avoid null map errors
+        setConversations(Array.isArray(response.data) ? response.data : []);
         setLoading(false);
       } catch (err) {
         setError("Failed to fetch conversations");

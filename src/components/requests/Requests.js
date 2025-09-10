@@ -27,7 +27,10 @@ function Requests() {
             Authorization: `${token}`,
           },
         });
-        setRequests(response.data.requests);
+        // Ensure we always store an array to avoid null map errors
+        setRequests(
+          Array.isArray(response.data.requests) ? response.data.requests : []
+        );
         setLoading(false);
       } catch (err) {
         setError("Failed to fetch requests");
