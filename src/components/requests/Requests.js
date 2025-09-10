@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import api from "../../services/api";
 
-function Requests() {
+function Requests({ onRequestCountChange = () => {} }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,6 +40,10 @@ function Requests() {
 
     fetchRequests();
   }, []);
+
+  useEffect(() => {
+    onRequestCountChange(requests.length);
+  }, [requests, onRequestCountChange]);
 
   // Fetch profile previews for senders
   useEffect(() => {
