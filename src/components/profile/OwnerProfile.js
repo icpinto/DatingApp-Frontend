@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, Typography, TextField, Button, MenuItem, Grid, Chip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
 
@@ -14,24 +15,25 @@ function ProfilePage() {
     interests: [],
   });
   const [newInterest, setNewInterest] = useState("");
+  const navigate = useNavigate();
+  const userId = localStorage.getItem("user_id");
+  const hasPaid = localStorage.getItem("hasPaid") === "true";
 
-  const userId = localStorage.getItem("user_id"); 
-
-  
   useEffect(() => {
+    if (!hasPaid) return;
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(`/user/profile/${userId}`, {
           headers: { Authorization: `${token}` },
         });
-        setProfile(response.data); 
+        setProfile(response.data);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
     };
     fetchProfile();
-  }, [userId]);
+  }, [userId, hasPaid]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -62,6 +64,17 @@ function ProfilePage() {
       console.error("Error saving profile data:", error);
     }
   };
+
+  if (!hasPaid) {
+    return (
+      <Box sx={{ padding: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Profile creation requires payment.
+        </Typography>
+        <Button variant="contained" onClick={() => navigate("/payment")}>Go to Payment</Button>
+      </Box>
+    );
+  }
 
   if (profile) {
     // If profile exists, display profile information
