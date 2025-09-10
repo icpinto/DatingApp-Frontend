@@ -13,7 +13,7 @@ function QuestionsComponent() {
 
   useEffect(() => {
     if (!hasPaid) {
-      setLoading(false);
+      navigate("/payment");
       return;
     }
 
@@ -52,19 +52,9 @@ function QuestionsComponent() {
     };
 
     fetchQuestionsAndAnswers();
-  }, [hasPaid]);
+  }, [hasPaid, navigate]);
 
-  if (!hasPaid) {
-    return (
-      <Box sx={{ mt: 4, p: 2 }}>
-        <Typography variant="h5" gutterBottom>Questions</Typography>
-        <Typography sx={{ mb: 2 }}>Please complete payment to access the questionnaire.</Typography>
-        <Button variant="contained" onClick={() => navigate("/payment")}>
-          Go to Payment
-        </Button>
-      </Box>
-    );
-  }
+  if (!hasPaid) return null;
 
   if (loading) return <Typography>Loading questions...</Typography>;
   if (questions.length === 0) return <Typography>No questions available.</Typography>;

@@ -28,12 +28,20 @@ function ProfilePage() {
           headers: { Authorization: `${token}` },
         });
         setProfile(response.data);
+        setFormData({
+          bio: response.data.bio || "",
+          gender: response.data.gender || "",
+          date_of_birth: response.data.date_of_birth || "",
+          location: response.data.location || "",
+          interests: response.data.interests || [],
+        });
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
     };
-    fetchProfile();
-  }, [userId, hasPaid]);
+    if (userId) fetchProfile();
+  }, [userId]);
+
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -59,25 +67,16 @@ function ProfilePage() {
         { ...formData },
         { headers: { Authorization: `${token}` } }
       );
-      setProfile(response.data) // Set profile data after successful update
+      setProfile(response.data); // Set profile data after successful update
+      if (!hasPaid) navigate("/payment");
     } catch (error) {
       console.error("Error saving profile data:", error);
     }
   };
 
-  if (!hasPaid) {
-    return (
-      <Box sx={{ padding: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Profile creation requires payment.
-        </Typography>
-        <Button variant="contained" onClick={() => navigate("/payment")}>Go to Payment</Button>
-      </Box>
-    );
-  }
+  if (profile && hasPaid) {
+    // If profile exists and payment completed, display profile information
 
-  if (profile) {
-    // If profile exists, display profile information
     return (
       <Box sx={{ padding: 3 }}>
         <Typography variant="h4" gutterBottom>Profile</Typography>
@@ -93,7 +92,7 @@ function ProfilePage() {
     );
   }
 
-  // Display form if profile data is not yet available
+  // Display form if profile data is not yet available or payment pending
   return (
     <Box sx={{ padding: 3 }}>
       <Typography variant="h4" gutterBottom>Create Profile</Typography>
@@ -176,8 +175,6 @@ function ProfilePage() {
           </Grid>
         </Grid>
       </form>
-      
-      <QuestionsComponent />
     </Box>
   );
 }
