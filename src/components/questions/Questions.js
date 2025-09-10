@@ -22,16 +22,11 @@ function QuestionsComponent() {
   const fetchQuestion = async () => {
     setLoading(true);
     try {
-      const res = await chatService.get("/chat/next", {
-        params: { user_id: userId },
-      });
-      if (res.data.done) {
-        setQuestion(null);
-      } else {
-        setQuestion(res.data);
-      }
+      const res = await chatService.get(`/chat/next/${userId}`);
+      setQuestion(res.data || null);
     } catch (err) {
       console.error("Error fetching question:", err);
+      setQuestion(null);
     } finally {
       setLoading(false);
     }
@@ -62,17 +57,19 @@ function QuestionsComponent() {
   };
 
   const payload = question ? question.payload : null;
+  const questionType = question ? question.type : null;
+  const questionText = payload ? payload.question : "";
 
   if (loading) return <Typography>Loading question...</Typography>;
-  if (!payload) return <Typography>All questions completed!</Typography>;
+  if (!question) return <Typography>All questions completed!</Typography>;
 
   return (
     <Box sx={{ mt: 4, p: 2, borderTop: "1px solid #ccc" }}>
       <Typography variant="h5" gutterBottom>Questions</Typography>
       <Box>
-        <Typography variant="h6">{payload.question_text}</Typography>
+        <Typography variant="h6">{questionText}</Typography>
 
-        {payload.question_type === "multiple_choice" && (
+        {questionType === "multiple_choice" && (
           <RadioGroup value={answer} onChange={(e) => setAnswer(e.target.value)}>
             {payload.options.map((option, index) => (
               <FormControlLabel key={index} value={option} control={<Radio />} label={option} />
@@ -80,7 +77,7 @@ function QuestionsComponent() {
           </RadioGroup>
         )}
 
-        {payload.question_type === "scale" && (
+        {questionType === "scale" && (
           <Slider
             value={typeof answer === "number" ? answer : 5}
             onChange={(e, newValue) => setAnswer(newValue)}
@@ -92,7 +89,7 @@ function QuestionsComponent() {
           />
         )}
 
-        {payload.question_type === "open_text" && (
+        {questionType === "open_text" && (
           <TextField
             fullWidth
             multiline
