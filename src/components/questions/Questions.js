@@ -1,129 +1,97 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Button, TextField, RadioGroup, FormControlLabel, Radio, Slider, Grid } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import api from "../../services/api";
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Slider,
+  Grid,
+} from "@mui/material";
+import chatService from "../../services/chatService";
 
 function QuestionsComponent() {
-  const navigate = useNavigate();
-  const hasPaid = localStorage.getItem("hasPaid") === "true";
-  const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [question, setQuestion] = useState(null);
+  const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!hasPaid) {
-      navigate("/payment");
-      return;
-    }
+  const userId = localStorage.getItem("user_id") || "";
+  const [sessionId] = useState(() => {
+    const existing = localStorage.getItem("question_session_id");
+    if (existing) return existing;
+    const newId = crypto.randomUUID();
+    localStorage.setItem("question_session_id", newId);
+    return newId;
+  });
 
-    const fetchQuestionsAndAnswers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        // Fetch questions
-        const questionsResponse = await api.get("/user/questionnaire", {
-          headers: { Authorization: `${token}` },
-        });
-
-        const fetchedQuestions = questionsResponse.data.questions;
-
-        // Fetch user's previous answers
-        const answersResponse = await api.get("/user/questionnaireAnswers", {
-          headers: { Authorization: `${token}` },
-        });
-
-        const previousAnswers = answersResponse.data.answers || [];
-
-        // Map previous answers into a format we can use
-        const answersMap = {};
-        previousAnswers.forEach((answer) => {
-          answersMap[answer.question_id] =
-            answer.answer_text !== null ? answer.answer_text : answer.answer_value;
-        });
-
-        setQuestions(fetchedQuestions);
-        setAnswers(answersMap);
-      } catch (error) {
-        console.error("Error fetching questions or answers:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchQuestionsAndAnswers();
-  }, [hasPaid, navigate]);
-
-  if (!hasPaid) return null;
-
-  if (loading) return <Typography>Loading questions...</Typography>;
-  if (questions.length === 0) return <Typography>No questions available.</Typography>;
-
-  const currentQuestion = questions[currentQuestionIndex];
-
-  // Handle answer change based on question type
-  const handleAnswerChange = (event, newValue) => {
-    const value = event.target ? event.target.value : newValue;
-    setAnswers((prevAnswers) => ({
-      ...prevAnswers,
-      [currentQuestion.ID]: value,
-    }));
-  };
-
-  // Submit the answer to the backend
-  const submitAnswer = async () => {
-    const answerData = {
-      question_id: currentQuestion.ID,
-      answer_text: currentQuestion.QuestionType === "multiple_choice" || currentQuestion.QuestionType === "open_text"
-        ? answers[currentQuestion.ID] || null
-        : null,
-      answer_value: currentQuestion.QuestionType === "scale"
-        ? answers[currentQuestion.ID] || null
-        : null,
-    };
-
+  const fetchQuestion = async () => {
+    setLoading(true);
     try {
-      await api.post("/user/submitQuestionnaire", answerData, {
-        headers: { Authorization: `${localStorage.getItem("token")}` },
+      const res = await chatService.get("/chat/next", {
+        params: { user_id: userId, session_id: sessionId },
       });
-    } catch (error) {
-      console.error("Error submitting answer:", error);
+      if (res.data.done) {
+        setQuestion(null);
+      } else {
+        setQuestion(res.data);
+      }
+    } catch (err) {
+      console.error("Error fetching question:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle question navigation
-  const handleNext = async () => {
-    if (answers[currentQuestion.ID] !== undefined) await submitAnswer(); // Submit only if there's an answer
-    if (currentQuestionIndex < questions.length - 1) setCurrentQuestionIndex((index) => index + 1);
+  useEffect(() => {
+    fetchQuestion();
+    // Payment logic disabled for now
+  }, []);
+
+  const submitAnswer = async () => {
+    if (!question) return;
+    try {
+      await chatService.post("/chat/answer", {
+        user_id: userId,
+        session_id: sessionId,
+        question_instance_id: question.question_instance_id,
+        message: answer,
+      });
+    } catch (err) {
+      console.error("Error submitting answer:", err);
+    }
   };
 
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) setCurrentQuestionIndex((index) => index - 1);
+  const handleNext = async () => {
+    await submitAnswer();
+    setAnswer("");
+    await fetchQuestion();
   };
+
+  const payload = question ? question.payload : null;
+
+  if (loading) return <Typography>Loading question...</Typography>;
+  if (!payload) return <Typography>All questions completed!</Typography>;
 
   return (
     <Box sx={{ mt: 4, p: 2, borderTop: "1px solid #ccc" }}>
       <Typography variant="h5" gutterBottom>Questions</Typography>
       <Box>
-        <Typography variant="h6">{currentQuestion.QuestionText}</Typography>
-        
-        {/* Render input based on question type */}
-        {currentQuestion.QuestionType === "multiple_choice" && (
-          <RadioGroup
-            name={`question-${currentQuestion.ID}`}
-            value={answers[currentQuestion.ID] || ""}
-            onChange={handleAnswerChange}
-          >
-            {currentQuestion.Options.map((option, index) => (
+        <Typography variant="h6">{payload.question_text}</Typography>
+
+        {payload.question_type === "multiple_choice" && (
+          <RadioGroup value={answer} onChange={(e) => setAnswer(e.target.value)}>
+            {payload.options.map((option, index) => (
               <FormControlLabel key={index} value={option} control={<Radio />} label={option} />
             ))}
           </RadioGroup>
         )}
 
-        {currentQuestion.QuestionType === "scale" && (
+        {payload.question_type === "scale" && (
           <Slider
-            value={answers[currentQuestion.ID] || 5}
-            onChange={(e, newValue) => handleAnswerChange(e, newValue)}
+            value={typeof answer === "number" ? answer : 5}
+            onChange={(e, newValue) => setAnswer(newValue)}
             step={1}
             marks
             min={1}
@@ -132,33 +100,20 @@ function QuestionsComponent() {
           />
         )}
 
-        {currentQuestion.QuestionType === "open_text" && (
+        {payload.question_type === "open_text" && (
           <TextField
             fullWidth
             multiline
             rows={4}
-            value={answers[currentQuestion.ID] || ""}
-            onChange={handleAnswerChange}
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
             placeholder="Type your answer..."
           />
         )}
       </Box>
 
-      {/* Navigation buttons */}
-      <Grid container justifyContent="space-between" sx={{ mt: 2 }}>
-        <Button
-          variant="contained"
-          onClick={handlePrevious}
-          disabled={currentQuestionIndex === 0}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleNext}
-          disabled={currentQuestionIndex === questions.length - 1}
-        >
+      <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
+        <Button variant="contained" color="primary" onClick={handleNext}>
           Next
         </Button>
       </Grid>
