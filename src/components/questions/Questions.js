@@ -18,19 +18,12 @@ function QuestionsComponent() {
   const [loading, setLoading] = useState(true);
 
   const userId = localStorage.getItem("user_id") || "";
-  const [sessionId] = useState(() => {
-    const existing = localStorage.getItem("question_session_id");
-    if (existing) return existing;
-    const newId = crypto.randomUUID();
-    localStorage.setItem("question_session_id", newId);
-    return newId;
-  });
 
   const fetchQuestion = async () => {
     setLoading(true);
     try {
       const res = await chatService.get("/chat/next", {
-        params: { user_id: userId, session_id: sessionId },
+        params: { user_id: userId },
       });
       if (res.data.done) {
         setQuestion(null);
@@ -54,7 +47,6 @@ function QuestionsComponent() {
     try {
       await chatService.post("/chat/answer", {
         user_id: userId,
-        session_id: sessionId,
         question_instance_id: question.question_instance_id,
         message: answer,
       });
