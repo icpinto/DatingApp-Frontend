@@ -20,6 +20,7 @@ function ProfilePage() {
   const hasPaid = localStorage.getItem("hasPaid") === "true";
 
   useEffect(() => {
+    if (!hasPaid) return;
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -40,6 +41,7 @@ function ProfilePage() {
     };
     if (userId) fetchProfile();
   }, [userId]);
+
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -74,6 +76,7 @@ function ProfilePage() {
 
   if (profile && hasPaid) {
     // If profile exists and payment completed, display profile information
+
     return (
       <Box sx={{ padding: 3 }}>
         <Typography variant="h4" gutterBottom>Profile</Typography>
