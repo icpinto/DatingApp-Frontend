@@ -15,20 +15,26 @@ import {
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import chatService from "../../services/chatService";
+import QuestionCategorySelector from "./QuestionCategorySelector";
 
 function QuestionsComponent() {
   const [question, setQuestion] = useState(null);
   const [meAnswer, setMeAnswer] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const userId = localStorage.getItem("user_id") || "";
 
   const fetchQuestion = async () => {
     setLoading(true);
     try {
+      const params = { user_id: userId };
+      if (selectedCategory !== "All") {
+        params.category = selectedCategory;
+      }
       const res = await chatService.get("/chat/next", {
-        params: { user_id: userId },
+        params,
       });
       setQuestion(res.data || null);
     } catch (err) {
@@ -42,7 +48,7 @@ function QuestionsComponent() {
   useEffect(() => {
     fetchQuestion();
     // Payment logic disabled for now
-  }, []);
+  }, [selectedCategory]);
 
   const submitAnswer = async () => {
     if (!question) return;
@@ -77,6 +83,10 @@ function QuestionsComponent() {
   return (
     <Box sx={{ mt: 4, p: 2, borderTop: "1px solid #ccc" }}>
       <Typography variant="h5" gutterBottom>Questions</Typography>
+      <QuestionCategorySelector
+        value={selectedCategory}
+        onChange={setSelectedCategory}
+      />
       <Box>
         <Typography variant="h6" sx={{ mb: 2 }}>
           {questionText}
