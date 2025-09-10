@@ -117,7 +117,7 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
           }}
         >
           {/* Check if conversationMessages is null or empty */}
-          {(!conversationMessages || conversationMessages.length === 0) ? (
+          {Array.isArray(conversationMessages) && conversationMessages.length === 0 ? (
             <Typography variant="body1" color="text.secondary">
               No messages yet. Start the conversation!
             </Typography>

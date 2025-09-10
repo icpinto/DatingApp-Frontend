@@ -105,9 +105,9 @@ function Requests() {
         Received Requests
       </Typography>
 
-      {(!requests || requests.length === 0)  ? (
+      {Array.isArray(requests) && requests.length === 0 ? (
         <Typography variant="body1" color="text.secondary">
-          No requests found.
+          You have no pending requests.
         </Typography>
       ) : (
         <Grid container spacing={3}>

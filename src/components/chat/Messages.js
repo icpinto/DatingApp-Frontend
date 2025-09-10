@@ -92,9 +92,9 @@ function Messages() {
       <Typography variant="h4" gutterBottom>
         Messages
       </Typography>
-      {(!conversations || conversations.length === 0) ? (
+      {Array.isArray(conversations) && conversations.length === 0 ? (
         <Typography variant="body1" color="text.secondary">
-          No conversations found.
+          You have no conversations yet.
         </Typography>
       ) : (
         <List>
