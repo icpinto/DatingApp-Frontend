@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { IconButton } from "@mui/material";
+import { AppBar, Toolbar, Typography, IconButton } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -24,14 +24,20 @@ function App() {
     <WebSocketProvider>
       <Router>
         <div className="App">
-          <IconButton
-            aria-label="toggle light and dark mode"
-            onClick={colorMode.toggleColorMode}
-            color="inherit"
-            sx={{ position: "fixed", top: 8, right: 8, zIndex: 1200 }}
-          >
-            {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
+          <AppBar position="static">
+            <Toolbar>
+              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                MatchUp
+              </Typography>
+              <IconButton
+                aria-label="toggle light and dark mode"
+                onClick={colorMode.toggleColorMode}
+                color="inherit"
+              >
+                {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
+            </Toolbar>
+          </AppBar>
           <Routes>
             <Route path="/signup" element={<Signup />} />
             <Route path="/" element={<Login />} />
