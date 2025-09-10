@@ -22,7 +22,9 @@ function QuestionsComponent() {
   const fetchQuestion = async () => {
     setLoading(true);
     try {
-      const res = await chatService.get(`/chat/next/${userId}`);
+      const res = await chatService.get("/chat/next", {
+        params: { user_id: userId },
+      });
       setQuestion(res.data || null);
     } catch (err) {
       console.error("Error fetching question:", err);
