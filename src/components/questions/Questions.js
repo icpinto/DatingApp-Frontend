@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Box, Typography, Button, TextField, RadioGroup, FormControlLabel, Radio, Slider, Grid } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 function QuestionsComponent() {
+  const navigate = useNavigate();
+  const hasPaid = localStorage.getItem("hasPaid") === "true";
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!hasPaid) {
+      setLoading(false);
+      return;
+    }
+
     const fetchQuestionsAndAnswers = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -25,7 +33,7 @@ function QuestionsComponent() {
           headers: { Authorization: `${token}` },
         });
 
-        const previousAnswers = answersResponse.data.answers|| [];
+        const previousAnswers = answersResponse.data.answers || [];
 
         // Map previous answers into a format we can use
         const answersMap = {};
@@ -44,7 +52,19 @@ function QuestionsComponent() {
     };
 
     fetchQuestionsAndAnswers();
-  }, []);
+  }, [hasPaid]);
+
+  if (!hasPaid) {
+    return (
+      <Box sx={{ mt: 4, p: 2 }}>
+        <Typography variant="h5" gutterBottom>Questions</Typography>
+        <Typography sx={{ mb: 2 }}>Please complete payment to access the questionnaire.</Typography>
+        <Button variant="contained" onClick={() => navigate("/payment")}>
+          Go to Payment
+        </Button>
+      </Box>
+    );
+  }
 
   if (loading) return <Typography>Loading questions...</Typography>;
   if (questions.length === 0) return <Typography>No questions available.</Typography>;
