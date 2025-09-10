@@ -10,6 +10,7 @@ import MainTabs from "./components/tabs/MainTabs";
 import Profile from "./components/profile/Profile";
 import Requests from "./components/requests/Requests";
 import Messages from "./components/chat/Messages";
+import Payment from "./components/payment/Payment";
 import { WebSocketProvider } from "./context/WebSocketProvider";
 import { ColorModeContext } from "./context/ThemeContext";
 
@@ -45,6 +46,7 @@ function App() {
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/requests" element={<Requests />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/payment" element={<Payment />} />
           </Routes>
         </div>
       </Router>

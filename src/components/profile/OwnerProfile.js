@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, Typography, TextField, Button, MenuItem, Grid, Chip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
 
@@ -14,10 +15,10 @@ function ProfilePage() {
     interests: [],
   });
   const [newInterest, setNewInterest] = useState("");
+  const navigate = useNavigate();
+  const userId = localStorage.getItem("user_id");
+  const hasPaid = localStorage.getItem("hasPaid") === "true";
 
-  const userId = localStorage.getItem("user_id"); 
-
-  
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -25,12 +26,19 @@ function ProfilePage() {
         const response = await api.get(`/user/profile/${userId}`, {
           headers: { Authorization: `${token}` },
         });
-        setProfile(response.data); 
+        setProfile(response.data);
+        setFormData({
+          bio: response.data.bio || "",
+          gender: response.data.gender || "",
+          date_of_birth: response.data.date_of_birth || "",
+          location: response.data.location || "",
+          interests: response.data.interests || [],
+        });
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
     };
-    fetchProfile();
+    if (userId) fetchProfile();
   }, [userId]);
 
   // Handle form field changes
@@ -57,14 +65,15 @@ function ProfilePage() {
         { ...formData },
         { headers: { Authorization: `${token}` } }
       );
-      setProfile(response.data) // Set profile data after successful update
+      setProfile(response.data); // Set profile data after successful update
+      if (!hasPaid) navigate("/payment");
     } catch (error) {
       console.error("Error saving profile data:", error);
     }
   };
 
-  if (profile) {
-    // If profile exists, display profile information
+  if (profile && hasPaid) {
+    // If profile exists and payment completed, display profile information
     return (
       <Box sx={{ padding: 3 }}>
         <Typography variant="h4" gutterBottom>Profile</Typography>
@@ -80,7 +89,7 @@ function ProfilePage() {
     );
   }
 
-  // Display form if profile data is not yet available
+  // Display form if profile data is not yet available or payment pending
   return (
     <Box sx={{ padding: 3 }}>
       <Typography variant="h4" gutterBottom>Create Profile</Typography>
@@ -163,8 +172,6 @@ function ProfilePage() {
           </Grid>
         </Grid>
       </form>
-      
-      <QuestionsComponent />
     </Box>
   );
 }
