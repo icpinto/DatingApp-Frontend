@@ -11,6 +11,10 @@ import {
   Grid,
   Card,
   CardContent,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  InputAdornment,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -23,6 +27,11 @@ function QuestionsComponent() {
   const [idealAnswer, setIdealAnswer] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const userId = localStorage.getItem("user_id") || "";
 
@@ -40,6 +49,7 @@ function QuestionsComponent() {
     } catch (err) {
       console.error("Error fetching question:", err);
       setQuestion(null);
+      setSnackbar({ open: true, message: "Failed to load question", severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -61,8 +71,10 @@ function QuestionsComponent() {
           ideal_partner: idealAnswer,
         },
       });
+      setSnackbar({ open: true, message: "Answer submitted", severity: "success" });
     } catch (err) {
       console.error("Error submitting answer:", err);
+      setSnackbar({ open: true, message: "Failed to submit answer", severity: "error" });
     }
   };
 
@@ -77,7 +89,12 @@ function QuestionsComponent() {
   const questionType = question ? question.type : null;
   const questionText = payload ? payload.question : "";
 
-  if (loading) return <Typography>Loading question...</Typography>;
+  if (loading)
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   if (!question) return <Typography>All questions completed!</Typography>;
 
   return (
@@ -129,6 +146,13 @@ function QuestionsComponent() {
                     value={meAnswer}
                     onChange={(e) => setMeAnswer(e.target.value)}
                     placeholder="Type your answer..."
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon color="primary" />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                 )}
               </CardContent>
@@ -171,6 +195,13 @@ function QuestionsComponent() {
                     value={idealAnswer}
                     onChange={(e) => setIdealAnswer(e.target.value)}
                     placeholder="Type your answer..."
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <FavoriteIcon color="secondary" />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                 )}
               </CardContent>
@@ -185,6 +216,20 @@ function QuestionsComponent() {
         </Button>
       </Grid>
     </Box>
+
+    <Snackbar
+      open={snackbar.open}
+      autoHideDuration={6000}
+      onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+    >
+      <Alert
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        severity={snackbar.severity}
+        sx={{ width: "100%" }}
+      >
+        {snackbar.message}
+      </Alert>
+    </Snackbar>
   );
 }
 

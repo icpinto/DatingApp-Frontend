@@ -1,14 +1,31 @@
 import React, { useState } from "react";
 import api from "../../services/api";
 import { useNavigate, Link } from "react-router-dom";
-import { TextField, Button, Box, Snackbar, Alert, Paper, Typography } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Box,
+  Snackbar,
+  Alert,
+  Paper,
+  Typography,
+  InputAdornment,
+  CircularProgress,
+} from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import LockIcon from "@mui/icons-material/Lock";
 import "./Auth.css";
 
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const validate = () => {
@@ -22,6 +39,7 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    setLoading(true);
     try {
       const response = await api.post("/login", {
         username,
@@ -29,10 +47,20 @@ function Login() {
       });
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user_id", response.data.user_id);
-      setSnackbar({ open: true, message: "Login successful! Redirecting...", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Login successful! Redirecting...",
+        severity: "success",
+      });
       setTimeout(() => navigate("/home"), 1000);
     } catch (error) {
-      setSnackbar({ open: true, message: "Login failed. Please check your credentials.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Login failed. Please check your credentials.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,9 +83,16 @@ function Login() {
               }
             }}
             error={Boolean(errors.username)}
-            helperText={errors.username}
+            helperText={errors.username || "Enter your username"}
             fullWidth
             margin="normal"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PersonIcon />
+                </InputAdornment>
+              ),
+            }}
           />
           <TextField
             label="Password"
@@ -72,12 +107,26 @@ function Login() {
               }
             }}
             error={Boolean(errors.password)}
-            helperText={errors.password}
+            helperText={errors.password || "Enter your password"}
             fullWidth
             margin="normal"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockIcon />
+                </InputAdornment>
+              ),
+            }}
           />
-          <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>
-            Log In
+          <Button
+            variant="contained"
+            color="primary"
+            type="submit"
+            fullWidth
+            sx={{ mt: 2 }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : "Log In"}
           </Button>
         </Box>
         <div className="auth-switch">
