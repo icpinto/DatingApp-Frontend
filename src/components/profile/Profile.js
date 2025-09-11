@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Container, Stack, Typography, Button } from "@mui/material";
+import { Container, Stack, Typography, Button, Skeleton } from "@mui/material";
+import { PersonOff } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 
@@ -9,16 +10,18 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [message, setMessage] = useState("");
   const [requestStatus, setRequestStatus] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(`/user/profile/${userId}`, {
-            headers: {
-              Authorization: `${token}`,
-            },
-          });
+          headers: {
+            Authorization: `${token}`,
+          },
+        });
         setUser(response.data); // Set the user data from the API response
 
         // Check if a request has already been sent to this user
@@ -31,6 +34,8 @@ function Profile() {
         setRequestStatus(requestResponse.data.requestStatus); // API should return a boolean
       } catch (error) {
         setMessage("Failed to load user profile.");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -58,8 +63,28 @@ function Profile() {
     }
   };
 
+  if (loading) {
+    return (
+      <Container sx={{ p: spacing.pagePadding }}>
+        <Stack spacing={spacing.section}>
+          <Skeleton variant="text" width="60%" />
+          <Skeleton variant="text" width="40%" />
+          <Skeleton variant="text" width="40%" />
+          <Skeleton variant="rectangular" width={120} height={36} />
+        </Stack>
+      </Container>
+    );
+  }
+
   if (!user) {
-    return <p>{message || "Loading..."}</p>;
+    return (
+      <Container sx={{ p: spacing.pagePadding }}>
+        <Stack spacing={1} alignItems="center">
+          <PersonOff fontSize="large" color="disabled" />
+          <Typography>{message || "No profile data available."}</Typography>
+        </Stack>
+      </Container>
+    );
   }
 
   return (
