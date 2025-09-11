@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { AppBar, Toolbar, Typography, IconButton } from "@mui/material";
+import { AppBar, Toolbar, Typography, IconButton, Box } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -13,6 +13,7 @@ import Messages from "./components/chat/Messages";
 import Payment from "./components/payment/Payment";
 import { WebSocketProvider } from "./context/WebSocketProvider";
 import { ColorModeContext } from "./context/ThemeContext";
+import logo from "./logo.svg";
 
 
 
@@ -25,15 +26,27 @@ function App() {
     <WebSocketProvider>
       <Router>
         <div className="App">
-          <AppBar position="static">
+          <AppBar
+            position="static"
+            color="primary"
+            enableColorOnDark
+            elevation={theme.palette.mode === "light" ? 2 : 4}
+          >
             <Toolbar>
-              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              <Box
+                component="img"
+                src={logo}
+                alt="MatchUp logo"
+                sx={{ height: 40, mr: 2 }}
+              />
+              <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
                 MatchUp
               </Typography>
               <IconButton
                 aria-label="toggle light and dark mode"
                 onClick={colorMode.toggleColorMode}
                 color="inherit"
+                sx={{ ml: 1 }}
               >
                 {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
