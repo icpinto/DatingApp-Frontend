@@ -84,7 +84,10 @@ function ProfilePage() {
   useEffect(() => {
     const fetchEnums = async () => {
       try {
-        const res = await api.get(`/user/profile/enums`);
+        const token = localStorage.getItem("token");
+        const res = await api.get(`/user/profile/enums`, {
+          headers: { Authorization: `${token}` },
+        });
         setEnums(res.data || {});
       } catch (error) {
         console.error("Error fetching enums:", error);
