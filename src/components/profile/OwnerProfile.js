@@ -14,6 +14,7 @@ function ProfilePage() {
     interests: [],
   });
   const [newInterest, setNewInterest] = useState("");
+  const [profileImage, setProfileImage] = useState(null);
   const userId = localStorage.getItem("user_id");
 
   useEffect(() => {
@@ -53,17 +54,33 @@ function ProfilePage() {
     }
   };
 
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setProfileImage(e.target.files[0]);
+    }
+  };
+
   // Handle submitting the profile form
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const response = await api.post(
-        `/user/profile`,
-        { ...formData },
-        { headers: { Authorization: `${token}` } }
-      );
-      setProfile(response.data); // Set profile data after successful update
+      const data = new FormData();
+      data.append("bio", formData.bio);
+      data.append("gender", formData.gender);
+      data.append("date_of_birth", formData.date_of_birth);
+      data.append("location", formData.location);
+      formData.interests.forEach((interest) => data.append("interests", interest));
+      if (profileImage) {
+        data.append("profile_image", profileImage);
+      }
+      await api.post(`/user/profile`, data, {
+        headers: { Authorization: `${token}`, "Content-Type": "multipart/form-data" },
+      });
+      const profileResponse = await api.get(`/user/profile/${userId}`, {
+        headers: { Authorization: `${token}` },
+      });
+      setProfile(profileResponse.data); // Set profile data after successful update
     } catch (error) {
       console.error("Error saving profile data:", error);
     }
@@ -74,6 +91,14 @@ function ProfilePage() {
       {profile ? (
         <>
           <Typography variant="h4" gutterBottom>Profile</Typography>
+          {profile.profile_image && (
+            <Box
+              component="img"
+              src={profile.profile_image}
+              alt="Profile"
+              sx={{ width: 150, height: 150, mb: 2 }}
+            />
+          )}
           <Typography variant="body1"><strong>Bio:</strong> {profile.bio}</Typography>
           <Typography variant="body1"><strong>Gender:</strong> {profile.gender}</Typography>
           <Typography variant="body1"><strong>Date of Birth:</strong> {profile.date_of_birth}</Typography>
@@ -129,6 +154,16 @@ function ProfilePage() {
                   value={formData.location}
                   onChange={handleChange}
                   fullWidth
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  type="file"
+                  name="profile_image"
+                  inputProps={{ accept: "image/*" }}
+                  onChange={handleFileChange}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
                 />
               </Grid>
               <Grid item xs={12}>
