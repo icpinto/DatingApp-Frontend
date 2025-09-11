@@ -1,6 +1,24 @@
 
 import React, { useState, useEffect } from "react";
-import { Box, Typography, TextField, Button, MenuItem, Grid, Chip } from "@mui/material";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  MenuItem,
+  Grid,
+  Chip,
+  Paper,
+  Snackbar,
+  Alert,
+  InputAdornment,
+  CircularProgress,
+} from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
+import WcIcon from "@mui/icons-material/Wc";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import InterestsIcon from "@mui/icons-material/Interests";
 import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
 
@@ -15,6 +33,13 @@ function ProfilePage() {
   });
   const [newInterest, setNewInterest] = useState("");
   const [profileImage, setProfileImage] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const userId = localStorage.getItem("user_id");
 
   useEffect(() => {
@@ -46,6 +71,16 @@ function ProfilePage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.bio) newErrors.bio = "Bio is required";
+    if (!formData.gender) newErrors.gender = "Gender is required";
+    if (!formData.date_of_birth) newErrors.date_of_birth = "Date of birth is required";
+    if (!formData.location) newErrors.location = "Location is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Handle adding a new interest
   const handleAddInterest = () => {
     if (newInterest.trim()) {
@@ -63,6 +98,8 @@ function ProfilePage() {
   // Handle submitting the profile form
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+    setSaving(true);
     try {
       const token = localStorage.getItem("token");
       const data = new FormData();
@@ -81,35 +118,39 @@ function ProfilePage() {
         headers: { Authorization: `${token}` },
       });
       setProfile(profileResponse.data); // Set profile data after successful update
+      setSnackbar({ open: true, message: "Profile saved", severity: "success" });
     } catch (error) {
       console.error("Error saving profile data:", error);
+      setSnackbar({ open: true, message: "Failed to save profile", severity: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 
-  return (
-    <Box sx={{ padding: 3 }}>
-      {profile ? (
-        <>
-          <Typography variant="h4" gutterBottom>Profile</Typography>
-          {profile.profile_image && (
-            <Box
-              component="img"
-              src={profile.profile_image}
-              alt="Profile"
-              sx={{ width: 150, height: 150, mb: 2 }}
-            />
-          )}
-          <Typography variant="body1"><strong>Bio:</strong> {profile.bio}</Typography>
-          <Typography variant="body1"><strong>Gender:</strong> {profile.gender}</Typography>
-          <Typography variant="body1"><strong>Date of Birth:</strong> {profile.date_of_birth}</Typography>
-          <Typography variant="body1"><strong>Location:</strong> {profile.location}</Typography>
-          <Typography variant="body1"><strong>Interests:</strong> {profile.interests?.join(", ")}</Typography>
-          <Typography variant="body2" color="textSecondary">Profile created on: {new Date(profile.created_at).toLocaleDateString()}</Typography>
-        </>
-      ) : (
-        <>
-          <Typography variant="h4" gutterBottom>Create Profile</Typography>
-          <form onSubmit={handleSubmit}>
+    return (
+      <Box sx={{ padding: 3 }}>
+        {profile ? (
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h4" gutterBottom>Profile</Typography>
+            {profile.profile_image && (
+              <Box
+                component="img"
+                src={profile.profile_image}
+                alt="Profile"
+                sx={{ width: 150, height: 150, mb: 2 }}
+              />
+            )}
+            <Typography variant="body1"><strong>Bio:</strong> {profile.bio}</Typography>
+            <Typography variant="body1"><strong>Gender:</strong> {profile.gender}</Typography>
+            <Typography variant="body1"><strong>Date of Birth:</strong> {profile.date_of_birth}</Typography>
+            <Typography variant="body1"><strong>Location:</strong> {profile.location}</Typography>
+            <Typography variant="body1"><strong>Interests:</strong> {profile.interests?.join(", ")}</Typography>
+            <Typography variant="body2" color="textSecondary">Profile created on: {new Date(profile.created_at).toLocaleDateString()}</Typography>
+          </Paper>
+        ) : (
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h4" gutterBottom>Create Profile</Typography>
+            <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -120,6 +161,15 @@ function ProfilePage() {
                   multiline
                   rows={4}
                   fullWidth
+                  error={Boolean(errors.bio)}
+                  helperText={errors.bio || "Tell us about yourself"}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <InfoIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -130,6 +180,15 @@ function ProfilePage() {
                   onChange={handleChange}
                   select
                   fullWidth
+                  error={Boolean(errors.gender)}
+                  helperText={errors.gender || "Select your gender"}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <WcIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 >
                   <MenuItem value="Male">Male</MenuItem>
                   <MenuItem value="Female">Female</MenuItem>
@@ -145,6 +204,15 @@ function ProfilePage() {
                   type="date"
                   InputLabelProps={{ shrink: true }}
                   fullWidth
+                  error={Boolean(errors.date_of_birth)}
+                  helperText={errors.date_of_birth || "When were you born?"}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <CalendarTodayIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -154,6 +222,15 @@ function ProfilePage() {
                   value={formData.location}
                   onChange={handleChange}
                   fullWidth
+                  error={Boolean(errors.location)}
+                  helperText={errors.location || "Where do you live?"}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LocationOnIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -172,7 +249,14 @@ function ProfilePage() {
                   value={newInterest}
                   onChange={(e) => setNewInterest(e.target.value)}
                   fullWidth
-                  onKeyPress={(e) => e.key === 'Enter' && e.preventDefault()} // Prevent form submission on Enter
+                  onKeyPress={(e) => e.key === 'Enter' && e.preventDefault()}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <InterestsIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
                 <Button variant="contained" color="primary" onClick={handleAddInterest} sx={{ mt: 1 }}>
                   Add Interest
@@ -192,17 +276,37 @@ function ProfilePage() {
                 </Box>
               </Grid>
               <Grid item xs={12}>
-                <Button type="submit" variant="contained" color="primary" fullWidth>
-                  Save Profile
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  disabled={saving}
+                >
+                  {saving ? <CircularProgress size={24} /> : "Save Profile"}
                 </Button>
               </Grid>
             </Grid>
           </form>
-        </>
+        </Paper>
       )}
-      <QuestionsComponent />
-    </Box>
-  );
+        <QuestionsComponent />
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        >
+          <Alert
+            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    );
 }
 
 export default ProfilePage;
