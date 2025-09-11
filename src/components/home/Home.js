@@ -8,6 +8,9 @@ import {
   Button,
   Container,
   Stack,
+  CardHeader,
+  Avatar,
+  Grow,
 } from "@mui/material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
@@ -100,46 +103,64 @@ function Home() {
                 onClick={() => handleToggleExpand(user.user_id)}
                 sx={{ cursor: "pointer" }}
               >
+                <CardHeader
+                  avatar={
+                    <Avatar src={user.profile_image} alt={user.username} />
+                  }
+                  title={
+                    <Typography variant="h6" component="div">
+                      {user.username}
+                    </Typography>
+                  }
+                  subheader={user.location || ""}
+                />
                 <CardContent>
-                  <Typography variant="h5" component="div">
-                    {user.username}
-                  </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {user.bio || "No bio available"}
                   </Typography>
                 </CardContent>
 
                 {/* Expanded Profile View */}
-                <Collapse in={expandedUserId === user.user_id} timeout="auto" unmountOnExit>
+                <Collapse
+                  in={expandedUserId === user.user_id}
+                  timeout="auto"
+                  unmountOnExit
+                >
                   {profileData && expandedUserId === user.user_id && (
-                    <CardContent>
-                      <Stack spacing={spacing.section}>
-                        <Typography variant="body1">
-                          <strong>Bio:</strong> {profileData.bio || "No bio available"}
-                        </Typography>
-                        <Typography variant="body1">
-                          <strong>Age:</strong> {profileData.age || "N/A"}
-                        </Typography>
-                        <Typography variant="body1">
-                          <strong>Location:</strong> {profileData.location || "N/A"}
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          color={profileData.requestStatus ? "secondary" : "primary"}
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent collapse toggle
-                            handleSendRequest(user.user_id);
-                          }}
-                          disabled={profileData.requestStatus}
-                          sx={{ alignSelf: "flex-start" }}
-                        >
-                          {profileData.requestStatus ? "Request Sent" : "Send Request"}
-                        </Button>
-                        {message && (
-                          <Typography color="success.main">{message}</Typography>
-                        )}
-                      </Stack>
-                    </CardContent>
+                    <Grow in={expandedUserId === user.user_id}>
+                      <CardContent>
+                        <Stack spacing={spacing.section}>
+                          <Typography variant="body1">
+                            <strong>Bio:</strong> {profileData.bio || "No bio available"}
+                          </Typography>
+                          <Typography variant="body1">
+                            <strong>Age:</strong> {profileData.age || "N/A"}
+                          </Typography>
+                          <Typography variant="body1">
+                            <strong>Location:</strong> {profileData.location || "N/A"}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            color={
+                              profileData.requestStatus ? "secondary" : "primary"
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent collapse toggle
+                              handleSendRequest(user.user_id);
+                            }}
+                            disabled={profileData.requestStatus}
+                            sx={{ alignSelf: "flex-start" }}
+                          >
+                            {profileData.requestStatus
+                              ? "Request Sent"
+                              : "Send Request"}
+                          </Button>
+                          {message && (
+                            <Typography color="success.main">{message}</Typography>
+                          )}
+                        </Stack>
+                      </CardContent>
+                    </Grow>
                   )}
                 </Collapse>
               </Card>
