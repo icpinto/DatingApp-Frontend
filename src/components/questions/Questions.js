@@ -98,124 +98,125 @@ function QuestionsComponent() {
   if (!question) return <Typography>All questions completed!</Typography>;
 
   return (
-    <Box sx={{ mt: 4, p: 2, borderTop: "1px solid #ccc" }}>
-      <Typography variant="h5" gutterBottom>Questions</Typography>
-      <QuestionCategorySelector
-        value={selectedCategory}
-        onChange={setSelectedCategory}
-      />
-      <Box>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          {questionText}
-        </Typography>
+    <>
+      <Box sx={{ mt: 4, p: 2, borderTop: "1px solid #ccc" }}>
+        <Typography variant="h5" gutterBottom>Questions</Typography>
+        <QuestionCategorySelector
+          value={selectedCategory}
+          onChange={setSelectedCategory}
+        />
+        <Box>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {questionText}
+          </Typography>
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ border: 1, borderColor: "primary.main" }}>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <PersonIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="subtitle1">Me</Typography>
-                </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Card sx={{ border: 1, borderColor: "primary.main" }}>
+                <CardContent>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                    <PersonIcon color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="subtitle1">Me</Typography>
+                  </Box>
 
-                {questionType === "multiple_choice" && (
-                  <RadioGroup value={meAnswer} onChange={(e) => setMeAnswer(e.target.value)}>
-                    {payload.options.map((option, index) => (
-                      <FormControlLabel key={index} value={option} control={<Radio color="primary" />} label={option} />
-                    ))}
-                  </RadioGroup>
-                )}
+                  {questionType === "multiple_choice" && (
+                    <RadioGroup value={meAnswer} onChange={(e) => setMeAnswer(e.target.value)}>
+                      {payload.options.map((option, index) => (
+                        <FormControlLabel key={index} value={option} control={<Radio color="primary" />} label={option} />
+                      ))}
+                    </RadioGroup>
+                  )}
 
-                {questionType === "scale" && (
-                  <Slider
-                    value={typeof meAnswer === "number" ? meAnswer : 5}
-                    onChange={(e, newValue) => setMeAnswer(newValue)}
-                    step={1}
-                    marks
-                    min={1}
-                    max={10}
-                    valueLabelDisplay="auto"
-                  />
-                )}
+                  {questionType === "scale" && (
+                    <Slider
+                      value={typeof meAnswer === "number" ? meAnswer : 5}
+                      onChange={(e, newValue) => setMeAnswer(newValue)}
+                      step={1}
+                      marks
+                      min={1}
+                      max={10}
+                      valueLabelDisplay="auto"
+                    />
+                  )}
 
-                {questionType === "open_text" && (
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={4}
-                    value={meAnswer}
-                    onChange={(e) => setMeAnswer(e.target.value)}
-                    placeholder="Type your answer..."
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon color="primary" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                )}
-              </CardContent>
-            </Card>
+                  {questionType === "open_text" && (
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={meAnswer}
+                      onChange={(e) => setMeAnswer(e.target.value)}
+                      placeholder="Type your answer..."
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <PersonIcon color="primary" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Card sx={{ border: 1, borderColor: "secondary.main" }}>
+                <CardContent>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                    <FavoriteIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="subtitle1">Ideal Partner</Typography>
+                  </Box>
+
+                  {questionType === "multiple_choice" && (
+                    <RadioGroup value={idealAnswer} onChange={(e) => setIdealAnswer(e.target.value)}>
+                      {payload.options.map((option, index) => (
+                        <FormControlLabel key={index} value={option} control={<Radio color="secondary" />} label={option} />
+                      ))}
+                    </RadioGroup>
+                  )}
+
+                  {questionType === "scale" && (
+                    <Slider
+                      value={typeof idealAnswer === "number" ? idealAnswer : 5}
+                      onChange={(e, newValue) => setIdealAnswer(newValue)}
+                      step={1}
+                      marks
+                      min={1}
+                      max={10}
+                      valueLabelDisplay="auto"
+                    />
+                  )}
+
+                  {questionType === "open_text" && (
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={idealAnswer}
+                      onChange={(e) => setIdealAnswer(e.target.value)}
+                      placeholder="Type your answer..."
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <FavoriteIcon color="secondary" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
+        </Box>
 
-          <Grid item xs={12} md={6}>
-            <Card sx={{ border: 1, borderColor: "secondary.main" }}>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <FavoriteIcon color="secondary" sx={{ mr: 1 }} />
-                  <Typography variant="subtitle1">Ideal Partner</Typography>
-                </Box>
-
-                {questionType === "multiple_choice" && (
-                  <RadioGroup value={idealAnswer} onChange={(e) => setIdealAnswer(e.target.value)}>
-                    {payload.options.map((option, index) => (
-                      <FormControlLabel key={index} value={option} control={<Radio color="secondary" />} label={option} />
-                    ))}
-                  </RadioGroup>
-                )}
-
-                {questionType === "scale" && (
-                  <Slider
-                    value={typeof idealAnswer === "number" ? idealAnswer : 5}
-                    onChange={(e, newValue) => setIdealAnswer(newValue)}
-                    step={1}
-                    marks
-                    min={1}
-                    max={10}
-                    valueLabelDisplay="auto"
-                  />
-                )}
-
-                {questionType === "open_text" && (
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={4}
-                    value={idealAnswer}
-                    onChange={(e) => setIdealAnswer(e.target.value)}
-                    placeholder="Type your answer..."
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <FavoriteIcon color="secondary" />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
+        <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
+          <Button variant="contained" color="primary" onClick={handleNext}>
+            Next
+          </Button>
         </Grid>
       </Box>
-
-      <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
-        <Button variant="contained" color="primary" onClick={handleNext}>
-          Next
-        </Button>
-      </Grid>
-    </Box>
 
     <Snackbar
       open={snackbar.open}
@@ -230,6 +231,7 @@ function QuestionsComponent() {
         {snackbar.message}
       </Alert>
     </Snackbar>
+    </>
   );
 }
 
