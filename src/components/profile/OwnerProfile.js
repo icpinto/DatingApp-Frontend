@@ -21,6 +21,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import InterestsIcon from "@mui/icons-material/Interests";
 import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
+import ProfileSections from "./ProfileSections";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -29,6 +30,11 @@ function ProfilePage() {
     gender: "",
     date_of_birth: "",
     location: "",
+    highest_education: "",
+    occupation: "",
+    family_type: "",
+    siblings: "",
+    star_sign: "",
     interests: [],
   });
   const [newInterest, setNewInterest] = useState("");
@@ -55,6 +61,11 @@ function ProfilePage() {
           gender: response.data.gender || "",
           date_of_birth: response.data.date_of_birth || "",
           location: response.data.location || "",
+          highest_education: response.data.highest_education || "",
+          occupation: response.data.occupation || "",
+          family_type: response.data.family_type || "",
+          siblings: response.data.siblings || "",
+          star_sign: response.data.star_sign || "",
           interests: response.data.interests || [],
         });
       } catch (error) {
@@ -108,6 +119,11 @@ function ProfilePage() {
       data.append("gender", formData.gender);
       data.append("date_of_birth", formData.date_of_birth);
       data.append("location", formData.location);
+      data.append("highest_education", formData.highest_education);
+      data.append("occupation", formData.occupation);
+      data.append("family_type", formData.family_type);
+      data.append("siblings", formData.siblings);
+      data.append("star_sign", formData.star_sign);
       formData.interests.forEach((interest) => data.append("interests", interest));
       if (profileImage) {
         data.append("profile_image", profileImage);
@@ -141,18 +157,19 @@ function ProfilePage() {
                 sx={{ width: 150, height: 150, mb: 2 }}
               />
             )}
-            <Typography variant="body1"><strong>Bio:</strong> {profile.bio}</Typography>
-            <Typography variant="body1"><strong>Gender:</strong> {profile.gender}</Typography>
-            <Typography variant="body1"><strong>Date of Birth:</strong> {profile.date_of_birth}</Typography>
-            <Typography variant="body1"><strong>Location:</strong> {profile.location}</Typography>
-            <Typography variant="body1"><strong>Interests:</strong> {profile.interests?.join(", ")}</Typography>
-            <Typography variant="body2" color="textSecondary">Profile created on: {new Date(profile.created_at).toLocaleDateString()}</Typography>
+            <ProfileSections data={profile} />
+            <Typography variant="body2" color="textSecondary">
+              Profile created on: {new Date(profile.created_at).toLocaleDateString()}
+            </Typography>
           </Paper>
         ) : (
           <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom>Create Profile</Typography>
             <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="h6">Personal</Typography>
+              </Grid>
               <Grid item xs={12}>
                 <TextField
                   label="Bio"
@@ -220,6 +237,9 @@ function ProfilePage() {
                 />
               </Grid>
               <Grid item xs={12}>
+                <Typography variant="h6">Residency</Typography>
+              </Grid>
+              <Grid item xs={12}>
                 <TextField
                   label="Location"
                   name="location"
@@ -239,6 +259,60 @@ function ProfilePage() {
                 />
               </Grid>
               <Grid item xs={12}>
+                <Typography variant="h6">Education</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Highest Education"
+                  name="highest_education"
+                  value={formData.highest_education}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Occupation"
+                  name="occupation"
+                  value={formData.occupation}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6">Family</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Family Type"
+                  name="family_type"
+                  value={formData.family_type}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Siblings"
+                  name="siblings"
+                  value={formData.siblings}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6">Horoscope</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Star Sign"
+                  name="star_sign"
+                  value={formData.star_sign}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
+              <Grid item xs={12}>
                 <TextField
                   type="file"
                   name="profile_image"
@@ -247,6 +321,9 @@ function ProfilePage() {
                   fullWidth
                   InputLabelProps={{ shrink: true }}
                 />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6">Interests</Typography>
               </Grid>
               <Grid item xs={12}>
                 <TextField
