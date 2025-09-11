@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Container, Stack, Typography, Button } from "@mui/material";
 import api from "../../services/api";
+import { spacing } from "../../styles";
 
 function Profile() {
   const { userId } = useParams(); // Get user ID from URL
@@ -61,28 +63,32 @@ function Profile() {
   }
 
   return (
-    <div style={{ padding: "20px" }}>
-    <h2>{user.username}'s Profile</h2>
-    <p><strong>Bio:</strong> {user.bio || "No bio available"}</p>
-    <p><strong>Age:</strong> {user.age || "N/A"}</p>
-    <p><strong>Location:</strong> {user.location || "N/A"}</p>
-    {/* Additional profile information can go here */}
-    <button
-      onClick={handleSendRequest}
-      disabled={requestStatus} // Disable button if request already sent
-      style={{
-        padding: "10px 20px",
-        backgroundColor: requestStatus ? "gray" : "#007bff",
-        color: "white",
-        border: "none",
-        borderRadius: "5px",
-        cursor: requestStatus ? "not-allowed" : "pointer",
-      }}
-    >
-      {requestStatus ? "Request Sent" : "Send Request"}
-    </button>
-    {message && <p style={{ marginTop: "10px", color: "green" }}>{message}</p>}
-  </div>
+    <Container sx={{ p: spacing.pagePadding }}>
+      <Stack spacing={spacing.section}>
+        <Typography variant="h2">{user.username}'s Profile</Typography>
+        <Typography>
+          <strong>Bio:</strong> {user.bio || "No bio available"}
+        </Typography>
+        <Typography>
+          <strong>Age:</strong> {user.age || "N/A"}
+        </Typography>
+        <Typography>
+          <strong>Location:</strong> {user.location || "N/A"}
+        </Typography>
+        {/* Additional profile information can go here */}
+        <Button
+          onClick={handleSendRequest}
+          disabled={requestStatus} // Disable button if request already sent
+          variant="contained"
+          sx={{ alignSelf: "flex-start" }}
+        >
+          {requestStatus ? "Request Sent" : "Send Request"}
+        </Button>
+        {message && (
+          <Typography color="success.main">{message}</Typography>
+        )}
+      </Stack>
+    </Container>
   );
 }
 

@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, Typography, Grid, Collapse, Button } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Collapse,
+  Button,
+  Container,
+  Stack,
+} from "@mui/material";
 import api from "../../services/api";
+import { spacing } from "../../styles";
 
 function Home() {
   const [activeUsers, setActiveUsers] = useState([]);
@@ -79,14 +89,17 @@ function Home() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Active Users</h2>
-      {message && <p>{message}</p>}
+    <Container sx={{ p: spacing.pagePadding }}>
+      <Typography variant="h2">Active Users</Typography>
+      {message && <Typography>{message}</Typography>}
       <Grid container spacing={3} direction="column">
         {Array.isArray(activeUsers) && activeUsers.length > 0 ? (
           activeUsers.map((user) => (
             <Grid item xs={12} key={user.id}>
-              <Card onClick={() => handleToggleExpand(user.user_id)} style={{ cursor: "pointer" }}>
+              <Card
+                onClick={() => handleToggleExpand(user.user_id)}
+                sx={{ cursor: "pointer" }}
+              >
                 <CardContent>
                   <Typography variant="h5" component="div">
                     {user.username}
@@ -100,28 +113,32 @@ function Home() {
                 <Collapse in={expandedUserId === user.user_id} timeout="auto" unmountOnExit>
                   {profileData && expandedUserId === user.user_id && (
                     <CardContent>
-                      <Typography variant="body1">
-                        <strong>Bio:</strong> {profileData.bio || "No bio available"}
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>Age:</strong> {profileData.age || "N/A"}
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>Location:</strong> {profileData.location || "N/A"}
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        color={profileData.requestStatus ? "secondary" : "primary"}
-                        style={{ marginTop: "10px" }}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent collapse toggle
-                          handleSendRequest(user.user_id);
-                        }}
-                        disabled={profileData.requestStatus}
-                      >
-                        {profileData.requestStatus ? "Request Sent" : "Send Request"}
-                      </Button>
-                      {message && <p style={{ marginTop: "10px", color: "green" }}>{message}</p>}
+                      <Stack spacing={spacing.section}>
+                        <Typography variant="body1">
+                          <strong>Bio:</strong> {profileData.bio || "No bio available"}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Age:</strong> {profileData.age || "N/A"}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Location:</strong> {profileData.location || "N/A"}
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          color={profileData.requestStatus ? "secondary" : "primary"}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent collapse toggle
+                            handleSendRequest(user.user_id);
+                          }}
+                          disabled={profileData.requestStatus}
+                          sx={{ alignSelf: "flex-start" }}
+                        >
+                          {profileData.requestStatus ? "Request Sent" : "Send Request"}
+                        </Button>
+                        {message && (
+                          <Typography color="success.main">{message}</Typography>
+                        )}
+                      </Stack>
                     </CardContent>
                   )}
                 </Collapse>
@@ -134,7 +151,7 @@ function Home() {
           </Grid>
         )}
       </Grid>
-    </div>
+    </Container>
   );
 }
 
