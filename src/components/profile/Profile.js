@@ -4,6 +4,7 @@ import { Container, Stack, Typography, Button, Skeleton } from "@mui/material";
 import { PersonOff } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
+import ProfileSections from "./ProfileSections";
 
 function Profile() {
   const { userId } = useParams(); // Get user ID from URL
@@ -91,16 +92,7 @@ function Profile() {
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
         <Typography variant="h2">{user.username}'s Profile</Typography>
-        <Typography>
-          <strong>Bio:</strong> {user.bio || "No bio available"}
-        </Typography>
-        <Typography>
-          <strong>Age:</strong> {user.age || "N/A"}
-        </Typography>
-        <Typography>
-          <strong>Location:</strong> {user.location || "N/A"}
-        </Typography>
-        {/* Additional profile information can go here */}
+        <ProfileSections data={user} />
         <Button
           onClick={handleSendRequest}
           disabled={requestStatus} // Disable button if request already sent
