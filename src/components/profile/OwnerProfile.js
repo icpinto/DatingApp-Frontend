@@ -31,21 +31,41 @@ import ProfileSections from "./ProfileSections";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
+  const [enums, setEnums] = useState({});
   const [formData, setFormData] = useState({
     bio: "",
     gender: "",
     date_of_birth: "",
-    location_legacy: "",
+    location: "",
     country_code: "",
     province: "",
     district: "",
     city: "",
     postal_code: "",
     highest_education: "",
+    field_of_study: "",
+    institution: "",
+    employment_status: "",
     occupation: "",
-    family_type: "",
+    father_occupation: "",
+    mother_occupation: "",
+    siblings_count: "",
     siblings: "",
-    star_sign: "",
+    civil_status: "",
+    religion: "",
+    religion_detail: "",
+    caste: "",
+    height_cm: "",
+    weight_kg: "",
+    dietary_preference: "",
+    smoking: "",
+    alcohol: "",
+    horoscope_available: "false",
+    birth_time: "",
+    birth_place: "",
+    sinhala_raasi: "",
+    nakshatra: "",
+    horoscope: "",
     interests: [],
     languages: [],
   });
@@ -62,6 +82,18 @@ function ProfilePage() {
   const userId = localStorage.getItem("user_id");
 
   useEffect(() => {
+    const fetchEnums = async () => {
+      try {
+        const res = await api.get(`/user/profile/enums`);
+        setEnums(res.data || {});
+      } catch (error) {
+        console.error("Error fetching enums:", error);
+      }
+    };
+    fetchEnums();
+  }, []);
+
+  useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -74,11 +106,20 @@ function ProfilePage() {
             bio: data.bio,
             gender: data.gender,
             date_of_birth: data.date_of_birth,
+            civil_status: data.civil_status,
+            religion: data.religion,
+            religion_detail: data.religion_detail,
+            caste: data.caste,
+            height_cm: data.height_cm,
+            weight_kg: data.weight_kg,
+            dietary_preference: data.dietary_preference,
+            smoking: data.smoking,
+            alcohol: data.alcohol,
             languages: data.languages,
             interests: data.interests,
           },
           residency: {
-            location_legacy: data.location_legacy,
+            location: data.location || data.location_legacy,
             country_code: data.country_code,
             province: data.province,
             district: data.district,
@@ -87,14 +128,24 @@ function ProfilePage() {
           },
           education: {
             highest_education: data.highest_education,
+            field_of_study: data.field_of_study,
+            institution: data.institution,
+            employment_status: data.employment_status,
             occupation: data.occupation,
           },
           family: {
-            family_type: data.family_type,
+            father_occupation: data.father_occupation,
+            mother_occupation: data.mother_occupation,
+            siblings_count: data.siblings_count,
             siblings: data.siblings,
           },
           horoscope: {
-            star_sign: data.star_sign,
+            horoscope_available: data.horoscope_available,
+            birth_time: data.birth_time,
+            birth_place: data.birth_place,
+            sinhala_raasi: data.sinhala_raasi,
+            nakshatra: data.nakshatra,
+            horoscope: data.horoscope,
           },
         };
         setProfile({
@@ -106,17 +157,36 @@ function ProfilePage() {
           bio: data.bio || "",
           gender: data.gender || "",
           date_of_birth: data.date_of_birth || "",
-          location_legacy: data.location_legacy || "",
+          location: data.location || data.location_legacy || "",
           country_code: data.country_code || "",
           province: data.province || "",
           district: data.district || "",
           city: data.city || "",
           postal_code: data.postal_code || "",
           highest_education: data.highest_education || "",
+          field_of_study: data.field_of_study || "",
+          institution: data.institution || "",
+          employment_status: data.employment_status || "",
           occupation: data.occupation || "",
-          family_type: data.family_type || "",
+          father_occupation: data.father_occupation || "",
+          mother_occupation: data.mother_occupation || "",
+          siblings_count: data.siblings_count || "",
           siblings: data.siblings || "",
-          star_sign: data.star_sign || "",
+          civil_status: data.civil_status || "",
+          religion: data.religion || "",
+          religion_detail: data.religion_detail || "",
+          caste: data.caste || "",
+          height_cm: data.height_cm || "",
+          weight_kg: data.weight_kg || "",
+          dietary_preference: data.dietary_preference || "",
+          smoking: data.smoking || "",
+          alcohol: data.alcohol || "",
+          horoscope_available: String(data.horoscope_available || false),
+          birth_time: data.birth_time || "",
+          birth_place: data.birth_place || "",
+          sinhala_raasi: data.sinhala_raasi || "",
+          nakshatra: data.nakshatra || "",
+          horoscope: data.horoscope || "",
           interests: data.interests || [],
           languages: data.languages || [],
         });
@@ -140,7 +210,7 @@ function ProfilePage() {
     if (!formData.bio) newErrors.bio = "Bio is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
     if (!formData.date_of_birth) newErrors.date_of_birth = "Date of birth is required";
-    if (!formData.location_legacy) newErrors.location_legacy = "Location is required";
+    if (!formData.location) newErrors.location = "Location is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -177,17 +247,36 @@ function ProfilePage() {
       data.append("bio", formData.bio);
       data.append("gender", formData.gender);
       data.append("date_of_birth", formData.date_of_birth);
-      data.append("location_legacy", formData.location_legacy);
+      data.append("location", formData.location);
       data.append("country_code", formData.country_code);
       data.append("province", formData.province);
       data.append("district", formData.district);
       data.append("city", formData.city);
       data.append("postal_code", formData.postal_code);
       data.append("highest_education", formData.highest_education);
+      data.append("field_of_study", formData.field_of_study);
+      data.append("institution", formData.institution);
+      data.append("employment_status", formData.employment_status);
       data.append("occupation", formData.occupation);
-      data.append("family_type", formData.family_type);
+      data.append("father_occupation", formData.father_occupation);
+      data.append("mother_occupation", formData.mother_occupation);
+      data.append("siblings_count", formData.siblings_count);
       data.append("siblings", formData.siblings);
-      data.append("star_sign", formData.star_sign);
+      data.append("civil_status", formData.civil_status);
+      data.append("religion", formData.religion);
+      data.append("religion_detail", formData.religion_detail);
+      data.append("caste", formData.caste);
+      data.append("height_cm", formData.height_cm);
+      data.append("weight_kg", formData.weight_kg);
+      data.append("dietary_preference", formData.dietary_preference);
+      data.append("smoking", formData.smoking);
+      data.append("alcohol", formData.alcohol);
+      data.append("horoscope_available", formData.horoscope_available);
+      data.append("birth_time", formData.birth_time);
+      data.append("birth_place", formData.birth_place);
+      data.append("sinhala_raasi", formData.sinhala_raasi);
+      data.append("nakshatra", formData.nakshatra);
+      data.append("horoscope", formData.horoscope);
       formData.interests.forEach((interest) => data.append("interests", interest));
       formData.languages.forEach((lang) => data.append("languages", lang));
       if (profileImage) {
@@ -205,11 +294,20 @@ function ProfilePage() {
           bio: updated.bio,
           gender: updated.gender,
           date_of_birth: updated.date_of_birth,
+          civil_status: updated.civil_status,
+          religion: updated.religion,
+          religion_detail: updated.religion_detail,
+          caste: updated.caste,
+          height_cm: updated.height_cm,
+          weight_kg: updated.weight_kg,
+          dietary_preference: updated.dietary_preference,
+          smoking: updated.smoking,
+          alcohol: updated.alcohol,
           languages: updated.languages,
           interests: updated.interests,
         },
         residency: {
-          location_legacy: updated.location_legacy,
+          location: updated.location || updated.location_legacy,
           country_code: updated.country_code,
           province: updated.province,
           district: updated.district,
@@ -218,14 +316,24 @@ function ProfilePage() {
         },
         education: {
           highest_education: updated.highest_education,
+          field_of_study: updated.field_of_study,
+          institution: updated.institution,
+          employment_status: updated.employment_status,
           occupation: updated.occupation,
         },
         family: {
-          family_type: updated.family_type,
+          father_occupation: updated.father_occupation,
+          mother_occupation: updated.mother_occupation,
+          siblings_count: updated.siblings_count,
           siblings: updated.siblings,
         },
         horoscope: {
-          star_sign: updated.star_sign,
+          horoscope_available: updated.horoscope_available,
+          birth_time: updated.birth_time,
+          birth_place: updated.birth_place,
+          sinhala_raasi: updated.sinhala_raasi,
+          nakshatra: updated.nakshatra,
+          horoscope: updated.horoscope,
         },
       };
       setProfile({
@@ -337,6 +445,124 @@ function ProfilePage() {
                             }}
                           />
                         </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Civil Status"
+                            name="civil_status"
+                            value={formData.civil_status}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.civil_status?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Religion"
+                            name="religion"
+                            value={formData.religion}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.religion?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Religion Detail"
+                            name="religion_detail"
+                            value={formData.religion_detail}
+                            onChange={handleChange}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Caste"
+                            name="caste"
+                            value={formData.caste}
+                            onChange={handleChange}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Height (cm)"
+                            name="height_cm"
+                            value={formData.height_cm}
+                            onChange={handleChange}
+                            type="number"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Weight (kg)"
+                            name="weight_kg"
+                            value={formData.weight_kg}
+                            onChange={handleChange}
+                            type="number"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Dietary Preference"
+                            name="dietary_preference"
+                            value={formData.dietary_preference}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.dietary_preference?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Smoking"
+                            name="smoking"
+                            value={formData.smoking}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.smoking?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Alcohol"
+                            name="alcohol"
+                            value={formData.alcohol}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.alcohol?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
                         <Grid item xs={12}>
                           <TextField
                             label="Add Language"
@@ -418,13 +644,13 @@ function ProfilePage() {
                         <Grid item xs={12}>
                           <TextField
                             label="Location"
-                            name="location_legacy"
-                            value={formData.location_legacy}
+                            name="location"
+                            value={formData.location}
                             onChange={handleChange}
                             fullWidth
                             required
-                            error={Boolean(errors.location_legacy)}
-                            helperText={errors.location_legacy || "Where do you live?"}
+                            error={Boolean(errors.location)}
+                            helperText={errors.location || "Where do you live?"}
                             InputProps={{
                               startAdornment: (
                                 <InputAdornment position="start">
@@ -495,8 +721,49 @@ function ProfilePage() {
                             name="highest_education"
                             value={formData.highest_education}
                             onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.highest_education?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Field of Study"
+                            name="field_of_study"
+                            value={formData.field_of_study}
+                            onChange={handleChange}
                             fullWidth
                           />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Institution"
+                            name="institution"
+                            value={formData.institution}
+                            onChange={handleChange}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Employment Status"
+                            name="employment_status"
+                            value={formData.employment_status}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.employment_status?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
@@ -519,16 +786,35 @@ function ProfilePage() {
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Family Type"
-                            name="family_type"
-                            value={formData.family_type}
+                            label="Father's Occupation"
+                            name="father_occupation"
+                            value={formData.father_occupation}
                             onChange={handleChange}
                             fullWidth
                           />
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Siblings"
+                            label="Mother's Occupation"
+                            name="mother_occupation"
+                            value={formData.mother_occupation}
+                            onChange={handleChange}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Number of Siblings"
+                            name="siblings_count"
+                            value={formData.siblings_count}
+                            onChange={handleChange}
+                            type="number"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Siblings Details"
                             name="siblings"
                             value={formData.siblings}
                             onChange={handleChange}
@@ -547,9 +833,72 @@ function ProfilePage() {
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Star Sign"
-                            name="star_sign"
-                            value={formData.star_sign}
+                            label="Horoscope Available"
+                            name="horoscope_available"
+                            value={formData.horoscope_available}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            <MenuItem value="true">Yes</MenuItem>
+                            <MenuItem value="false">No</MenuItem>
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Birth Time"
+                            name="birth_time"
+                            value={formData.birth_time}
+                            onChange={handleChange}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Birth Place"
+                            name="birth_place"
+                            value={formData.birth_place}
+                            onChange={handleChange}
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Sinhala Raasi"
+                            name="sinhala_raasi"
+                            value={formData.sinhala_raasi}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.sinhala_raasi?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Nakshatra"
+                            name="nakshatra"
+                            value={formData.nakshatra}
+                            onChange={handleChange}
+                            select
+                            fullWidth
+                          >
+                            {enums.nakshatra?.map((option) => (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Horoscope Details"
+                            name="horoscope"
+                            value={formData.horoscope}
                             onChange={handleChange}
                             fullWidth
                           />
