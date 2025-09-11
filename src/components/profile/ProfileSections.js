@@ -25,11 +25,14 @@ const sections = [
 function ProfileSections({ data }) {
   const renderFields = (sectionData) => (
     <Stack spacing={1}>
-      {Object.entries(sectionData || {}).map(([field, value]) => (
-        <Typography key={field}>
-          <strong>{formatLabel(field)}:</strong> {value ?? "N/A"}
-        </Typography>
-      ))}
+      {Object.entries(sectionData || {}).map(([field, value]) => {
+        const displayValue = Array.isArray(value) ? value.join(", ") : value;
+        return (
+          <Typography key={field}>
+            <strong>{formatLabel(field)}:</strong> {displayValue ?? "N/A"}
+          </Typography>
+        );
+      })}
     </Stack>
   );
 

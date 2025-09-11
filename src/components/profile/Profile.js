@@ -23,7 +23,37 @@ function Profile() {
             Authorization: `${token}`,
           },
         });
-        setUser(response.data); // Set the user data from the API response
+        const data = response.data;
+        const formatted = {
+          username: data.username,
+          personal: {
+            bio: data.bio,
+            gender: data.gender,
+            date_of_birth: data.date_of_birth,
+            languages: data.languages,
+            interests: data.interests,
+          },
+          residency: {
+            location_legacy: data.location_legacy,
+            country_code: data.country_code,
+            province: data.province,
+            district: data.district,
+            city: data.city,
+            postal_code: data.postal_code,
+          },
+          education: {
+            highest_education: data.highest_education,
+            occupation: data.occupation,
+          },
+          family: {
+            family_type: data.family_type,
+            siblings: data.siblings,
+          },
+          horoscope: {
+            star_sign: data.star_sign,
+          },
+        };
+        setUser(formatted); // Set the user data from the API response
 
         // Check if a request has already been sent to this user
         const requestResponse = await api.get(`/user/checkReqStatus/${userId}`, {
