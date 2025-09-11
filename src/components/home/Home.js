@@ -13,7 +13,7 @@ import {
   Grow,
   Skeleton,
 } from "@mui/material";
-import { GroupOff } from "@mui/icons-material";
+import { Group } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 
@@ -205,7 +205,7 @@ function Home() {
         ) : (
           <Grid item xs={12}>
             <Stack alignItems="center" spacing={1}>
-              <GroupOff fontSize="large" color="disabled" />
+              <Group fontSize="large" color="disabled" />
               <Typography>No active users available.</Typography>
             </Stack>
           </Grid>
