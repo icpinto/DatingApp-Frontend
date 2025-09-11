@@ -103,7 +103,7 @@ function ProfilePage() {
           <Typography variant="body1"><strong>Gender:</strong> {profile.gender}</Typography>
           <Typography variant="body1"><strong>Date of Birth:</strong> {profile.date_of_birth}</Typography>
           <Typography variant="body1"><strong>Location:</strong> {profile.location}</Typography>
-          <Typography variant="body1"><strong>Interests:</strong> {profile.interests.join(", ")}</Typography>
+          <Typography variant="body1"><strong>Interests:</strong> {profile.interests?.join(", ")}</Typography>
           <Typography variant="body2" color="textSecondary">Profile created on: {new Date(profile.created_at).toLocaleDateString()}</Typography>
         </>
       ) : (
