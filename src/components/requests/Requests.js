@@ -7,9 +7,11 @@ import {
   Button,
   Grid,
   Box,
-  CircularProgress,
   Avatar,
+  Skeleton,
+  Stack,
 } from "@mui/material";
+import { HourglassEmpty } from "@mui/icons-material";
 import api from "../../services/api";
 
 function Requests({ onRequestCountChange = () => {} }) {
@@ -103,8 +105,29 @@ function Requests({ onRequestCountChange = () => {} }) {
     }
   };
 
-  if (loading) return <CircularProgress />; 
-  if (error) return <Typography color="error">{error}</Typography>; 
+  if (loading)
+    return (
+      <Box sx={{ padding: 2 }}>
+        <Grid container spacing={3}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Card variant="outlined" sx={{ maxWidth: 345 }}>
+                <CardHeader
+                  avatar={<Skeleton variant="circular" width={40} height={40} />}
+                  title={<Skeleton width="80%" />}
+                  subheader={<Skeleton width="40%" />}
+                />
+                <CardContent>
+                  <Skeleton width="100%" />
+                  <Skeleton width="60%" />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    );
+  if (error) return <Typography color="error">{error}</Typography>;
 
   return (
     <Box sx={{ padding: 2 }}>
@@ -113,9 +136,12 @@ function Requests({ onRequestCountChange = () => {} }) {
       </Typography>
 
       {Array.isArray(requests) && requests.length === 0 ? (
-        <Typography variant="body1" color="text.secondary">
-          You have no pending requests.
-        </Typography>
+        <Stack alignItems="center" spacing={1}>
+          <HourglassEmpty color="disabled" fontSize="large" />
+          <Typography variant="body1" color="text.secondary">
+            You have no pending requests.
+          </Typography>
+        </Stack>
       ) : (
         <Grid container spacing={3}>
           {requests.map((request) => {
