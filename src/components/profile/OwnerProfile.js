@@ -65,10 +65,11 @@ function ProfilePage() {
   }, [userId]);
 
 
-  // Handle form field changes
+  // Handle form field changes with inline feedback
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: value ? "" : prev[name] }));
   };
 
   const validate = () => {
@@ -161,6 +162,7 @@ function ProfilePage() {
                   multiline
                   rows={4}
                   fullWidth
+                  required
                   error={Boolean(errors.bio)}
                   helperText={errors.bio || "Tell us about yourself"}
                   InputProps={{
@@ -180,6 +182,7 @@ function ProfilePage() {
                   onChange={handleChange}
                   select
                   fullWidth
+                  required
                   error={Boolean(errors.gender)}
                   helperText={errors.gender || "Select your gender"}
                   InputProps={{
@@ -204,6 +207,7 @@ function ProfilePage() {
                   type="date"
                   InputLabelProps={{ shrink: true }}
                   fullWidth
+                  required
                   error={Boolean(errors.date_of_birth)}
                   helperText={errors.date_of_birth || "When were you born?"}
                   InputProps={{
@@ -222,6 +226,7 @@ function ProfilePage() {
                   value={formData.location}
                   onChange={handleChange}
                   fullWidth
+                  required
                   error={Boolean(errors.location)}
                   helperText={errors.location || "Where do you live?"}
                   InputProps={{
