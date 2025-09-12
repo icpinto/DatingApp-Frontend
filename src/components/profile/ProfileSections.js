@@ -1,18 +1,6 @@
 import React from "react";
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
-  Stack
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
-// Helper to format keys like "date_of_birth" => "Date Of Birth"
-const formatLabel = (key) =>
-  key
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+import { Stack, Typography } from "@mui/material";
+import ProfileSection from "./ProfileSection";
 
 const sections = [
   { key: "personal", label: "Personal" },
@@ -23,22 +11,7 @@ const sections = [
 ];
 
 function ProfileSections({ data }) {
-  const renderFields = (sectionData) => (
-    <Stack spacing={1}>
-      {Object.entries(sectionData || {}).map(([field, value]) => {
-        const displayValue = Array.isArray(value) ? value.join(", ") : value;
-        return (
-          <Typography key={field}>
-            <strong>{formatLabel(field)}:</strong> {displayValue ?? "N/A"}
-          </Typography>
-        );
-      })}
-    </Stack>
-  );
-
-  const availableSections = sections.filter(
-    ({ key }) => data && data[key]
-  );
+  const availableSections = sections.filter(({ key }) => data && data[key]);
 
   if (availableSections.length === 0) {
     return <Typography>No additional information available.</Typography>;
@@ -47,12 +20,7 @@ function ProfileSections({ data }) {
   return (
     <Stack spacing={2}>
       {availableSections.map(({ key, label }) => (
-        <Accordion key={key} defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="h6">{label}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>{renderFields(data[key])}</AccordionDetails>
-        </Accordion>
+        <ProfileSection key={key} label={label} data={data[key]} />
       ))}
     </Stack>
   );
