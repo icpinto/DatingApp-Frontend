@@ -117,7 +117,9 @@ function Messages() {
                 onClick={() => handleOpenDrawer(conversation)}
               >
                 <ListItemAvatar>
-                  <Avatar>{otherUsername?.charAt(0).toUpperCase()}</Avatar>
+                  <Avatar variant="rounded">
+                    {otherUsername?.charAt(0).toUpperCase()}
+                  </Avatar>
                 </ListItemAvatar>
                 <ListItemText
                   primary={otherUsername}

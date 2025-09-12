@@ -362,6 +362,7 @@ function ProfilePage() {
             {profile.profile_image && (
               <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
                 <Avatar
+                  variant="rounded"
                   src={profile.profile_image}
                   alt="Profile"
                   sx={{ width: 150, height: 150 }}

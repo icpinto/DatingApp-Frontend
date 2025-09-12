@@ -135,7 +135,11 @@ function Home() {
               >
                 <CardHeader
                   avatar={
-                    <Avatar src={user.profile_image} alt={user.username} />
+                    <Avatar
+                      variant="rounded"
+                      src={user.profile_image}
+                      alt={user.username}
+                    />
                   }
                   title={
                     <Typography variant="h6" component="div">
