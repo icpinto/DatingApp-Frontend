@@ -20,13 +20,6 @@ function ProfileSections({ data }) {
 
   return (
     <Stack spacing={2} sx={{ width: "100%" }}>
-      {hasProfileImage && (
-        <Avatar
-          src={data.profile_image}
-          alt="Profile"
-          sx={{ width: 150, height: 150, alignSelf: "center" }}
-        />
-      )}
       {availableSections.map(({ key, label }) => (
         <ProfileSection key={key} label={label} data={data[key]} />
       ))}
