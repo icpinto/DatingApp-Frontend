@@ -26,6 +26,7 @@ function Profile() {
         const data = response.data;
         const formatted = {
           username: data.username,
+          profile_image: data.profile_image,
           personal: {
             bio: data.bio,
             gender: data.gender,
