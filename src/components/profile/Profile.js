@@ -26,16 +26,16 @@ function Profile() {
         const data = response.data;
         const formatted = {
           username: data.username,
-          profile_image: data.profile_image,
+          profile_image: data.profile_image_url,
           personal: {
             bio: data.bio,
             gender: data.gender,
-            date_of_birth: data.date_of_birth,
+            date_of_birth: data.date_of_birth ? data.date_of_birth.split("T")[0] : "",
             languages: data.languages,
             interests: data.interests,
           },
           residency: {
-            location_legacy: data.location_legacy,
+            location: data.location || data.location_legacy,
             country_code: data.country_code,
             province: data.province,
             district: data.district,

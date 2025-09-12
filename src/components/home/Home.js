@@ -37,9 +37,14 @@ function Home() {
         });
         const rawUsers = Array.isArray(response.data) ? response.data : [];
         const currentUserId = Number(localStorage.getItem("user_id"));
-        const users = rawUsers.filter(
-          (user) => user.user_id !== currentUserId && user.id !== currentUserId
-        );
+        const users = rawUsers
+          .filter(
+            (user) => user.user_id !== currentUserId && user.id !== currentUserId
+          )
+          .map((user) => ({
+            ...user,
+            profile_image: user.profile_image_url,
+          }));
         setActiveUsers(users);
         // No active users message handled in render
       } catch (error) {
