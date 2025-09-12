@@ -109,7 +109,7 @@ function ProfilePage() {
           personal: {
             bio: data.bio,
             gender: data.gender,
-            date_of_birth: data.date_of_birth,
+            date_of_birth: data.date_of_birth ? data.date_of_birth.split("T")[0] : "",
             civil_status: data.civil_status,
             religion: data.religion,
             religion_detail: data.religion_detail,
@@ -153,14 +153,14 @@ function ProfilePage() {
           },
         };
         setProfile({
-          profile_image: data.profile_image,
+          profile_image: data.profile_image_url,
           created_at: data.created_at,
           ...formatted,
         });
         setFormData({
           bio: data.bio || "",
           gender: data.gender || "",
-          date_of_birth: data.date_of_birth || "",
+          date_of_birth: data.date_of_birth ? data.date_of_birth.split("T")[0] : "",
           location: data.location || data.location_legacy || "",
           country_code: data.country_code || "",
           province: data.province || "",
@@ -297,7 +297,7 @@ function ProfilePage() {
         personal: {
           bio: updated.bio,
           gender: updated.gender,
-          date_of_birth: updated.date_of_birth,
+          date_of_birth: updated.date_of_birth ? updated.date_of_birth.split("T")[0] : "",
           civil_status: updated.civil_status,
           religion: updated.religion,
           religion_detail: updated.religion_detail,
@@ -341,7 +341,7 @@ function ProfilePage() {
         },
       };
       setProfile({
-        profile_image: updated.profile_image,
+        profile_image: updated.profile_image_url,
         created_at: updated.created_at,
         ...formatted,
       });
