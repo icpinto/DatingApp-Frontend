@@ -32,6 +32,7 @@ import ProfileSections from "./ProfileSections";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
+  const [rawProfile, setRawProfile] = useState(null);
   const [enums, setEnums] = useState({});
   const [formData, setFormData] = useState({
     bio: "",
@@ -80,7 +81,48 @@ function ProfilePage() {
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
   const userId = localStorage.getItem("user_id");
+
+  const populateFormData = (data) => {
+    setFormData({
+      bio: data.bio || "",
+      gender: data.gender || "",
+      date_of_birth: data.date_of_birth ? data.date_of_birth.split("T")[0] : "",
+      location: data.location || data.location_legacy || "",
+      country_code: data.country_code || "",
+      province: data.province || "",
+      district: data.district || "",
+      city: data.city || "",
+      postal_code: data.postal_code || "",
+      highest_education: data.highest_education || "",
+      field_of_study: data.field_of_study || "",
+      institution: data.institution || "",
+      employment_status: data.employment_status || "",
+      occupation: data.occupation || "",
+      father_occupation: data.father_occupation || "",
+      mother_occupation: data.mother_occupation || "",
+      siblings_count: data.siblings_count || "",
+      siblings: data.siblings || "",
+      civil_status: data.civil_status || "",
+      religion: data.religion || "",
+      religion_detail: data.religion_detail || "",
+      caste: data.caste || "",
+      height_cm: data.height_cm || "",
+      weight_kg: data.weight_kg || "",
+      dietary_preference: data.dietary_preference || "",
+      smoking: data.smoking || "",
+      alcohol: data.alcohol || "",
+      horoscope_available: String(data.horoscope_available || false),
+      birth_time: data.birth_time || "",
+      birth_place: data.birth_place || "",
+      sinhala_raasi: data.sinhala_raasi || "",
+      nakshatra: data.nakshatra || "",
+      horoscope: data.horoscope || "",
+      interests: data.interests || [],
+      languages: data.languages || [],
+    });
+  };
 
   useEffect(() => {
     const fetchEnums = async () => {
@@ -105,6 +147,8 @@ function ProfilePage() {
           headers: { Authorization: `${token}` },
         });
         const data = response.data;
+        setRawProfile(data);
+        populateFormData(data);
         const formatted = {
           personal: {
             bio: data.bio,
@@ -156,43 +200,6 @@ function ProfilePage() {
           profile_image: data.profile_image_url,
           created_at: data.created_at,
           ...formatted,
-        });
-        setFormData({
-          bio: data.bio || "",
-          gender: data.gender || "",
-          date_of_birth: data.date_of_birth ? data.date_of_birth.split("T")[0] : "",
-          location: data.location || data.location_legacy || "",
-          country_code: data.country_code || "",
-          province: data.province || "",
-          district: data.district || "",
-          city: data.city || "",
-          postal_code: data.postal_code || "",
-          highest_education: data.highest_education || "",
-          field_of_study: data.field_of_study || "",
-          institution: data.institution || "",
-          employment_status: data.employment_status || "",
-          occupation: data.occupation || "",
-          father_occupation: data.father_occupation || "",
-          mother_occupation: data.mother_occupation || "",
-          siblings_count: data.siblings_count || "",
-          siblings: data.siblings || "",
-          civil_status: data.civil_status || "",
-          religion: data.religion || "",
-          religion_detail: data.religion_detail || "",
-          caste: data.caste || "",
-          height_cm: data.height_cm || "",
-          weight_kg: data.weight_kg || "",
-          dietary_preference: data.dietary_preference || "",
-          smoking: data.smoking || "",
-          alcohol: data.alcohol || "",
-          horoscope_available: String(data.horoscope_available || false),
-          birth_time: data.birth_time || "",
-          birth_place: data.birth_place || "",
-          sinhala_raasi: data.sinhala_raasi || "",
-          nakshatra: data.nakshatra || "",
-          horoscope: data.horoscope || "",
-          interests: data.interests || [],
-          languages: data.languages || [],
         });
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -293,6 +300,8 @@ function ProfilePage() {
         headers: { Authorization: `${token}` },
       });
       const updated = profileResponse.data;
+      setRawProfile(updated);
+      populateFormData(updated);
       const formatted = {
         personal: {
           bio: updated.bio,
@@ -345,6 +354,7 @@ function ProfilePage() {
         created_at: updated.created_at,
         ...formatted,
       });
+      setIsEditing(false);
       setSnackbar({ open: true, message: "Profile saved", severity: "success" });
     } catch (error) {
       console.error("Error saving profile data:", error);
@@ -354,29 +364,21 @@ function ProfilePage() {
     }
   };
 
+  const handleEdit = () => {
+    if (rawProfile) populateFormData(rawProfile);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (rawProfile) populateFormData(rawProfile);
+    setIsEditing(false);
+  };
+
     return (
       <Box sx={{ padding: 3 }}>
-        {profile ? (
+        {(!profile || isEditing) ? (
           <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>Profile</Typography>
-            {profile.profile_image && (
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <Avatar
-                  variant="rounded"
-                  src={profile.profile_image}
-                  alt="Profile"
-                  sx={{ width: 150, height: 150 }}
-                />
-              </Box>
-            )}
-            <ProfileSections data={profile} />
-            <Typography variant="body2" color="textSecondary">
-              Profile created on: {new Date(profile.created_at).toLocaleDateString()}
-            </Typography>
-          </Paper>
-        ) : (
-          <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h4" gutterBottom>Create Profile</Typography>
+              <Typography variant="h4" gutterBottom>{profile ? "Edit Profile" : "Create Profile"}</Typography>
               <form onSubmit={handleSubmit}>
                 <Stack spacing={2}>
                   <Accordion defaultExpanded>
@@ -923,25 +925,56 @@ function ProfilePage() {
                     </AccordionDetails>
                   </Accordion>
 
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    disabled={saving}
-                  >
-                    {saving ? <CircularProgress size={24} /> : "Save Profile"}
-                  </Button>
-                </Stack>
-              </form>
-        </Paper>
-      )}
-        <QuestionsComponent />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      disabled={saving}
+                    >
+                      {saving ? <CircularProgress size={24} /> : "Save Profile"}
+                    </Button>
+                    {profile && (
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        fullWidth
+                        onClick={handleCancelEdit}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </Stack>
+                </form>
+          </Paper>
+        ) : (
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h4" gutterBottom>Profile</Typography>
+            {profile.profile_image && (
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <Avatar
+                  variant="rounded"
+                  src={profile.profile_image}
+                  alt="Profile"
+                  sx={{ width: 150, height: 150 }}
+                />
+              </Box>
+            )}
+            <ProfileSections data={profile} />
+            <Typography variant="body2" color="textSecondary">
+              Profile created on: {new Date(profile.created_at).toLocaleDateString()}
+            </Typography>
+            <Button variant="contained" sx={{ mt: 2 }} onClick={handleEdit}>
+              Edit Profile
+            </Button>
+          </Paper>
+        )}
+          <QuestionsComponent />
 
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={6000}
+            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         >
           <Alert
             onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
