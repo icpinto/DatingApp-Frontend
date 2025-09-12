@@ -14,7 +14,10 @@ export const WebSocketProvider = ({ children }) => {
       ws.current.close();
     }
 
-    const socket = new WebSocket(`ws://localhost:8080/ws/${token}`);
+    const baseUrl =
+      process.env.REACT_APP_CHAT_SERVICE_URL || "http://localhost:8082";
+    const wsUrl = baseUrl.replace(/^http/, "ws");
+    const socket = new WebSocket(`${wsUrl}/ws/${token}`);
     ws.current = socket;
 
     const handleMessage = (event) => {

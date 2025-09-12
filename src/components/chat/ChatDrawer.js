@@ -11,7 +11,7 @@ import {
   IconButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import api from "../../services/api";
+import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 
 function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
@@ -30,11 +30,14 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
       const fetchMessages = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await api.get(`/user/conversations/${conversationId}`, {
-            headers: {
-              Authorization: `${token}`,
-            },
-          });
+          const response = await chatService.get(
+            `/conversations/${conversationId}/messages`,
+            {
+              headers: {
+                Authorization: `${token}`,
+              },
+            }
+          );
           setConversationMessages(response.data || []);
         } catch (err) {
           setError("Failed to fetch messages");
