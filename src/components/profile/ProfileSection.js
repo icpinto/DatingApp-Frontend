@@ -16,7 +16,7 @@ const formatLabel = (key) =>
 
 function ProfileSection({ label, data }) {
   return (
-    <Accordion defaultExpanded>
+    <Accordion defaultExpanded sx={{ width: "100%" }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
         <Typography variant="h6">{label}</Typography>
       </AccordionSummary>

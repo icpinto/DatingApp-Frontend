@@ -8,6 +8,7 @@ import {
   MenuItem,
   Grid,
   Chip,
+  Avatar,
   Paper,
   Snackbar,
   Alert,
@@ -358,6 +359,15 @@ function ProfilePage() {
         {profile ? (
           <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h4" gutterBottom>Profile</Typography>
+            {profile.profile_image && (
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <Avatar
+                  src={profile.profile_image}
+                  alt="Profile"
+                  sx={{ width: 150, height: 150 }}
+                />
+              </Box>
+            )}
             <ProfileSections data={profile} />
             <Typography variant="body2" color="textSecondary">
               Profile created on: {new Date(profile.created_at).toLocaleDateString()}
