@@ -6,7 +6,7 @@ import axios from "axios";
 // The chat service itself must send the correct CORS headers.
 const chatService = axios.create({
   baseURL:
-    process.env.REACT_APP_CHAT_SERVICE_URL || "http://localhost:8000",
+    process.env.REACT_APP_CHAT_SERVICE_URL || "http://localhost:8082",
 });
 
 export default chatService;

@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import ChatDrawer from "./ChatDrawer";
 import api from "../../services/api";
+import chatService from "../../services/chatService";
 
 function Messages() {
   const [conversations, setConversations] = useState([]);
@@ -25,7 +26,7 @@ function Messages() {
     const fetchConversations = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await api.get("/user/conversations", {
+        const response = await chatService.get("/conversations", {
           headers: {
             Authorization: `${token}`,
           },
