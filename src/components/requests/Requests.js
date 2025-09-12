@@ -151,7 +151,7 @@ function Requests({ onRequestCountChange = () => {} }) {
                 <Card variant="outlined" sx={{ maxWidth: 345 }}>
                   <CardHeader
                     avatar={
-                      <Avatar>
+                      <Avatar variant="rounded">
                         {request.sender_username?.charAt(0).toUpperCase()}
                       </Avatar>
                     }
