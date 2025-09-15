@@ -1,7 +1,9 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -22,23 +24,29 @@ export const WebSocketProvider = ({ children }) => {
     process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
   const wsUrl = baseUrl.replace(/^http/, "ws");
 
-  const send = (data) => {
+  const send = useCallback((data) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(data));
     }
-  };
+  }, []);
 
-  const joinConversation = (conversationId) => {
-    joinedConversations.current.add(String(conversationId));
-    send({ type: "join", conversation_id: String(conversationId) });
-  };
+  const joinConversation = useCallback(
+    (conversationId) => {
+      joinedConversations.current.add(String(conversationId));
+      send({ type: "join", conversation_id: String(conversationId) });
+    },
+    [send]
+  );
 
-  const leaveConversation = (conversationId) => {
-    joinedConversations.current.delete(String(conversationId));
-    send({ type: "leave", conversation_id: String(conversationId) });
-  };
+  const leaveConversation = useCallback(
+    (conversationId) => {
+      joinedConversations.current.delete(String(conversationId));
+      send({ type: "leave", conversation_id: String(conversationId) });
+    },
+    [send]
+  );
 
-  const setConversationHistory = (conversationId, msgs) => {
+  const setConversationHistory = useCallback((conversationId, msgs) => {
     setConversations((prev) => ({
       ...prev,
       [conversationId]: {
@@ -46,9 +54,9 @@ export const WebSocketProvider = ({ children }) => {
         messages: msgs,
       },
     }));
-  };
+  }, []);
 
-  const addLocalMessage = (conversationId, message) => {
+  const addLocalMessage = useCallback((conversationId, message) => {
     setConversations((prev) => {
       const convo = prev[conversationId] || { messages: [], lastRead: null };
       return {
@@ -59,24 +67,27 @@ export const WebSocketProvider = ({ children }) => {
         },
       };
     });
-  };
+  }, []);
 
-  const markRead = (conversationId, messageId) => {
-    send({
-      type: "read",
-      conversation_id: String(conversationId),
-      message_id: messageId,
-    });
-    setConversations((prev) => {
-      const convo = prev[conversationId] || { messages: [], lastRead: null };
-      return {
-        ...prev,
-        [conversationId]: { ...convo, lastRead: messageId },
-      };
-    });
-  };
+  const markRead = useCallback(
+    (conversationId, messageId) => {
+      send({
+        type: "read",
+        conversation_id: String(conversationId),
+        message_id: messageId,
+      });
+      setConversations((prev) => {
+        const convo = prev[conversationId] || { messages: [], lastRead: null };
+        return {
+          ...prev,
+          [conversationId]: { ...convo, lastRead: messageId },
+        };
+      });
+    },
+    [send]
+  );
 
-  const sendMessage = (messageData) => send(messageData);
+  const sendMessage = useCallback((messageData) => send(messageData), [send]);
 
   const handleMessage = (event) => {
     const msg = JSON.parse(event.data);
@@ -195,19 +206,31 @@ export const WebSocketProvider = ({ children }) => {
     };
   }, []);
 
+  const contextValue = useMemo(
+    () => ({
+      conversations,
+      lastError,
+      joinConversation,
+      leaveConversation,
+      sendMessage,
+      markRead,
+      setConversationHistory,
+      addLocalMessage,
+    }),
+    [
+      conversations,
+      lastError,
+      joinConversation,
+      leaveConversation,
+      sendMessage,
+      markRead,
+      setConversationHistory,
+      addLocalMessage,
+    ]
+  );
+
   return (
-    <WebSocketContext.Provider
-      value={{
-        conversations,
-        lastError,
-        joinConversation,
-        leaveConversation,
-        sendMessage,
-        markRead,
-        setConversationHistory,
-        addLocalMessage,
-      }}
-    >
+    <WebSocketContext.Provider value={contextValue}>
       {children}
     </WebSocketContext.Provider>
   );
