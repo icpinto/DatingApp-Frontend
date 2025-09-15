@@ -50,7 +50,7 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
   // Append real-time messages from WebSocket without duplicating
   useEffect(() => {
     const filteredMessages = messages.filter(
-      (message) => message.conversation_id === conversationId
+      (message) => String(message.conversation_id) === String(conversationId)
     );
 
     if (filteredMessages.length > 0) {
@@ -82,18 +82,28 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
   const handleSendMessage = () => {
     if (newMessage.trim() === "") return;
 
-    const messageData = {
+    // Message displayed locally in the UI
+    const displayMessage = {
       message: newMessage,
       conversation_id: Number(conversationId),
       sender_id: Number(sender_id),
       receiver_id: Number(receiver_id),
-      timestamp: new Date().toISOString(), // Add a timestamp
+      timestamp: new Date().toISOString(),
+    };
+
+    // Message format expected by the server
+    const wsMessage = {
+      type: "send_message",
+      conversation_id: String(conversationId),
+      client_msg_id: Date.now().toString(),
+      body: newMessage,
+      mime_type: "text/plain",
     };
 
     // Optimistically update the conversation messages
-    setConversationMessages((prevMessages) => [...prevMessages, messageData]);
+    setConversationMessages((prevMessages) => [...prevMessages, displayMessage]);
 
-    sendMessage(messageData); // Send the message over WebSocket
+    sendMessage(wsMessage); // Send the message over WebSocket
     setNewMessage(""); // Clear input
   };
 
@@ -149,7 +159,9 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
                         borderBottomLeftRadius: isSender ? 0 : "12px",
                       }}
                     >
-                      <Typography variant="body2">{message.message}</Typography>
+                      <Typography variant="body2">
+                        {message.message || message.body}
+                      </Typography>
                       <Typography
                         variant="caption"
                         sx={{ display: "block", textAlign: "right", mt: 1, color: "text.secondary" }}
