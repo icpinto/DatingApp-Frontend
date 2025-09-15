@@ -15,7 +15,7 @@ export const WebSocketProvider = ({ children }) => {
     }
 
     const baseUrl =
-      process.env.REACT_APP_CHAT_SERVICE_URL || "http://localhost:8082";
+      process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
     const wsUrl = baseUrl.replace(/^http/, "ws");
     const socket = new WebSocket(`${wsUrl}/ws/${token}`);
     ws.current = socket;
