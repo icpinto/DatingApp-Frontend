@@ -7,11 +7,9 @@ import ThemeContext from './context/ThemeContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    <ThemeContext>
-      <App />
-    </ThemeContext>
-  </React.StrictMode>
+  <ThemeContext>
+    <App />
+  </ThemeContext>
 );
 
 // If you want to start measuring performance in your app, pass a function
