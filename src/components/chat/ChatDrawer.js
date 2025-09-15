@@ -15,7 +15,13 @@ import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 
 function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
-  const { messages, sendMessage } = useWebSocket();
+  const {
+    messages,
+    sendMessage,
+    joinConversation,
+    leaveConversation,
+    markRead,
+  } = useWebSocket();
   const [conversationMessages, setConversationMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState(null);
@@ -47,24 +53,36 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
     }
   }, [conversationId]);
 
-  // Append real-time messages from WebSocket without duplicating
-  useEffect(() => {
-    const filteredMessages = messages.filter(
-      (message) => String(message.conversation_id) === String(conversationId)
-    );
+    // Append real-time messages from WebSocket without duplicating
+    useEffect(() => {
+      const filteredMessages = messages.filter(
+        (m) => String(m.conversation_id) === String(conversationId)
+      );
 
-    if (filteredMessages.length > 0) {
-      setConversationMessages((prevMessages) => {
-        const existing = new Set(
-          prevMessages.map((m) => m.id ?? m.timestamp)
-        );
-        const newMessages = filteredMessages.filter(
-          (m) => !existing.has(m.id ?? m.timestamp)
-        );
-        return [...prevMessages, ...newMessages];
-      });
-    }
-  }, [messages, conversationId]);
+      if (filteredMessages.length > 0) {
+        setConversationMessages((prevMessages) => {
+          const existing = new Set(
+            prevMessages.map((m) => m.message_id ?? m.timestamp)
+          );
+          const newMessages = filteredMessages.filter(
+            (m) => !existing.has(m.message_id ?? m.timestamp)
+          );
+          return [...prevMessages, ...newMessages];
+        });
+      }
+    }, [messages, conversationId]);
+
+    // Join/leave conversation rooms over WebSocket
+    useEffect(() => {
+      if (conversationId && open) {
+        joinConversation(conversationId);
+      }
+      return () => {
+        if (conversationId) {
+          leaveConversation(conversationId);
+        }
+      };
+    }, [conversationId, open, joinConversation, leaveConversation]);
 
   // Clear messages when closing the drawer
   useEffect(() => {
@@ -72,36 +90,46 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
   }, [conversationId]);
 
   // Keep the latest message in view
-  useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
-  }, [conversationMessages]);
+    useEffect(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }, [conversationMessages]);
+
+    // Mark the latest message as read when conversation updates
+    useEffect(() => {
+      if (conversationMessages.length > 0) {
+        const last = conversationMessages[conversationMessages.length - 1];
+        if (last.message_id) {
+          markRead(conversationId, last.message_id);
+        }
+      }
+    }, [conversationMessages, conversationId, markRead]);
 
   // Handle sending a new message
   const handleSendMessage = () => {
     if (newMessage.trim() === "") return;
 
     // Message displayed locally in the UI
-    const displayMessage = {
-      message: newMessage,
-      conversation_id: Number(conversationId),
-      sender_id: Number(sender_id),
-      receiver_id: Number(receiver_id),
-      timestamp: new Date().toISOString(),
-    };
+      const displayMessage = {
+        body: newMessage,
+        conversation_id: Number(conversationId),
+        sender_id: Number(sender_id),
+        receiver_id: Number(receiver_id),
+        timestamp: new Date().toISOString(),
+      };
 
-    // Message format expected by the server
-    const wsMessage = {
-      type: "send_message",
-      conversation_id: String(conversationId),
-      client_msg_id: Date.now().toString(),
-      body: newMessage,
-      mime_type: "text/plain",
-    };
+      // Message format expected by the server
+      const wsMessage = {
+        type: "send_message",
+        conversation_id: String(conversationId),
+        client_msg_id: Date.now().toString(),
+        body: newMessage,
+        mime_type: "text/plain",
+      };
 
     // Optimistically update the conversation messages
-    setConversationMessages((prevMessages) => [...prevMessages, displayMessage]);
+      setConversationMessages((prevMessages) => [...prevMessages, displayMessage]);
 
     sendMessage(wsMessage); // Send the message over WebSocket
     setNewMessage(""); // Clear input
@@ -159,9 +187,7 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
                         borderBottomLeftRadius: isSender ? 0 : "12px",
                       }}
                     >
-                      <Typography variant="body2">
-                        {message.message || message.body}
-                      </Typography>
+                        <Typography variant="body2">{message.body}</Typography>
                       <Typography
                         variant="caption"
                         sx={{ display: "block", textAlign: "right", mt: 1, color: "text.secondary" }}
