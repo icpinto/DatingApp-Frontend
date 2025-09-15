@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const WebSocketContext = createContext(null);
 
@@ -29,8 +35,32 @@ export const WebSocketProvider = ({ children }) => {
     ws.current = socket;
 
     const handleMessage = (event) => {
-      const receivedMessage = JSON.parse(event.data);
-      setMessages((prevMessages) => [...prevMessages, receivedMessage]);
+      const msg = JSON.parse(event.data);
+
+      switch (msg.type) {
+        case "message": {
+          const payload = msg.payload || {};
+          const formatted = {
+            conversation_id: msg.conversation_id,
+            message_id: payload.message_id,
+            sender_id: Number(payload.sender_id),
+            body: payload.body,
+            mime_type: payload.mime_type,
+            timestamp: payload.created_at,
+          };
+          setMessages((prev) => [...prev, formatted]);
+          break;
+        }
+        case "read":
+          // Expose read events to consumers if needed
+          setMessages((prev) => [...prev, msg]);
+          break;
+        case "error":
+          console.error("WebSocket server error:", msg.error);
+          break;
+        default:
+          break;
+      }
     };
 
     socket.addEventListener("open", () => {
@@ -44,19 +74,52 @@ export const WebSocketProvider = ({ children }) => {
       console.log("WebSocket connection closed.")
     );
 
+    // Send pings periodically to keep the connection alive
+    const pingInterval = setInterval(() => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 30000);
+
     // Remove listeners and close connection on unmount
     return () => {
+      clearInterval(pingInterval);
       socket.removeEventListener("message", handleMessage);
       socket.close();
     };
   }, []);
 
-  const sendMessage = (messageData) => {
-    ws.current.send(JSON.stringify(messageData));
+  const send = (data) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify(data));
+    }
   };
 
+  const joinConversation = (conversationId) =>
+    send({ type: "join", conversation_id: String(conversationId) });
+
+  const leaveConversation = (conversationId) =>
+    send({ type: "leave", conversation_id: String(conversationId) });
+
+  const sendMessage = (messageData) => send(messageData);
+
+  const markRead = (conversationId, messageId) =>
+    send({
+      type: "read",
+      conversation_id: String(conversationId),
+      message_id: messageId,
+    });
+
   return (
-    <WebSocketContext.Provider value={{ messages, sendMessage }}>
+    <WebSocketContext.Provider
+      value={{
+        messages,
+        joinConversation,
+        leaveConversation,
+        sendMessage,
+        markRead,
+      }}
+    >
       {children}
     </WebSocketContext.Provider>
   );
