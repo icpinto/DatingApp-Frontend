@@ -11,6 +11,7 @@ const WebSocketContext = createContext(null);
 export const WebSocketProvider = ({ children }) => {
   const ws = useRef(null);
   const [messages, setMessages] = useState([]);
+  const processedMessageIds = useRef(new Set());
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -40,20 +41,24 @@ export const WebSocketProvider = ({ children }) => {
       switch (msg.type) {
         case "message": {
           const payload = msg.payload || {};
-          const formatted = {
-            conversation_id: msg.conversation_id,
-            message_id: payload.message_id,
-            sender_id: Number(payload.sender_id),
-            body: payload.body,
-            mime_type: payload.mime_type,
-            timestamp: payload.created_at,
-          };
-          setMessages((prev) => [...prev, formatted]);
+          const id = payload.message_id;
+          if (!processedMessageIds.current.has(id)) {
+            processedMessageIds.current.add(id);
+            const formatted = {
+              conversation_id: msg.conversation_id,
+              message_id: id,
+              sender_id: Number(payload.sender_id),
+              body: payload.body,
+              mime_type: payload.mime_type,
+              timestamp: payload.created_at,
+            };
+            setMessages((prev) => [...prev, formatted]);
+          }
           break;
         }
         case "read":
-          // Expose read events to consumers if needed
-          setMessages((prev) => [...prev, msg]);
+          // Read receipts are currently not stored in the messages list
+          // to avoid loops and invalid message rendering.
           break;
         case "error":
           console.error("WebSocket server error:", msg.error);
