@@ -2,6 +2,11 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment Variables
+
+- `REACT_APP_CHAT_SERVICE_URL` – URL for the chat HTTP API (default `http://localhost:8082`).
+- `REACT_APP_CHAT_WS_URL` – URL for the chat WebSocket gateway (default `http://localhost:8081`).
+
 ## Available Scripts
 
 In the project directory, you can run:
