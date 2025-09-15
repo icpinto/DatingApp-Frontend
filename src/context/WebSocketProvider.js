@@ -18,14 +18,14 @@ export const WebSocketProvider = ({ children }) => {
       process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
     const wsUrl = baseUrl.replace(/^http/, "ws");
 
-    // Connect to the WebSocket endpoint and include the JWT in the
-    // Authorization header required by the gateway. Browsers do not allow
-    // setting arbitrary headers directly, but the environment running this
-    // frontend supports passing them via the options argument.
-    const socketOptions = token
-      ? { headers: { Authorization: `Bearer ${token}` } }
-      : undefined;
-    const socket = new WebSocket(`${wsUrl}/ws`, socketOptions);
+    // Browsers do not allow custom headers to be specified when
+    // establishing a WebSocket connection. Instead, append the token as a
+    // query parameter so the server can still perform authentication.
+    const wsEndpoint = token
+      ? `${wsUrl}/ws?token=${encodeURIComponent(token)}`
+      : `${wsUrl}/ws`;
+
+    const socket = new WebSocket(wsEndpoint);
     ws.current = socket;
 
     const handleMessage = (event) => {
