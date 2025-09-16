@@ -204,7 +204,7 @@ function ChatDrawer({
       <Box
         ref={messagesContainerRef}
         sx={{
-          flexGrow: 1,
+          flex: "1 1 0",
           overflowY: "auto",
           mt: 2,
           pr: 1,
