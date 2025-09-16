@@ -18,6 +18,174 @@ import ChatDrawer from "./ChatDrawer";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 
+const pickFirst = (...values) =>
+  values.find((value) => value !== undefined && value !== null);
+
+const normalizeConversationList = (payload) => {
+  const visited = new WeakSet();
+
+  const explore = (value) => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    if (!value || typeof value !== "object") {
+      return [];
+    }
+
+    if (visited.has(value)) {
+      return [];
+    }
+
+    visited.add(value);
+
+    const preferredKeys = ["conversations", "data", "results", "items"];
+    for (const key of preferredKeys) {
+      if (Array.isArray(value[key])) {
+        return value[key];
+      }
+    }
+
+    for (const child of Object.values(value)) {
+      const nested = explore(child);
+      if (nested.length) {
+        return nested;
+      }
+    }
+
+    return [];
+  };
+
+  return explore(payload);
+};
+
+const flattenConversationEntry = (entry) => {
+  if (entry && typeof entry === "object" && entry.conversation) {
+    const { conversation, ...rest } = entry;
+    return { ...conversation, ...rest };
+  }
+
+  return entry;
+};
+
+const extractLastMessageInfo = (conversation = {}) => {
+  const lastMessage = pickFirst(
+    conversation.last_message,
+    conversation.lastMessage,
+    conversation.latest_message,
+    conversation.latestMessage,
+    conversation.most_recent_message,
+    conversation.mostRecentMessage
+  );
+
+  let body = pickFirst(
+    conversation.last_message_body,
+    conversation.lastMessageBody
+  );
+  let mime_type = pickFirst(
+    conversation.last_message_mime_type,
+    conversation.lastMessageMimeType
+  );
+  let timestamp = pickFirst(
+    conversation.last_message_timestamp,
+    conversation.lastMessageTimestamp,
+    conversation.last_message_sent_at,
+    conversation.lastMessageSentAt,
+    conversation.last_message_time,
+    conversation.lastMessageTime
+  );
+
+  if (
+    lastMessage &&
+    typeof lastMessage === "object" &&
+    !Array.isArray(lastMessage)
+  ) {
+    body = pickFirst(
+      body,
+      lastMessage.body,
+      lastMessage.message,
+      lastMessage.text,
+      lastMessage.content,
+      lastMessage.Body,
+      lastMessage.Message
+    );
+    mime_type = pickFirst(
+      mime_type,
+      lastMessage.mime_type,
+      lastMessage.mimeType,
+      lastMessage.MimeType
+    );
+    timestamp = pickFirst(
+      timestamp,
+      lastMessage.timestamp,
+      lastMessage.created_at,
+      lastMessage.createdAt,
+      lastMessage.sent_at,
+      lastMessage.sentAt,
+      lastMessage.updated_at,
+      lastMessage.updatedAt
+    );
+  } else if (lastMessage !== undefined && lastMessage !== null) {
+    body = pickFirst(body, lastMessage);
+  }
+
+  return {
+    body,
+    mime_type,
+    timestamp,
+  };
+};
+
+const buildMessagePreview = (body, mimeType) => {
+  if (mimeType && mimeType !== "text/plain") {
+    return "Media message";
+  }
+
+  if (typeof body === "string") {
+    const trimmed = body.trim();
+    return trimmed.length ? trimmed : "No messages yet";
+  }
+
+  if (body !== undefined && body !== null) {
+    try {
+      const stringified = String(body);
+      return stringified.trim().length ? stringified : "No messages yet";
+    } catch (err) {
+      return "No messages yet";
+    }
+  }
+
+  return "No messages yet";
+};
+
+const formatLastMessageTimestamp = (timestamp) => {
+  if (!timestamp) {
+    return "";
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+
+  if (sameDay) {
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return date.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+};
+
 function Messages() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +206,10 @@ function Messages() {
           },
         });
         // Ensure conversations is always an array to avoid null map errors
-        setConversations(Array.isArray(response.data) ? response.data : []);
+        const normalized = normalizeConversationList(response.data)
+          .map(flattenConversationEntry)
+          .filter(Boolean);
+        setConversations(normalized);
         setLoading(false);
       } catch (err) {
         setError("Failed to fetch conversations");
@@ -139,7 +310,14 @@ function Messages() {
                         conversation.user1_id === currentUserId
                           ? conversation.user2_username
                           : conversation.user1_username;
-                      const otherProfile = profiles[otherUserId];
+                      const { body, mime_type, timestamp } =
+                        extractLastMessageInfo(conversation);
+                      const messagePreview = buildMessagePreview(
+                        body,
+                        mime_type
+                      );
+                      const formattedTimestamp =
+                        formatLastMessageTimestamp(timestamp);
                       return (
                         <ListItem
                           key={`${conversation.id}-panel`}
@@ -165,8 +343,47 @@ function Messages() {
                             </Avatar>
                           </ListItemAvatar>
                           <ListItemText
-                            primary={otherUsername}
-                            secondary={otherProfile?.bio || "No bio available"}
+                            primary={
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                <Typography
+                                  component="span"
+                                  variant="subtitle1"
+                                  noWrap
+                                  sx={{
+                                    flexGrow: 1,
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {otherUsername}
+                                </Typography>
+                                {formattedTimestamp ? (
+                                  <Typography
+                                    component="span"
+                                    variant="caption"
+                                    color="text.secondary"
+                                    noWrap
+                                  >
+                                    {formattedTimestamp}
+                                  </Typography>
+                                ) : null}
+                              </Box>
+                            }
+                            secondary={
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                color="text.secondary"
+                                noWrap
+                              >
+                                {messagePreview}
+                              </Typography>
+                            }
                           />
                         </ListItem>
                       );
