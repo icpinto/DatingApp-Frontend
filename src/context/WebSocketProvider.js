@@ -8,6 +8,122 @@ import React, {
   useState,
 } from "react";
 
+const pickFirst = (...values) =>
+  values.find((value) => value !== undefined && value !== null);
+
+const toNumberOrUndefined = (value) => {
+  if (value === undefined || value === null) return undefined;
+  const numeric = Number(value);
+  return Number.isNaN(numeric) ? undefined : numeric;
+};
+
+const toStringOrUndefined = (value) => {
+  if (value === undefined || value === null) return undefined;
+  return String(value);
+};
+
+const extractTimestamp = (value) => {
+  if (!value && value !== 0) {
+    return null;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return value;
+};
+
+const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
+  const conversation_id =
+    toNumberOrUndefined(
+      pickFirst(
+        message.conversation_id,
+        message.conversationId,
+        message.ConversationID,
+        message.ConversationId
+      )
+    ) ?? toNumberOrUndefined(conversationId);
+
+  const message_id = toStringOrUndefined(
+    pickFirst(
+      message.message_id,
+      message.id,
+      message.ID,
+      message.MessageID,
+      message.MessageId
+    )
+  );
+
+  const client_msg_id = toStringOrUndefined(
+    pickFirst(
+      message.client_msg_id,
+      message.clientMsgId,
+      message.clientMsgID,
+      message.ClientMsgId,
+      message.ClientMsgID,
+      message.temp_id,
+      message.tempId
+    )
+  );
+
+  const sender_id = toNumberOrUndefined(
+    pickFirst(
+      message.sender_id,
+      message.senderId,
+      message.SenderID,
+      message.SenderId,
+      message.user_id,
+      message.UserID,
+      message.UserId
+    )
+  );
+
+  const receiver_id = toNumberOrUndefined(
+    pickFirst(
+      message.receiver_id,
+      message.receiverId,
+      message.ReceiverID,
+      message.ReceiverId,
+      message.to,
+      message.to_id,
+      message.ToID,
+      message.ToId
+    )
+  );
+
+  const body = pickFirst(message.body, message.message, message.Body, "");
+  const mime_type = pickFirst(
+    message.mime_type,
+    message.mimeType,
+    message.MimeType,
+    "text/plain"
+  );
+
+  const timestamp = extractTimestamp(
+    pickFirst(
+      message.timestamp,
+      message.created_at,
+      message.createdAt,
+      message.CreatedAt,
+      message.sent_at,
+      message.sentAt,
+      message.SentAt
+    )
+  );
+
+  return {
+    conversation_id,
+    message_id,
+    client_msg_id,
+    sender_id,
+    receiver_id,
+    body,
+    mime_type,
+    timestamp,
+    ...overrides,
+  };
+};
+
 const WebSocketContext = createContext(null);
 
 export const WebSocketProvider = ({ children }) => {
@@ -47,23 +163,42 @@ export const WebSocketProvider = ({ children }) => {
   );
 
   const setConversationHistory = useCallback((conversationId, msgs) => {
-    setConversations((prev) => ({
-      ...prev,
-      [conversationId]: {
-        ...(prev[conversationId] || {}),
-        messages: msgs,
-      },
-    }));
+    setConversations((prev) => {
+      const convo = prev[conversationId] || { messages: [], lastRead: null };
+      const normalizedMessages = Array.isArray(msgs)
+        ? msgs.map((message) =>
+            normalizeMessage(conversationId, message, { pending: false })
+          )
+        : [];
+
+      normalizedMessages.forEach((message) => {
+        if (message.message_id) {
+          processedMessageIds.current.add(message.message_id);
+        }
+      });
+
+      return {
+        ...prev,
+        [conversationId]: {
+          ...convo,
+          messages: normalizedMessages,
+        },
+      };
+    });
   }, []);
 
   const addLocalMessage = useCallback((conversationId, message) => {
+    const normalized = normalizeMessage(conversationId, message, {
+      pending: true,
+    });
+
     setConversations((prev) => {
       const convo = prev[conversationId] || { messages: [], lastRead: null };
       return {
         ...prev,
         [conversationId]: {
           ...convo,
-          messages: [...convo.messages, message],
+          messages: [...convo.messages, normalized],
         },
       };
     });
@@ -95,31 +230,85 @@ export const WebSocketProvider = ({ children }) => {
     switch (msg.type) {
       case "message": {
         const payload = msg.payload || {};
-        const id = payload.message_id;
-        if (!processedMessageIds.current.has(id)) {
-          processedMessageIds.current.add(id);
-          const formatted = {
-            conversation_id: msg.conversation_id,
-            message_id: id,
-            sender_id: Number(payload.sender_id),
-            body: payload.body,
-            mime_type: payload.mime_type,
-            timestamp: payload.created_at,
-          };
-          setConversations((prev) => {
-            const convo = prev[msg.conversation_id] || {
-              messages: [],
-              lastRead: null,
-            };
-            return {
-              ...prev,
-              [msg.conversation_id]: {
-                ...convo,
-                messages: [...convo.messages, formatted],
-              },
-            };
-          });
+        const formatted = normalizeMessage(msg.conversation_id, payload, {
+          pending: false,
+        });
+        const id = formatted.message_id;
+
+        if (id && processedMessageIds.current.has(id)) {
+          break;
         }
+
+        if (id) {
+          processedMessageIds.current.add(id);
+        }
+
+        setConversations((prev) => {
+          let conversationKey = null;
+
+          if (msg.conversation_id !== undefined && msg.conversation_id !== null) {
+            conversationKey = String(msg.conversation_id);
+          } else if (
+            formatted.conversation_id !== undefined &&
+            formatted.conversation_id !== null
+          ) {
+            conversationKey = String(formatted.conversation_id);
+          }
+
+          if (!conversationKey) {
+            return prev;
+          }
+
+          const convo = prev[conversationKey] || {
+            messages: [],
+            lastRead: null,
+          };
+          let updatedMessages = [...convo.messages];
+
+          if (formatted.client_msg_id) {
+            updatedMessages = updatedMessages.filter(
+              (messageItem) =>
+                messageItem.client_msg_id !== formatted.client_msg_id
+            );
+          } else if (formatted.message_id && formatted.sender_id !== undefined) {
+            const pendingIndex = updatedMessages.findIndex(
+              (messageItem) =>
+                !messageItem.message_id &&
+                messageItem.sender_id === formatted.sender_id &&
+                messageItem.body === formatted.body
+            );
+
+            if (pendingIndex !== -1) {
+              updatedMessages.splice(pendingIndex, 1);
+            }
+          }
+
+          if (formatted.message_id) {
+            const existingIndex = updatedMessages.findIndex(
+              (messageItem) => messageItem.message_id === formatted.message_id
+            );
+
+            if (existingIndex !== -1) {
+              const mergedMessage = {
+                ...updatedMessages[existingIndex],
+                ...formatted,
+              };
+              updatedMessages.splice(existingIndex, 1, mergedMessage);
+
+              return {
+                ...prev,
+                [conversationKey]: { ...convo, messages: updatedMessages },
+              };
+            }
+          }
+
+          updatedMessages.push(formatted);
+
+          return {
+            ...prev,
+            [conversationKey]: { ...convo, messages: updatedMessages },
+          };
+        });
         break;
       }
       case "read": {

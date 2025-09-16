@@ -14,6 +14,37 @@ import CloseIcon from "@mui/icons-material/Close";
 import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 
+const formatMessageTimestamp = (message) => {
+  if (!message) return "";
+
+  if (message.pending) {
+    return "Sending…";
+  }
+
+  const rawTimestamp =
+    message.timestamp ||
+    message.created_at ||
+    message.createdAt ||
+    message.CreatedAt ||
+    message.sent_at ||
+    message.sentAt ||
+    message.SentAt ||
+    message.updated_at ||
+    message.updatedAt ||
+    null;
+
+  if (!rawTimestamp) {
+    return "—";
+  }
+
+  const parsed = new Date(rawTimestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
+
+  return parsed.toLocaleString();
+};
+
 function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
   const {
     conversations,
@@ -92,19 +123,22 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
     if (newMessage.trim() === "") return;
 
     // Message displayed locally in the UI
+    const clientMsgId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const timestamp = new Date().toISOString();
     const displayMessage = {
       body: newMessage,
       conversation_id: Number(conversationId),
       sender_id: Number(sender_id),
       receiver_id: Number(receiver_id),
-      timestamp: new Date().toISOString(),
+      timestamp,
+      client_msg_id: clientMsgId,
     };
 
     // Message format expected by the server
     const wsMessage = {
       type: "send_message",
       conversation_id: String(conversationId),
-      client_msg_id: Date.now().toString(),
+      client_msg_id: clientMsgId,
       body: newMessage,
       mime_type: "text/plain",
     };
@@ -144,10 +178,12 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
           ) : (
             <List>
               {conversationMessages.map((message, index) => {
+                const messageKey =
+                  message.message_id || message.client_msg_id || index;
                 const isSender = message.sender_id === sender_id;
                 return (
                   <ListItem
-                    key={index}
+                    key={messageKey}
                     sx={{
                       display: "flex",
                       justifyContent: isSender ? "flex-start" : "flex-end",
@@ -164,14 +200,15 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
                         borderRadius: "12px",
                         borderBottomRightRadius: isSender ? "12px" : 0,
                         borderBottomLeftRadius: isSender ? 0 : "12px",
+                        opacity: message.pending ? 0.6 : 1,
                       }}
                     >
-                        <Typography variant="body2">{message.body}</Typography>
+                      <Typography variant="body2">{message.body}</Typography>
                       <Typography
                         variant="caption"
                         sx={{ display: "block", textAlign: "right", mt: 1, color: "text.secondary" }}
                       >
-                        {new Date(message.timestamp || message.CreatedAt).toLocaleString()}
+                        {formatMessageTimestamp(message)}
                       </Typography>
                     </Paper>
                   </ListItem>
