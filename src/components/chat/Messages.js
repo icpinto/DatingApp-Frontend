@@ -186,6 +186,271 @@ const formatLastMessageTimestamp = (timestamp) => {
   });
 };
 
+const toNumberOrUndefined = (value) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const numeric = Number(value);
+  return Number.isNaN(numeric) ? undefined : numeric;
+};
+
+const toTrimmedStringOrUndefined = (value) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const stringified = String(value).trim();
+  return stringified.length ? stringified : undefined;
+};
+
+const parseUserLikeObject = (value) => {
+  if (!value || typeof value !== "object") {
+    return { id: undefined, username: undefined };
+  }
+
+  const id = toNumberOrUndefined(
+    pickFirst(
+      value.user_id,
+      value.id,
+      value.userId,
+      value.UserID,
+      value.UserId,
+      value.profile_id,
+      value.profileId,
+      value.user?.id,
+      value.user?.user_id
+    )
+  );
+
+  const username = toTrimmedStringOrUndefined(
+    pickFirst(
+      value.username,
+      value.user_name,
+      value.name,
+      value.display_name,
+      value.displayName,
+      value.handle,
+      value.user?.username,
+      value.user?.name,
+      value.profile?.username,
+      value.profile?.name
+    )
+  );
+
+  return { id, username };
+};
+
+const getUserInfoFromKeys = (conversation, keys = []) => {
+  let id;
+  let username;
+
+  keys.forEach((key) => {
+    if (!key) return;
+
+    const directId = toNumberOrUndefined(
+      pickFirst(
+        conversation?.[`${key}_id`],
+        conversation?.[`${key}Id`],
+        conversation?.[`${key}ID`],
+        conversation?.[`${key}_user_id`]
+      )
+    );
+
+    if (id === undefined && directId !== undefined) {
+      id = directId;
+    }
+
+    const directUsername = toTrimmedStringOrUndefined(
+      pickFirst(
+        conversation?.[`${key}_username`],
+        conversation?.[`${key}_name`],
+        conversation?.[`${key}Username`],
+        conversation?.[`${key}Name`]
+      )
+    );
+
+    if (!username && directUsername) {
+      username = directUsername;
+    }
+
+    const nested = conversation?.[key];
+    const nestedInfo = parseUserLikeObject(nested);
+
+    if (id === undefined && nestedInfo.id !== undefined) {
+      id = nestedInfo.id;
+    }
+
+    if (!username && nestedInfo.username) {
+      username = nestedInfo.username;
+    }
+  });
+
+  return { id, username };
+};
+
+const getConversationUsers = (conversation = {}) => ({
+  user1: getUserInfoFromKeys(conversation, [
+    "user1",
+    "user_one",
+    "userOne",
+    "user_1",
+    "first_user",
+    "firstUser",
+  ]),
+  user2: getUserInfoFromKeys(conversation, [
+    "user2",
+    "user_two",
+    "userTwo",
+    "user_2",
+    "second_user",
+    "secondUser",
+  ]),
+});
+
+const getProfileDisplayName = (profile) => {
+  if (!profile || typeof profile !== "object") {
+    return undefined;
+  }
+
+  const preferred = toTrimmedStringOrUndefined(
+    pickFirst(
+      profile.username,
+      profile.display_name,
+      profile.displayName,
+      profile.name,
+      profile.preferred_name,
+      profile.preferredName,
+      profile.user?.username,
+      profile.user?.name
+    )
+  );
+
+  if (preferred) {
+    return preferred;
+  }
+
+  const fullName = [
+    toTrimmedStringOrUndefined(
+      pickFirst(profile.first_name, profile.firstName)
+    ),
+    toTrimmedStringOrUndefined(
+      pickFirst(profile.last_name, profile.lastName)
+    ),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (fullName.trim().length) {
+    return fullName.trim();
+  }
+
+  const email = toTrimmedStringOrUndefined(profile.email);
+  if (email) {
+    const usernamePart = email.split("@")[0];
+    return usernamePart || undefined;
+  }
+
+  return undefined;
+};
+
+const getConversationPartnerDetails = (
+  conversation = {},
+  currentUserId,
+  profiles = {}
+) => {
+  const { user1, user2 } = getConversationUsers(conversation);
+
+  let otherUserId;
+  let conversationUsername;
+
+  if (
+    user1.id !== undefined &&
+    currentUserId !== undefined &&
+    user1.id === currentUserId
+  ) {
+    otherUserId = user2.id;
+    conversationUsername = user2.username;
+  } else if (
+    user2.id !== undefined &&
+    currentUserId !== undefined &&
+    user2.id === currentUserId
+  ) {
+    otherUserId = user1.id;
+    conversationUsername = user1.username;
+  } else {
+    if (user1.id !== undefined && user1.id !== currentUserId) {
+      otherUserId = user1.id;
+      conversationUsername = user1.username;
+    } else if (user2.id !== undefined && user2.id !== currentUserId) {
+      otherUserId = user2.id;
+      conversationUsername = user2.username;
+    } else {
+      conversationUsername = user1.username || user2.username;
+    }
+  }
+
+  if (otherUserId === undefined || otherUserId === currentUserId) {
+    const candidateArrays = [
+      conversation.users,
+      conversation.participants,
+      conversation.members,
+      conversation.memberships,
+      conversation.userProfiles,
+      conversation.profileUsers,
+    ];
+
+    for (const arr of candidateArrays) {
+      if (!Array.isArray(arr)) continue;
+
+      for (const entry of arr) {
+        const parsed = parseUserLikeObject(entry);
+
+        if (!conversationUsername && parsed.username) {
+          conversationUsername = parsed.username;
+        }
+
+        if (
+          parsed.id !== undefined &&
+          (currentUserId === undefined || parsed.id !== currentUserId)
+        ) {
+          otherUserId = parsed.id;
+          if (!conversationUsername && parsed.username) {
+            conversationUsername = parsed.username;
+          }
+          break;
+        }
+      }
+
+      if (
+        otherUserId !== undefined &&
+        otherUserId !== currentUserId
+      ) {
+        break;
+      }
+    }
+  }
+
+  const profile =
+    otherUserId !== undefined && otherUserId !== null
+      ? profiles?.[otherUserId]
+      : undefined;
+
+  const profileName = getProfileDisplayName(profile);
+  const displayName =
+    toTrimmedStringOrUndefined(conversationUsername) ||
+    toTrimmedStringOrUndefined(profileName) ||
+    "Unknown user";
+
+  const bio =
+    toTrimmedStringOrUndefined(profile?.bio) || "No bio available";
+
+  return { otherUserId, displayName, bio };
+};
+
+const getCurrentUserId = () =>
+  toNumberOrUndefined(localStorage.getItem("user_id"));
+
 function Messages() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +459,7 @@ function Messages() {
   const [profiles, setProfiles] = useState({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const currentUserId = getCurrentUserId();
 
   // Fetch conversations on component mount
   useEffect(() => {
@@ -224,25 +490,35 @@ function Messages() {
   useEffect(() => {
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
-      const currentUserId = Number(localStorage.getItem("user_id"));
       const uniqueIds = new Set();
       conversations.forEach((conv) => {
-        const otherId =
-          conv.user1_id === currentUserId ? conv.user2_id : conv.user1_id;
-        uniqueIds.add(otherId);
+        const { otherUserId } = getConversationPartnerDetails(
+          conv,
+          getCurrentUserId()
+        );
+        if (otherUserId !== undefined) {
+          uniqueIds.add(otherUserId);
+        }
       });
+      if (uniqueIds.size === 0) {
+        setProfiles({});
+        return;
+      }
       const profilesData = {};
       await Promise.all(
-        Array.from(uniqueIds).map(async (id) => {
-          try {
-            const res = await api.get(`/user/profile/${id}`, {
-              headers: { Authorization: `${token}` },
-            });
-            profilesData[id] = res.data;
-          } catch (e) {
-            // ignore individual profile fetch errors
-          }
-        })
+        Array.from(uniqueIds)
+          .map((id) => toNumberOrUndefined(id))
+          .filter((id) => id !== undefined)
+          .map(async (id) => {
+            try {
+              const res = await api.get(`/user/profile/${id}`, {
+                headers: { Authorization: `${token}` },
+              });
+              profilesData[id] = res.data;
+            } catch (e) {
+              // ignore individual profile fetch errors
+            }
+          })
       );
       setProfiles(profilesData);
     };
@@ -263,6 +539,13 @@ function Messages() {
 
   const showListPane = !isMobile || !selectedConversation;
   const showChatPane = !isMobile || Boolean(selectedConversation);
+  const selectedConversationDetails = selectedConversation
+    ? getConversationPartnerDetails(
+        selectedConversation,
+        currentUserId,
+        profiles
+      )
+    : null;
 
   if (loading) return <CircularProgress />;
   if (error) return <Typography color="error">{error}</Typography>;
@@ -299,17 +582,12 @@ function Messages() {
                 {Array.isArray(conversations) && conversations.length > 0 ? (
                   <List>
                     {conversations.map((conversation) => {
-                      const currentUserId = Number(
-                        localStorage.getItem("user_id")
-                      );
-                      const otherUserId =
-                        conversation.user1_id === currentUserId
-                          ? conversation.user2_id
-                          : conversation.user1_id;
-                      const otherUsername =
-                        conversation.user1_id === currentUserId
-                          ? conversation.user2_username
-                          : conversation.user1_username;
+                      const { displayName } =
+                        getConversationPartnerDetails(
+                          conversation,
+                          currentUserId,
+                          profiles
+                        );
                       const { body, mime_type, timestamp } =
                         extractLastMessageInfo(conversation);
                       const messagePreview = buildMessagePreview(
@@ -318,6 +596,9 @@ function Messages() {
                       );
                       const formattedTimestamp =
                         formatLastMessageTimestamp(timestamp);
+                      const avatarInitial = displayName
+                        ? displayName.charAt(0).toUpperCase()
+                        : "?";
                       return (
                         <ListItem
                           key={`${conversation.id}-panel`}
@@ -338,9 +619,7 @@ function Messages() {
                           }}
                         >
                           <ListItemAvatar>
-                            <Avatar variant="rounded">
-                              {otherUsername?.charAt(0).toUpperCase()}
-                            </Avatar>
+                            <Avatar variant="rounded">{avatarInitial}</Avatar>
                           </ListItemAvatar>
                           <ListItemText
                             primary={
@@ -360,7 +639,7 @@ function Messages() {
                                     fontWeight: 600,
                                   }}
                                 >
-                                  {otherUsername}
+                                  {displayName}
                                 </Typography>
                                 {formattedTimestamp ? (
                                   <Typography
@@ -429,20 +708,8 @@ function Messages() {
                   user2_id={selectedConversation.user2_id}
                   open={Boolean(selectedConversation)}
                   onClose={handleCloseConversation}
-                  partnerName={(() => {
-                    const currentUserId = Number(localStorage.getItem("user_id"));
-                    return selectedConversation.user1_id === currentUserId
-                      ? selectedConversation.user2_username
-                      : selectedConversation.user1_username;
-                  })()}
-                  partnerBio={(() => {
-                    const currentUserId = Number(localStorage.getItem("user_id"));
-                    const otherUserId =
-                      selectedConversation.user1_id === currentUserId
-                        ? selectedConversation.user2_id
-                        : selectedConversation.user1_id;
-                    return profiles[otherUserId]?.bio || "No bio available";
-                  })()}
+                  partnerName={selectedConversationDetails?.displayName}
+                  partnerBio={selectedConversationDetails?.bio}
                 />
               ) : (
                 <Box
