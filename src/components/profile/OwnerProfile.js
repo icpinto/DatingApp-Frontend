@@ -548,7 +548,7 @@ function ProfilePage() {
                             select
                             fullWidth
                           >
-                            {enums.smoking?.map((option) => (
+                            {enums.habit_frequency?.map((option) => (
                               <MenuItem key={option} value={option}>
                                 {option}
                               </MenuItem>
@@ -564,7 +564,7 @@ function ProfilePage() {
                             select
                             fullWidth
                           >
-                            {enums.alcohol?.map((option) => (
+                            {enums.habit_frequency?.map((option) => (
                               <MenuItem key={option} value={option}>
                                 {option}
                               </MenuItem>
@@ -732,7 +732,7 @@ function ProfilePage() {
                             select
                             fullWidth
                           >
-                            {enums.highest_education?.map((option) => (
+                            {enums.education_level?.map((option) => (
                               <MenuItem key={option} value={option}>
                                 {option}
                               </MenuItem>
