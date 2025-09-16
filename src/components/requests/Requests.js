@@ -43,7 +43,7 @@ function Requests({ onRequestCountChange = () => {} }) {
 
       const [receivedRes, sentRes] = await Promise.allSettled([
         api.get("/user/requests", { headers }),
-        api.get("/sentRequests", { headers }),
+        api.get("user/sentRequests", { headers }),
       ]);
 
       if (receivedRes.status === "fulfilled") {
