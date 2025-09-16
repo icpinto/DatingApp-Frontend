@@ -169,7 +169,15 @@ function ChatDrawer({
   const headerTitle = partnerName || "Conversation";
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        flexGrow: 1,
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -200,6 +208,7 @@ function ChatDrawer({
           overflowY: "auto",
           mt: 2,
           pr: 1,
+          minHeight: 0,
         }}
       >
         {error && (

@@ -561,11 +561,13 @@ function Messages() {
         sx={{
           mt: 2,
           minHeight: { xs: "60vh", md: "70vh" },
+          height: { xs: "calc(100vh - 200px)", md: "calc(100vh - 220px)" },
+          overflow: "hidden",
         }}
         alignItems="stretch"
       >
         {showListPane && (
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
             <Paper
               elevation={3}
               sx={{
@@ -574,11 +576,20 @@ function Messages() {
                 flexDirection: "column",
                 p: 2,
                 flexGrow: 1,
+                minHeight: 0,
+                overflow: "hidden",
               }}
             >
               <Typography variant="h6">Conversations</Typography>
               <Divider sx={{ my: 2 }} />
-              <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 1 }}>
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  overflowY: "auto",
+                  pr: 1,
+                  minHeight: 0,
+                }}
+              >
                 {Array.isArray(conversations) && conversations.length > 0 ? (
                   <List>
                     {conversations.map((conversation) => {
@@ -690,15 +701,18 @@ function Messages() {
           </Grid>
         )}
         {showChatPane && (
-          <Grid item xs={12} md={8} sx={{ display: "flex" }}>
+          <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
             <Paper
               elevation={3}
               sx={{
                 width: "100%",
+                height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 p: 2,
                 flexGrow: 1,
+                minHeight: 0,
+                overflow: "hidden",
               }}
             >
               {selectedConversation ? (
