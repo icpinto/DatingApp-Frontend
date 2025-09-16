@@ -7,10 +7,13 @@ import {
   List,
   ListItem,
   Paper,
-  Drawer,
   IconButton,
+  Divider,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 
@@ -45,7 +48,15 @@ const formatMessageTimestamp = (message) => {
   return parsed.toLocaleString();
 };
 
-function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
+function ChatDrawer({
+  conversationId,
+  user1_id,
+  user2_id,
+  open,
+  onClose,
+  partnerName,
+  partnerBio,
+}) {
   const {
     conversations,
     sendMessage,
@@ -61,6 +72,8 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
 
   const conversationMessages =
     conversations[conversationId]?.messages || [];
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const sender_id = Number(localStorage.getItem("user_id"));
   let receiver_id = sender_id === user1_id ? user2_id : user1_id;
@@ -80,25 +93,26 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
             }
           );
           setConversationHistory(conversationId, response.data || []);
+          setError(null);
         } catch (err) {
           setError("Failed to fetch messages");
         }
       };
       fetchMessages();
     }
-  }, [conversationId]);
+  }, [conversationId, setConversationHistory]);
 
-    // Join/leave conversation rooms over WebSocket
-    useEffect(() => {
-      if (conversationId && open) {
-        joinConversation(conversationId);
+  // Join/leave conversation rooms over WebSocket
+  useEffect(() => {
+    if (conversationId && open) {
+      joinConversation(conversationId);
+    }
+    return () => {
+      if (conversationId) {
+        leaveConversation(conversationId);
       }
-      return () => {
-        if (conversationId) {
-          leaveConversation(conversationId);
-        }
-      };
-    }, [conversationId, open, joinConversation, leaveConversation]);
+    };
+  }, [conversationId, open, joinConversation, leaveConversation]);
 
   // Keep the latest message in view
   useEffect(() => {
@@ -148,96 +162,122 @@ function ChatDrawer({ conversationId, user1_id, user2_id, open, onClose }) {
     setNewMessage(""); // Clear input
   };
 
-  if (error) return <Typography color="error">{error}</Typography>;
+  if (!open) {
+    return null;
+  }
+
+  const headerTitle = partnerName || "Conversation";
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose}>
-      <Box sx={{ width: 400, padding: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h5" gutterBottom>
-            Conversation
-          </Typography>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-
-        <Box
-          ref={messagesContainerRef}
-          sx={{
-            maxHeight: "70vh",
-            overflowY: "auto",
-            mt: 2,
-          }}
-        >
-          {/* Check if conversationMessages is null or empty */}
-          {Array.isArray(conversationMessages) && conversationMessages.length === 0 ? (
-            <Typography variant="body1" color="text.secondary">
-              No messages yet. Start the conversation!
+    <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h6">{headerTitle}</Typography>
+          {partnerBio && (
+            <Typography variant="body2" color="text.secondary">
+              {partnerBio}
             </Typography>
-          ) : (
-            <List>
-              {conversationMessages.map((message, index) => {
-                const messageKey =
-                  message.message_id || message.client_msg_id || index;
-                const isSender = message.sender_id === sender_id;
-                return (
-                  <ListItem
-                    key={messageKey}
-                    sx={{
-                      display: "flex",
-                      justifyContent: isSender ? "flex-start" : "flex-end",
-                      mb: 1,
-                    }}
-                  >
-                    <Paper
-                      elevation={2}
-                      sx={{
-                        padding: 1.5,
-                        maxWidth: "70%",
-                        bgcolor: isSender ? "primary.light" : "grey.300",
-                        color: isSender ? "black" : "black",
-                        borderRadius: "12px",
-                        borderBottomRightRadius: isSender ? "12px" : 0,
-                        borderBottomLeftRadius: isSender ? 0 : "12px",
-                        opacity: message.pending ? 0.6 : 1,
-                      }}
-                    >
-                      <Typography variant="body2">{message.body}</Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{ display: "block", textAlign: "right", mt: 1, color: "text.secondary" }}
-                      >
-                        {formatMessageTimestamp(message)}
-                      </Typography>
-                    </Paper>
-                  </ListItem>
-                );
-              })}
-            </List>
           )}
         </Box>
-
-        <Box sx={{ display: "flex", mt: 2 }}>
-          <TextField
-            variant="outlined"
-            fullWidth
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-          />
-          <Button variant="contained" color="primary" onClick={handleSendMessage} sx={{ ml: 2 }}>
-            Send
-          </Button>
-        </Box>
+        <IconButton
+          onClick={onClose}
+          aria-label={isMobile ? "Back to conversations" : "Close conversation"}
+        >
+          {isMobile ? <ArrowBackIcon /> : <CloseIcon />}
+        </IconButton>
       </Box>
-    </Drawer>
+      <Divider sx={{ mt: 2 }} />
+      <Box
+        ref={messagesContainerRef}
+        sx={{
+          flexGrow: 1,
+          overflowY: "auto",
+          mt: 2,
+          pr: 1,
+        }}
+      >
+        {error && (
+          <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+            {error}
+          </Typography>
+        )}
+        {Array.isArray(conversationMessages) && conversationMessages.length === 0 ? (
+          <Typography variant="body1" color="text.secondary">
+            No messages yet. Start the conversation!
+          </Typography>
+        ) : (
+          <List sx={{ pb: 2 }}>
+            {conversationMessages.map((message, index) => {
+              const messageKey =
+                message.message_id || message.client_msg_id || index;
+              const isSender = message.sender_id === sender_id;
+              return (
+                <ListItem
+                  key={messageKey}
+                  sx={{
+                    display: "flex",
+                    justifyContent: isSender ? "flex-end" : "flex-start",
+                    mb: 1.5,
+                  }}
+                >
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      padding: 1.5,
+                      maxWidth: "75%",
+                      bgcolor: isSender ? "primary.main" : "grey.200",
+                      color: isSender ? "primary.contrastText" : "text.primary",
+                      borderRadius: "16px",
+                      borderTopRightRadius: isSender ? 0 : "16px",
+                      borderTopLeftRadius: isSender ? "16px" : 0,
+                      opacity: message.pending ? 0.6 : 1,
+                    }}
+                  >
+                    <Typography variant="body2">{message.body}</Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: "block",
+                        textAlign: "right",
+                        mt: 1,
+                        color: "text.secondary",
+                      }}
+                    >
+                      {formatMessageTimestamp(message)}
+                    </Typography>
+                  </Paper>
+                </ListItem>
+              );
+            })}
+          </List>
+        )}
+      </Box>
+      <Divider sx={{ mt: 2 }} />
+      <Box sx={{ display: "flex", mt: 2, gap: 2 }}>
+        <TextField
+          variant="outlined"
+          fullWidth
+          placeholder="Type a message..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+        />
+        <Button variant="contained" color="primary" onClick={handleSendMessage}>
+          Send
+        </Button>
+      </Box>
+    </Box>
   );
 }
 
