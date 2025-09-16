@@ -584,14 +584,21 @@ function Messages() {
               <Divider sx={{ my: 2 }} />
               <Box
                 sx={{
-                  flexGrow: 1,
-                  overflowY: "auto",
-                  pr: 1,
+                  flex: "1 1 0",
                   minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 {Array.isArray(conversations) && conversations.length > 0 ? (
-                  <List>
+                  <List
+                    sx={{
+                      flex: "1 1 0",
+                      minHeight: 0,
+                      overflowY: "auto",
+                      pr: 1,
+                    }}
+                  >
                     {conversations.map((conversation) => {
                       const { displayName } =
                         getConversationPartnerDetails(
@@ -682,7 +689,7 @@ function Messages() {
                 ) : (
                   <Box
                     sx={{
-                      height: "100%",
+                      flex: 1,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
