@@ -71,13 +71,30 @@ function QuestionsComponent() {
       }
       return answer;
     };
+
+    const buildAnswerPayload = (answer) => {
+      const selectedOption =
+        questionType === "scale" || questionType === "open_text"
+          ? answer?.toString() ?? ""
+          : answer || "";
+
+      const additionalValue = formatAnswer(answer);
+
+      return {
+        selected_option: selectedOption,
+        additionalProp1:
+          additionalValue !== undefined && additionalValue !== null
+            ? { value: additionalValue }
+            : {},
+      };
+    };
     try {
       await questionnaireService.post("/chat/answer", {
         user_id: userId,
         question_instance_id: question.question_instance_id,
-        message: {
-          me: formatAnswer(meAnswer),
-          ideal_partner: formatAnswer(idealAnswer),
+        answer: {
+          myself: buildAnswerPayload(meAnswer),
+          ideal_partner: buildAnswerPayload(idealAnswer),
         },
       });
       setSnackbar({ open: true, message: "Answer submitted", severity: "success" });
