@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import chatService from "../../services/chatService";
+import questionnaireService from "../../services/questionnaireService";
 import QuestionCategorySelector from "./QuestionCategorySelector";
 
 function QuestionsComponent() {
@@ -42,7 +42,7 @@ function QuestionsComponent() {
       if (selectedCategory !== "All") {
         params.category = selectedCategory;
       }
-      const res = await chatService.get("/chat/next", {
+      const res = await questionnaireService.get("/chat/next", {
         params,
       });
       setQuestion(res.data || null);
@@ -63,7 +63,7 @@ function QuestionsComponent() {
   const submitAnswer = async () => {
     if (!question) return;
     try {
-      await chatService.post("/chat/answer", {
+      await questionnaireService.post("/chat/answer", {
         user_id: userId,
         question_instance_id: question.question_instance_id,
         message: {
