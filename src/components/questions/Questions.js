@@ -62,13 +62,22 @@ function QuestionsComponent() {
 
   const submitAnswer = async () => {
     if (!question) return;
+    const formatAnswer = (answer) => {
+      if (questionType === "multiple_choice") {
+        const selectedOption = options.find((option) => option.key === answer);
+        if (selectedOption) {
+          return selectedOption.value;
+        }
+      }
+      return answer;
+    };
     try {
       await questionnaireService.post("/chat/answer", {
         user_id: userId,
         question_instance_id: question.question_instance_id,
         message: {
-          me: meAnswer,
-          ideal_partner: idealAnswer,
+          me: formatAnswer(meAnswer),
+          ideal_partner: formatAnswer(idealAnswer),
         },
       });
       setSnackbar({ open: true, message: "Answer submitted", severity: "success" });
@@ -85,9 +94,9 @@ function QuestionsComponent() {
     await fetchQuestion();
   };
 
-  const payload = question ? question.payload : null;
   const questionType = question ? question.type : null;
-  const questionText = payload ? payload.question : "";
+  const questionText = question ? question.question : "";
+  const options = question && Array.isArray(question.options) ? question.options : [];
 
   if (loading)
     return (
@@ -121,8 +130,13 @@ function QuestionsComponent() {
 
                   {questionType === "multiple_choice" && (
                     <RadioGroup value={meAnswer} onChange={(e) => setMeAnswer(e.target.value)}>
-                      {payload.options.map((option, index) => (
-                        <FormControlLabel key={index} value={option} control={<Radio color="primary" />} label={option} />
+                      {options.map((option) => (
+                        <FormControlLabel
+                          key={option.key}
+                          value={option.key}
+                          control={<Radio color="primary" />}
+                          label={option.label}
+                        />
                       ))}
                     </RadioGroup>
                   )}
@@ -170,8 +184,13 @@ function QuestionsComponent() {
 
                   {questionType === "multiple_choice" && (
                     <RadioGroup value={idealAnswer} onChange={(e) => setIdealAnswer(e.target.value)}>
-                      {payload.options.map((option, index) => (
-                        <FormControlLabel key={index} value={option} control={<Radio color="secondary" />} label={option} />
+                      {options.map((option) => (
+                        <FormControlLabel
+                          key={option.key}
+                          value={option.key}
+                          control={<Radio color="secondary" />}
+                          label={option.label}
+                        />
                       ))}
                     </RadioGroup>
                   )}
