@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import chatService from "../../services/chatService";
+import questionnaireService from "../../services/questionnaireService";
 
 function QuestionCategorySelector({ value, onChange }) {
   const [categories, setCategories] = useState([]);
@@ -8,7 +8,7 @@ function QuestionCategorySelector({ value, onChange }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await chatService.get("/questions/categories");
+        const res = await questionnaireService.get("/questions/categories");
         setCategories(res.data?.categories || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
