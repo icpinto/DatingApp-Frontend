@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Box,
   Card,
   CardContent,
   Typography,
@@ -16,6 +17,7 @@ import {
 import { Group } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
+import MatchRecommendations from "../matches/MatchRecommendations";
 
 function Home() {
   const [activeUsers, setActiveUsers] = useState([]);
@@ -107,9 +109,13 @@ function Home() {
 
   return (
     <Container sx={{ p: spacing.pagePadding }}>
-      <Typography variant="h2">Active Users</Typography>
-      {message && <Typography>{message}</Typography>}
-      <Grid container spacing={3} direction="column">
+      <Stack spacing={spacing.section}>
+        <MatchRecommendations limit={12} />
+        <Box>
+          <Typography variant="h2">Active Users</Typography>
+          {message && <Typography>{message}</Typography>}
+        </Box>
+        <Grid container spacing={3} direction="column">
         {loadingUsers ? (
           Array.from({ length: 3 }).map((_, index) => (
             <Grid item xs={12} key={index}>
@@ -219,7 +225,8 @@ function Home() {
             </Stack>
           </Grid>
         )}
-      </Grid>
+        </Grid>
+      </Stack>
     </Container>
   );
 }
