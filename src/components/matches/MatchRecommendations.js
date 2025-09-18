@@ -13,12 +13,64 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { fetchMatches } from "../../services/matchmaking";
 import { spacing } from "../../styles";
 
 const MAX_SCORE = 100;
+
+const extractProfileImage = (candidate = {}) => {
+  return (
+    candidate.profile_image ||
+    candidate.profile_image_url ||
+    candidate.profileImageUrl ||
+    candidate.profileImage ||
+    candidate.avatar_url ||
+    candidate.avatar ||
+    undefined
+  );
+};
+
+const normalizeMatch = (rawMatch = {}) => {
+  const profile =
+    rawMatch.profile ||
+    rawMatch.user ||
+    rawMatch.matched_user ||
+    rawMatch.matchedUser ||
+    {};
+
+  const combined = { ...profile, ...rawMatch };
+  const userId =
+    combined.user_id ??
+    combined.id ??
+    profile.user_id ??
+    profile.id ??
+    rawMatch.user_id ??
+    rawMatch.id;
+
+  const scoreValue =
+    combined.score ??
+    rawMatch.match_score ??
+    rawMatch.matchScore ??
+    rawMatch.compatibility_score ??
+    profile.score ??
+    0;
+  const numericScore = Number(scoreValue);
+  const safeScore = Number.isNaN(numericScore) ? 0 : numericScore;
+
+  const normalizedProfileImage =
+    extractProfileImage(combined) || extractProfileImage(profile);
+
+  return {
+    ...combined,
+    user_id: userId,
+    username: combined.username ?? profile.username ?? `User #${userId ?? ""}`,
+    location: combined.location ?? profile.location ?? "",
+    bio: combined.bio ?? profile.bio ?? "",
+    profile_image: normalizedProfileImage,
+    score: safeScore,
+  };
+};
 
 const formatScore = (score) => {
   const numericScore = Number(score);
@@ -51,7 +103,10 @@ const MatchRecommendations = ({ limit = 10 }) => {
       setStatus({ loading: true, error: "" });
       try {
         const results = await fetchMatches(userId, { limit });
-        const orderedMatches = [...results].sort(
+        const normalizedMatches = Array.isArray(results)
+          ? results.map(normalizeMatch)
+          : [];
+        const orderedMatches = [...normalizedMatches].sort(
           (a, b) => Number(b.score) - Number(a.score)
         );
         setMatches(orderedMatches);
@@ -114,36 +169,55 @@ const MatchRecommendations = ({ limit = 10 }) => {
                 bgcolor: (theme) => theme.palette.action.hover,
               }}
             >
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Avatar sx={{ bgcolor: "warning.main" }}>
-                  <EmojiEventsIcon />
-                </Avatar>
-                <Stack spacing={0.5} flexGrow={1}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Top Match
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    User #{topMatch.user_id}
-                  </Typography>
+              <Stack spacing={spacing.section}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Avatar
+                    variant="rounded"
+                    src={topMatch.profile_image}
+                    alt={topMatch.username}
+                    sx={{ width: 72, height: 72 }}
+                  >
+                    {topMatch.username
+                      ? topMatch.username.charAt(0).toUpperCase()
+                      : "?"}
+                  </Avatar>
+                  <Stack spacing={0.5} flexGrow={1}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Top Match
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      {topMatch.username || `User #${topMatch.user_id}`}
+                    </Typography>
+                    {topMatch.location && (
+                      <Typography variant="body2" color="text.secondary">
+                        {topMatch.location}
+                      </Typography>
+                    )}
+                  </Stack>
+                  <Chip
+                    color="primary"
+                    label={`${formatScore(topMatch.score)}% match`}
+                    sx={{ fontWeight: 600 }}
+                  />
                 </Stack>
-                <Chip
-                  color="primary"
-                  label={`${formatScore(topMatch.score)}% match`}
-                  sx={{ fontWeight: 600 }}
+                {topMatch.bio && (
+                  <Typography variant="body2" color="text.secondary">
+                    {topMatch.bio}
+                  </Typography>
+                )}
+                <LinearProgress
+                  variant="determinate"
+                  value={clampScore(topMatch.score)}
+                  sx={{ height: 8, borderRadius: 4 }}
                 />
+                {topMatch.reasons && (
+                  <Typography variant="body2" color="text.secondary">
+                    {Array.isArray(topMatch.reasons)
+                      ? topMatch.reasons.join(", ")
+                      : topMatch.reasons}
+                  </Typography>
+                )}
               </Stack>
-              <LinearProgress
-                variant="determinate"
-                value={clampScore(topMatch.score)}
-                sx={{ mt: 2, height: 8, borderRadius: 4 }}
-              />
-              {topMatch.reasons && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  {Array.isArray(topMatch.reasons)
-                    ? topMatch.reasons.join(", ")
-                    : topMatch.reasons}
-                </Typography>
-              )}
             </Box>
 
             {otherMatches.length > 0 && (
@@ -153,46 +227,65 @@ const MatchRecommendations = ({ limit = 10 }) => {
                 </Typography>
                 {otherMatches.map((match, index) => (
                   <Box
-                    key={`${match.user_id}-${index}`}
+                    key={`${match.user_id || "match"}-${index}`}
                     sx={{
                       p: 1.5,
                       borderRadius: 2,
                       border: (theme) => `1px solid ${theme.palette.divider}`,
                     }}
                   >
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar variant="rounded" sx={{ width: 32, height: 32 }}>
-                        {index + 2}
-                      </Avatar>
-                      <Stack spacing={0.25} flexGrow={1}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          User #{match.user_id}
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={clampScore(match.score)}
-                          sx={{ height: 6, borderRadius: 3 }}
-                        />
+                    <Stack spacing={1.25}>
+                      <Stack direction="row" alignItems="center" spacing={2}>
+                        <Avatar
+                          variant="rounded"
+                          src={match.profile_image}
+                          alt={match.username}
+                          sx={{ width: 48, height: 48 }}
+                        >
+                          {match.username
+                            ? match.username.charAt(0).toUpperCase()
+                            : index + 2}
+                        </Avatar>
+                        <Stack spacing={0.25} flexGrow={1}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {match.username || `User #${match.user_id}`}
+                          </Typography>
+                          {match.location && (
+                            <Typography variant="caption" color="text.secondary">
+                              {match.location}
+                            </Typography>
+                          )}
+                        </Stack>
+                        <Tooltip title="Match score">
+                          <Chip
+                            label={`${formatScore(match.score)}%`}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Tooltip>
                       </Stack>
-                      <Tooltip title="Match score">
-                        <Chip
-                          label={`${formatScore(match.score)}%`}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Tooltip>
+                      {match.bio && (
+                        <Typography variant="body2" color="text.secondary">
+                          {match.bio}
+                        </Typography>
+                      )}
+                      <LinearProgress
+                        variant="determinate"
+                        value={clampScore(match.score)}
+                        sx={{ height: 6, borderRadius: 3 }}
+                      />
+                      {match.reasons && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block" }}
+                        >
+                          {Array.isArray(match.reasons)
+                            ? match.reasons.join(", ")
+                            : match.reasons}
+                        </Typography>
+                      )}
                     </Stack>
-                    {match.reasons && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mt: 1 }}
-                      >
-                        {Array.isArray(match.reasons)
-                          ? match.reasons.join(", ")
-                          : match.reasons}
-                      </Typography>
-                    )}
                   </Box>
                 ))}
               </Stack>
