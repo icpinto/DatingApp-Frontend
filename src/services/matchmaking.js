@@ -1,9 +1,4 @@
-import axios from "axios";
-
-const matchApi = axios.create({
-  baseURL:
-    process.env.REACT_APP_MATCH_SERVICE_URL || "http://localhost:8003",
-});
+import api from "./api";
 
 const defaultQuery = {
   min_age: 0,
@@ -41,12 +36,21 @@ export const fetchMatches = async (userId, queryOverrides = {}) => {
     }
   });
 
-  const response = await matchApi.get(`/matches/${userId}`, {
+  const token = localStorage.getItem("token");
+
+  const response = await api.get(`/matches/${userId}`, {
     params,
     paramsSerializer: () => searchParams.toString(),
+    headers: token ? { Authorization: `${token}` } : undefined,
   });
 
-  return Array.isArray(response.data) ? response.data : [];
-};
+  if (Array.isArray(response.data)) {
+    return response.data;
+  }
 
-export default matchApi;
+  if (Array.isArray(response.data?.matches)) {
+    return response.data.matches;
+  }
+
+  return [];
+};
