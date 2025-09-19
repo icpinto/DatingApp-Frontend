@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -70,6 +71,10 @@ function ChatDrawer({
   } = useWebSocket();
   const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState(null);
+  const [blockError, setBlockError] = useState(null);
+  const [blockSuccess, setBlockSuccess] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const messagesContainerRef = useRef(null);
 
   const conversationMessages =
@@ -79,6 +84,13 @@ function ChatDrawer({
 
   const sender_id = Number(localStorage.getItem("user_id"));
   let receiver_id = sender_id === user1_id ? user2_id : user1_id;
+
+  useEffect(() => {
+    setBlockError(null);
+    setBlockSuccess(false);
+    setIsBlocking(false);
+    setIsBlocked(false);
+  }, [conversationId, user1_id, user2_id]);
 
   // Fetch initial messages
   useEffect(() => {
@@ -136,7 +148,7 @@ function ChatDrawer({
 
   // Handle sending a new message
   const handleSendMessage = () => {
-    if (newMessage.trim() === "") return;
+    if (isBlocked || newMessage.trim() === "") return;
 
     // Message displayed locally in the UI
     const clientMsgId = `${Date.now()}-${Math.random()
@@ -166,6 +178,40 @@ function ChatDrawer({
     setNewMessage(""); // Clear input
   };
 
+  const handleBlockUser = async () => {
+    if (!conversationId) {
+      setBlockError("Conversation not found. Please try again.");
+      return;
+    }
+
+    const targetUserId = Number(receiver_id);
+    if (Number.isNaN(targetUserId)) {
+      setBlockError("Unable to determine which user to block.");
+      return;
+    }
+
+    try {
+      setIsBlocking(true);
+      setBlockError(null);
+      const token = localStorage.getItem("token");
+      await chatService.post(
+        `/conversations/${conversationId}/block`,
+        { target_user_id: targetUserId },
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+      setBlockSuccess(true);
+      setIsBlocked(true);
+    } catch (err) {
+      setBlockError("Failed to block user. Please try again.");
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
   if (!open) {
     return null;
   }
@@ -193,14 +239,25 @@ function ChatDrawer({
           </Avatar>
         }
         action={
-          <IconButton
-            onClick={onClose}
-            aria-label={
-              isMobile ? "Back to conversations" : "Close conversation"
-            }
-          >
-            {isMobile ? <ArrowBackIcon /> : <CloseIcon />}
-          </IconButton>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={handleBlockUser}
+              disabled={isBlocked || isBlocking}
+            >
+              {isBlocked ? "Blocked" : isBlocking ? "Blocking…" : "Block user"}
+            </Button>
+            <IconButton
+              onClick={onClose}
+              aria-label={
+                isMobile ? "Back to conversations" : "Close conversation"
+              }
+            >
+              {isMobile ? <ArrowBackIcon /> : <CloseIcon />}
+            </IconButton>
+          </Stack>
         }
         title={
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -245,6 +302,21 @@ function ChatDrawer({
             `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.12)}`,
         }}
       >
+        {blockError ? (
+          <Alert
+            severity="error"
+            onClose={() => setBlockError(null)}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            {blockError}
+          </Alert>
+        ) : null}
+        {blockSuccess ? (
+          <Alert severity="success" sx={{ alignSelf: "flex-start" }}>
+            You have blocked this user. You will no longer receive messages
+            from them.
+          </Alert>
+        ) : null}
         {error && (
           <Typography color="error" variant="body2">
             {error}
@@ -343,37 +415,45 @@ function ChatDrawer({
       </Box>
       <Divider sx={{ mx: spacing.section, borderStyle: "dashed" }} />
       <Box sx={{ px: spacing.section, pb: spacing.section }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={1.5}
-          alignItems={{ xs: "stretch", sm: "center" }}
-        >
-          <TextField
-            variant="outlined"
-            fullWidth
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSendMessage}
-            sx={{
-              px: 4,
-              py: 1.25,
-              alignSelf: { xs: "stretch", sm: "flex-end" },
-            }}
+        {isBlocked ? (
+          <Typography variant="body2" color="text.secondary">
+            You have blocked this user. Messaging is disabled.
+          </Typography>
+        ) : (
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            alignItems={{ xs: "stretch", sm: "center" }}
           >
-            Send
-          </Button>
-        </Stack>
+            <TextField
+              variant="outlined"
+              fullWidth
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              disabled={isBlocked}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSendMessage}
+              sx={{
+                px: 4,
+                py: 1.25,
+                alignSelf: { xs: "stretch", sm: "flex-end" },
+              }}
+              disabled={isBlocked}
+            >
+              Send
+            </Button>
+          </Stack>
+        )}
       </Box>
     </Box>
   );
