@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box,
+  Avatar,
   Typography,
   Button,
   TextField,
@@ -11,13 +11,18 @@ import {
   Grid,
   Card,
   CardContent,
+  CardHeader,
+  Divider,
   Snackbar,
   Alert,
   CircularProgress,
   InputAdornment,
+  Skeleton,
+  Stack,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import { spacing } from "../../styles";
 import questionnaireService from "../../services/questionnaireService";
 import QuestionCategorySelector from "./QuestionCategorySelector";
 
@@ -115,158 +120,207 @@ function QuestionsComponent() {
   const questionText = question ? question.question : "";
   const options = question && Array.isArray(question.options) ? question.options : [];
 
-  if (loading)
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  if (!question) return <Typography>All questions completed!</Typography>;
-
   return (
     <>
-      <Box sx={{ mt: 4, p: 2, borderTop: "1px solid #ccc" }}>
-        <Typography variant="h5" gutterBottom>Questions</Typography>
-        <QuestionCategorySelector
-          value={selectedCategory}
-          onChange={setSelectedCategory}
+      <Card elevation={3} sx={{ borderRadius: 3 }}>
+        <CardHeader
+          avatar={
+            <Avatar sx={{ bgcolor: "primary.main" }}>
+              <FavoriteIcon />
+            </Avatar>
+          }
+          title="Questionnaire"
+          subheader="Share your preferences to improve recommendations"
         />
-        <Box>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            {questionText}
-          </Typography>
+        <Divider />
+        <CardContent>
+          <Stack spacing={spacing.section}>
+            <QuestionCategorySelector
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+            />
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ border: 1, borderColor: "primary.main" }}>
-                <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <PersonIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="subtitle1">Me</Typography>
-                  </Box>
+            {loading ? (
+              <Stack spacing={spacing.section}>
+                <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+                <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+              </Stack>
+            ) : !question ? (
+              <Typography color="text.secondary">
+                All questions completed! Check back later for more.
+              </Typography>
+            ) : (
+              <Stack spacing={spacing.section}>
+                <Typography variant="h6">{questionText}</Typography>
 
-                  {questionType === "multiple_choice" && (
-                    <RadioGroup value={meAnswer} onChange={(e) => setMeAnswer(e.target.value)}>
-                      {options.map((option) => (
-                        <FormControlLabel
-                          key={option.key}
-                          value={option.key}
-                          control={<Radio color="primary" />}
-                          label={option.label}
-                        />
-                      ))}
-                    </RadioGroup>
-                  )}
-
-                  {questionType === "scale" && (
-                    <Slider
-                      value={typeof meAnswer === "number" ? meAnswer : 5}
-                      onChange={(e, newValue) => setMeAnswer(newValue)}
-                      step={1}
-                      marks
-                      min={1}
-                      max={10}
-                      valueLabelDisplay="auto"
-                    />
-                  )}
-
-                  {questionType === "open_text" && (
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={meAnswer}
-                      onChange={(e) => setMeAnswer(e.target.value)}
-                      placeholder="Type your answer..."
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <PersonIcon color="primary" />
-                          </InputAdornment>
-                        ),
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        borderRadius: 2,
+                        height: "100%",
+                        display: "flex",
                       }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
+                    >
+                      <CardContent sx={{ width: "100%" }}>
+                        <Stack spacing={1.5}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Avatar sx={{ bgcolor: "primary.light", color: "primary.dark" }}>
+                              <PersonIcon />
+                            </Avatar>
+                            <Typography variant="subtitle1">Me</Typography>
+                          </Stack>
 
-            <Grid item xs={12} md={6}>
-              <Card sx={{ border: 1, borderColor: "secondary.main" }}>
-                <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <FavoriteIcon color="secondary" sx={{ mr: 1 }} />
-                    <Typography variant="subtitle1">Ideal Partner</Typography>
-                  </Box>
+                          {questionType === "multiple_choice" && (
+                            <RadioGroup
+                              value={meAnswer}
+                              onChange={(e) => setMeAnswer(e.target.value)}
+                            >
+                              {options.map((option) => (
+                                <FormControlLabel
+                                  key={option.key}
+                                  value={option.key}
+                                  control={<Radio color="primary" />}
+                                  label={option.label}
+                                />
+                              ))}
+                            </RadioGroup>
+                          )}
 
-                  {questionType === "multiple_choice" && (
-                    <RadioGroup value={idealAnswer} onChange={(e) => setIdealAnswer(e.target.value)}>
-                      {options.map((option) => (
-                        <FormControlLabel
-                          key={option.key}
-                          value={option.key}
-                          control={<Radio color="secondary" />}
-                          label={option.label}
-                        />
-                      ))}
-                    </RadioGroup>
-                  )}
+                          {questionType === "scale" && (
+                            <Slider
+                              value={typeof meAnswer === "number" ? meAnswer : 5}
+                              onChange={(e, newValue) => setMeAnswer(newValue)}
+                              step={1}
+                              marks
+                              min={1}
+                              max={10}
+                              valueLabelDisplay="auto"
+                            />
+                          )}
 
-                  {questionType === "scale" && (
-                    <Slider
-                      value={typeof idealAnswer === "number" ? idealAnswer : 5}
-                      onChange={(e, newValue) => setIdealAnswer(newValue)}
-                      step={1}
-                      marks
-                      min={1}
-                      max={10}
-                      valueLabelDisplay="auto"
-                    />
-                  )}
+                          {questionType === "open_text" && (
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={4}
+                              value={meAnswer}
+                              onChange={(e) => setMeAnswer(e.target.value)}
+                              placeholder="Type your answer..."
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <PersonIcon color="primary" />
+                                  </InputAdornment>
+                                ),
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
 
-                  {questionType === "open_text" && (
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={idealAnswer}
-                      onChange={(e) => setIdealAnswer(e.target.value)}
-                      placeholder="Type your answer..."
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <FavoriteIcon color="secondary" />
-                          </InputAdornment>
-                        ),
+                  <Grid item xs={12} md={6}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        borderRadius: 2,
+                        height: "100%",
+                        display: "flex",
                       }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
+                    >
+                      <CardContent sx={{ width: "100%" }}>
+                        <Stack spacing={1.5}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Avatar sx={{ bgcolor: "secondary.light", color: "secondary.dark" }}>
+                              <FavoriteIcon />
+                            </Avatar>
+                            <Typography variant="subtitle1">Ideal Partner</Typography>
+                          </Stack>
 
-        <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
-          <Button variant="contained" color="primary" onClick={handleNext}>
-            Next
-          </Button>
-        </Grid>
-      </Box>
+                          {questionType === "multiple_choice" && (
+                            <RadioGroup
+                              value={idealAnswer}
+                              onChange={(e) => setIdealAnswer(e.target.value)}
+                            >
+                              {options.map((option) => (
+                                <FormControlLabel
+                                  key={option.key}
+                                  value={option.key}
+                                  control={<Radio color="secondary" />}
+                                  label={option.label}
+                                />
+                              ))}
+                            </RadioGroup>
+                          )}
 
-    <Snackbar
-      open={snackbar.open}
-      autoHideDuration={6000}
-      onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-    >
-      <Alert
+                          {questionType === "scale" && (
+                            <Slider
+                              value={typeof idealAnswer === "number" ? idealAnswer : 5}
+                              onChange={(e, newValue) => setIdealAnswer(newValue)}
+                              step={1}
+                              marks
+                              min={1}
+                              max={10}
+                              valueLabelDisplay="auto"
+                            />
+                          )}
+
+                          {questionType === "open_text" && (
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={4}
+                              value={idealAnswer}
+                              onChange={(e) => setIdealAnswer(e.target.value)}
+                              placeholder="Type your answer..."
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <FavoriteIcon color="secondary" />
+                                  </InputAdornment>
+                                ),
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+
+                <Stack direction="row" justifyContent="flex-end">
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleNext}
+                    endIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
+                    disabled={loading}
+                  >
+                    Next
+                  </Button>
+                </Stack>
+              </Stack>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        severity={snackbar.severity}
-        sx={{ width: "100%" }}
       >
-        {snackbar.message}
-      </Alert>
-    </Snackbar>
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
