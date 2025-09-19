@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -9,7 +8,6 @@ import {
   Grid,
   Chip,
   Avatar,
-  Paper,
   Snackbar,
   Alert,
   InputAdornment,
@@ -18,6 +16,11 @@ import {
   AccordionSummary,
   AccordionDetails,
   Stack,
+  Container,
+  Card,
+  CardHeader,
+  CardContent,
+  Divider,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import WcIcon from "@mui/icons-material/Wc";
@@ -29,6 +32,7 @@ import LanguageIcon from "@mui/icons-material/Language";
 import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
 import ProfileSections from "./ProfileSections";
+import { spacing } from "../../styles";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -375,15 +379,21 @@ function ProfilePage() {
   };
 
     return (
-      <Box sx={{ padding: 3 }}>
-        {(!profile || isEditing) ? (
-          <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h4" gutterBottom>{profile ? "Edit Profile" : "Create Profile"}</Typography>
-              <form onSubmit={handleSubmit}>
-                <Stack spacing={2}>
-                  <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">Personal</Typography>
+      <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
+        <Stack spacing={spacing.section}>
+          {(!profile || isEditing) ? (
+            <Card elevation={4} sx={{ borderRadius: 3 }}>
+              <CardHeader
+                title={profile ? "Edit Profile" : "Create Profile"}
+                subheader="Keep your information up to date so matches can learn more about you"
+              />
+              <Divider />
+              <CardContent>
+                <form onSubmit={handleSubmit}>
+                  <Stack spacing={spacing.section}>
+                    <Accordion defaultExpanded>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography variant="h6">Personal</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
@@ -925,56 +935,75 @@ function ProfilePage() {
                     </AccordionDetails>
                   </Accordion>
 
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      disabled={saving}
-                    >
-                      {saving ? <CircularProgress size={24} /> : "Save Profile"}
-                    </Button>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                    justifyContent="flex-end"
+                  >
                     {profile && (
                       <Button
                         variant="outlined"
                         color="secondary"
-                        fullWidth
                         onClick={handleCancelEdit}
                       >
                         Cancel
                       </Button>
                     )}
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      disabled={saving}
+                      startIcon={
+                        saving ? <CircularProgress size={16} color="inherit" /> : null
+                      }
+                    >
+                      {saving ? "Saving..." : "Save Profile"}
+                    </Button>
+                  </Stack>
                   </Stack>
                 </form>
-          </Paper>
-        ) : (
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>Profile</Typography>
-            {profile.profile_image && (
-              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-                <Avatar
-                  variant="rounded"
-                  src={profile.profile_image}
-                  alt="Profile"
-                  sx={{ width: 150, height: 150 }}
-                />
-              </Box>
-            )}
-            <ProfileSections data={profile} />
-            <Typography variant="body2" color="textSecondary">
-              Profile created on: {new Date(profile.created_at).toLocaleDateString()}
-            </Typography>
-            <Button variant="contained" sx={{ mt: 2 }} onClick={handleEdit}>
-              Edit Profile
-            </Button>
-          </Paper>
-        )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card elevation={4} sx={{ borderRadius: 3 }}>
+              <CardHeader
+                title="Your Profile"
+                subheader="Review the details other members can see"
+                action={
+                  <Button variant="contained" onClick={handleEdit}>
+                    Edit Profile
+                  </Button>
+                }
+              />
+              <Divider />
+              <CardContent>
+                <Stack spacing={spacing.section}>
+                  {profile.profile_image && (
+                    <Box sx={{ display: "flex", justifyContent: "center" }}>
+                      <Avatar
+                        variant="rounded"
+                        src={profile.profile_image}
+                        alt="Profile"
+                        sx={{ width: 150, height: 150 }}
+                      />
+                    </Box>
+                  )}
+                  <ProfileSections data={profile} />
+                  <Typography variant="caption" color="text.secondary">
+                    Profile created on: {new Date(profile.created_at).toLocaleDateString()}
+                  </Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
           <QuestionsComponent />
+        </Stack>
 
-          <Snackbar
-            open={snackbar.open}
-            autoHideDuration={6000}
-            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         >
           <Alert
             onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
@@ -984,7 +1013,7 @@ function ProfilePage() {
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
+      </Container>
     );
 }
 
