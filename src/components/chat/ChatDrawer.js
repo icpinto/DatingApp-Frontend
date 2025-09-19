@@ -59,6 +59,7 @@ function ChatDrawer({
   onClose,
   partnerName,
   partnerBio,
+  blocked = false,
 }) {
   const {
     conversations,
@@ -89,8 +90,8 @@ function ChatDrawer({
     setBlockError(null);
     setBlockSuccess(false);
     setIsBlocking(false);
-    setIsBlocked(false);
-  }, [conversationId, user1_id, user2_id]);
+    setIsBlocked(Boolean(blocked));
+  }, [conversationId, user1_id, user2_id, blocked]);
 
   // Fetch initial messages
   useEffect(() => {
@@ -417,7 +418,7 @@ function ChatDrawer({
       <Box sx={{ px: spacing.section, pb: spacing.section }}>
         {isBlocked ? (
           <Typography variant="body2" color="text.secondary">
-            You have blocked this user. Messaging is disabled.
+            Messaging is disabled for this conversation.
           </Typography>
         ) : (
           <Stack
