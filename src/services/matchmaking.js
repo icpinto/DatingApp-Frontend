@@ -39,7 +39,7 @@ export const fetchMatches = async (userId, queryOverrides = {}) => {
 
   const token = localStorage.getItem("token");
 
-  const response = await api.get(`/matches`, {
+  const response = await api.get(`/user/matches`, {
     params,
     paramsSerializer: () => searchParams.toString(),
     headers: token ? { Authorization: `${token}` } : undefined,
