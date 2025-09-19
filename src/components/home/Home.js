@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Grid,
   Collapse,
   Button,
   Container,
@@ -13,6 +12,7 @@ import {
   Avatar,
   Grow,
   Skeleton,
+  Divider,
 } from "@mui/material";
 import { Group } from "@mui/icons-material";
 import api from "../../services/api";
@@ -27,6 +27,18 @@ function Home() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
+  const getUserIdentifier = (user) => {
+    if (!user) {
+      return undefined;
+    }
+    const value = user.user_id ?? user.id;
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? value : numericValue;
+  };
+
   useEffect(() => {
     const fetchActiveUsers = async () => {
       setLoadingUsers(true);
@@ -40,9 +52,10 @@ function Home() {
         const rawUsers = Array.isArray(response.data) ? response.data : [];
         const currentUserId = Number(localStorage.getItem("user_id"));
         const users = rawUsers
-          .filter(
-            (user) => user.user_id !== currentUserId && user.id !== currentUserId
-          )
+          .filter((user) => {
+            const userId = getUserIdentifier(user);
+            return userId !== currentUserId;
+          })
           .map((user) => ({
             ...user,
             profile_image: user.profile_image_url,
@@ -60,23 +73,30 @@ function Home() {
   }, []);
 
   // Toggle and fetch detailed profile data
-  const handleToggleExpand = async (userId) => {
-    if (expandedUserId === userId) {
+  const handleToggleExpand = async (rawUserId) => {
+    const userId = Number(rawUserId);
+    const normalizedUserId = Number.isNaN(userId) ? rawUserId : userId;
+
+    if (normalizedUserId === undefined || normalizedUserId === null || normalizedUserId === "") {
+      return;
+    }
+
+    if (expandedUserId === normalizedUserId) {
       setExpandedUserId(null); // Collapse if already expanded
     } else {
-      setExpandedUserId(userId);
+      setExpandedUserId(normalizedUserId);
       setLoadingProfile(true);
       setProfileData({});
       try {
         const token = localStorage.getItem("token");
-        const response = await api.get(`/user/profile/${userId}`, {
+        const response = await api.get(`/user/profile/${normalizedUserId}`, {
           headers: {
             Authorization: `${token}`,
           },
         });
 
         const requestStatusResponse = await api.get(
-          `/user/checkReqStatus/${userId}`,
+          `/user/checkReqStatus/${normalizedUserId}`,
           { headers: { Authorization: `${token}` } }
         );
 
@@ -92,12 +112,21 @@ function Home() {
     }
   };
 
-  const handleSendRequest = async (userId) => {
+  const handleSendRequest = async (rawUserId) => {
+    const userId = Number(rawUserId);
+    const normalizedUserId = Number.isNaN(userId) ? rawUserId : userId;
+
+    if (normalizedUserId === undefined || normalizedUserId === null || normalizedUserId === "") {
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
+      const parsedId = parseInt(normalizedUserId, 10);
       await api.post(
         `/user/sendRequest`,
-        { receiver_id: parseInt(userId, 10) },
+        {
+          receiver_id: Number.isNaN(parsedId) ? normalizedUserId : parsedId,
+        },
         { headers: { Authorization: `${token}` } }
       );
       setProfileData((prev) => ({ ...prev, requestStatus: true }));
@@ -107,125 +136,198 @@ function Home() {
     }
   };
 
+  const orderedUsers = useMemo(() => {
+    return Array.isArray(activeUsers) ? activeUsers : [];
+  }, [activeUsers]);
+
+  const renderActiveUser = (user, index) => {
+    const userId = getUserIdentifier(user);
+    const isExpanded = expandedUserId === userId;
+    const isTopUser = index === 0;
+    const displayName = user?.username || (userId ? `User #${userId}` : "User");
+    const avatarFallback = displayName.charAt(0)?.toUpperCase() || "?";
+
+    return (
+      <Box
+        key={userId ?? index}
+        onClick={() => {
+          if (userId === undefined || userId === null || userId === "") {
+            return;
+          }
+          handleToggleExpand(userId);
+        }}
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          cursor: "pointer",
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          bgcolor: (theme) =>
+            isTopUser ? theme.palette.action.hover : theme.palette.background.paper,
+          transition: "background-color 0.2s ease, border-color 0.2s ease",
+          "&:hover": {
+            bgcolor: (theme) => theme.palette.action.hover,
+          },
+        }}
+      >
+        <Stack spacing={spacing.section}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar
+              variant="rounded"
+              src={user?.profile_image}
+              alt={displayName}
+              sx={{ width: isTopUser ? 72 : 56, height: isTopUser ? 72 : 56 }}
+            >
+              {avatarFallback}
+            </Avatar>
+            <Stack spacing={0.5} flexGrow={1} minWidth={0}>
+              {isTopUser && (
+                <Typography variant="subtitle2" color="text.secondary">
+                  Most recently active
+                </Typography>
+              )}
+              <Typography
+                variant={isTopUser ? "h6" : "subtitle1"}
+                sx={{ fontWeight: 600, lineHeight: 1.3 }}
+                noWrap
+              >
+                {displayName}
+              </Typography>
+              {user?.location && (
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {user.location}
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {user?.bio || "No bio available"}
+          </Typography>
+        </Stack>
+        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+          {loadingProfile && isExpanded ? (
+            <Box sx={{ mt: spacing.section }}>
+              <Stack spacing={spacing.section}>
+                <Skeleton width="80%" />
+                <Skeleton width="60%" />
+                <Skeleton width="40%" />
+                <Skeleton variant="rectangular" width={160} height={40} />
+              </Stack>
+            </Box>
+          ) : (
+            profileData && isExpanded && (
+              <Grow in={isExpanded}>
+                <Box sx={{ mt: spacing.section }}>
+                  <Stack spacing={spacing.section}>
+                    <Typography variant="body1">
+                      <strong>Bio:</strong> {profileData.bio || "No bio available"}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Age:</strong> {profileData.age || "N/A"}
+                    </Typography>
+                    <Typography variant="body1">
+                      <strong>Location:</strong> {profileData.location || "N/A"}
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color={profileData.requestStatus ? "secondary" : "primary"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (userId !== undefined && userId !== null && userId !== "") {
+                          handleSendRequest(userId);
+                        }
+                      }}
+                      disabled={
+                        profileData.requestStatus ||
+                        userId === undefined ||
+                        userId === null ||
+                        userId === ""
+                      }
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      {profileData.requestStatus ? "Request Sent" : "Send Request"}
+                    </Button>
+                    {message && (
+                      <Typography
+                        color={
+                          message.toLowerCase().includes("failed")
+                            ? "error.main"
+                            : "success.main"
+                        }
+                      >
+                        {message}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Box>
+              </Grow>
+            )
+          )}
+        </Collapse>
+      </Box>
+    );
+  };
+
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
         <MatchRecommendations limit={12} />
-        <Box>
-          <Typography variant="h2">Active Users</Typography>
-          {message && <Typography>{message}</Typography>}
-        </Box>
-        <Grid container spacing={3} direction="column">
-        {loadingUsers ? (
-          Array.from({ length: 3 }).map((_, index) => (
-            <Grid item xs={12} key={index}>
-              <Card>
-                <CardHeader
-                  avatar={<Skeleton variant="circular" width={40} height={40} />}
-                  title={<Skeleton width="80%" />}
-                  subheader={<Skeleton width="40%" />}
-                />
-                <CardContent>
-                  <Skeleton width="100%" />
-                  <Skeleton width="60%" />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        ) : Array.isArray(activeUsers) && activeUsers.length > 0 ? (
-          activeUsers.map((user) => (
-            <Grid item xs={12} key={user.id}>
-              <Card
-                onClick={() => handleToggleExpand(user.user_id)}
-                sx={{ cursor: "pointer" }}
+        <Card elevation={3} sx={{ borderRadius: 3 }}>
+          <CardHeader
+            title="Active Users"
+            subheader="See who has been active recently"
+            avatar={
+              <Avatar sx={{ bgcolor: "primary.main" }}>
+                <Group />
+              </Avatar>
+            }
+          />
+          <Divider />
+          <CardContent>
+            {message && !loadingUsers && (
+              <Typography
+                variant="body2"
+                color={
+                  message.toLowerCase().includes("failed")
+                    ? "error.main"
+                    : "success.main"
+                }
+                sx={{ mb: spacing.section }}
               >
-                <CardHeader
-                  avatar={
-                    <Avatar
-                      variant="rounded"
-                      src={user.profile_image}
-                      alt={user.username}
-                    />
-                  }
-                  title={
-                    <Typography variant="h6" component="div">
-                      {user.username}
-                    </Typography>
-                  }
-                  subheader={user.location || ""}
-                />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    {user.bio || "No bio available"}
-                  </Typography>
-                </CardContent>
-
-                {/* Expanded Profile View */}
-                <Collapse
-                  in={expandedUserId === user.user_id}
-                  timeout="auto"
-                  unmountOnExit
-                >
-                  {loadingProfile ? (
-                    <CardContent>
-                      <Stack spacing={spacing.section}>
-                        <Skeleton width="80%" />
-                        <Skeleton width="60%" />
-                        <Skeleton width="40%" />
-                        <Skeleton variant="rectangular" width={120} height={36} />
-                      </Stack>
-                    </CardContent>
-                  ) : (
-                    profileData && expandedUserId === user.user_id && (
-                      <Grow in={expandedUserId === user.user_id}>
-                        <CardContent>
-                          <Stack spacing={spacing.section}>
-                            <Typography variant="body1">
-                              <strong>Bio:</strong> {profileData.bio || "No bio available"}
-                            </Typography>
-                            <Typography variant="body1">
-                              <strong>Age:</strong> {profileData.age || "N/A"}
-                            </Typography>
-                            <Typography variant="body1">
-                              <strong>Location:</strong> {profileData.location || "N/A"}
-                            </Typography>
-                            <Button
-                              variant="contained"
-                              color={
-                                profileData.requestStatus ? "secondary" : "primary"
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent collapse toggle
-                                handleSendRequest(user.user_id);
-                              }}
-                              disabled={profileData.requestStatus}
-                              sx={{ alignSelf: "flex-start" }}
-                            >
-                              {profileData.requestStatus
-                                ? "Request Sent"
-                                : "Send Request"}
-                            </Button>
-                            {message && (
-                              <Typography color="success.main">{message}</Typography>
-                            )}
-                          </Stack>
-                        </CardContent>
-                      </Grow>
-                    )
-                  )}
-                </Collapse>
-              </Card>
-            </Grid>
-          ))
-        ) : (
-          <Grid item xs={12}>
-            <Stack alignItems="center" spacing={1}>
-              <Group fontSize="large" color="disabled" />
-              <Typography>No active users available.</Typography>
-            </Stack>
-          </Grid>
-        )}
-        </Grid>
+                {message}
+              </Typography>
+            )}
+            {loadingUsers ? (
+              <Stack spacing={spacing.section}>
+                <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+                <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+                <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+              </Stack>
+            ) : orderedUsers.length > 0 ? (
+              <Stack
+                spacing={spacing.section}
+                divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
+              >
+                {orderedUsers.map((user, index) => renderActiveUser(user, index))}
+              </Stack>
+            ) : (
+              <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
+                <Group fontSize="large" color="disabled" />
+                <Typography color="text.secondary">
+                  No active users available.
+                </Typography>
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
       </Stack>
     </Container>
   );
