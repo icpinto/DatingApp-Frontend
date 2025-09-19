@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Avatar,
+  Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
-  Typography,
-  Button,
-  Grid,
-  Box,
-  Avatar,
+  Chip,
+  Container,
+  Divider,
   Skeleton,
   Stack,
-  Tabs,
-  Tab,
-  Chip,
+  Typography,
 } from "@mui/material";
-import { HourglassEmpty } from "@mui/icons-material";
+import { HourglassEmpty, PersonAddAlt1, Send } from "@mui/icons-material";
 import api from "../../services/api";
+import { spacing } from "../../styles";
 
 function Requests({ onRequestCountChange = () => {} }) {
   const [requests, setRequests] = useState([]);
@@ -25,7 +25,6 @@ function Requests({ onRequestCountChange = () => {} }) {
   const [sentError, setSentError] = useState(null);
   const [profiles, setProfiles] = useState({});
   const [sentProfiles, setSentProfiles] = useState({});
-  const [activeTab, setActiveTab] = useState(0);
 
   const normalizeRequests = (payload) => {
     if (!payload) return [];
@@ -72,7 +71,6 @@ function Requests({ onRequestCountChange = () => {} }) {
     onRequestCountChange(requests.length);
   }, [requests, onRequestCountChange]);
 
-  // Fetch profile previews for senders
   useEffect(() => {
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
@@ -124,7 +122,6 @@ function Requests({ onRequestCountChange = () => {} }) {
     }
   }, [sentRequests]);
 
-  // Handle accept request
   const handleAccept = async (id) => {
     try {
       const token = localStorage.getItem("token");
@@ -137,13 +134,12 @@ function Requests({ onRequestCountChange = () => {} }) {
           },
         }
       );
-      setRequests(requests.filter((request) => request.id !== id));
+      setRequests((prev) => prev.filter((request) => request.id !== id));
     } catch (err) {
       alert("Failed to accept the request. Please try again.");
     }
   };
 
-  // Handle reject request
   const handleReject = async (id) => {
     try {
       const token = localStorage.getItem("token");
@@ -156,34 +152,12 @@ function Requests({ onRequestCountChange = () => {} }) {
           },
         }
       );
-      setRequests(requests.filter((request) => request.id !== id));
+      setRequests((prev) => prev.filter((request) => request.id !== id));
     } catch (err) {
       alert("Failed to reject the request. Please try again.");
     }
   };
 
-  if (loading)
-    return (
-      <Box sx={{ padding: 2 }}>
-        <Grid container spacing={3}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card variant="outlined" sx={{ maxWidth: 345 }}>
-                <CardHeader
-                  avatar={<Skeleton variant="circular" width={40} height={40} />}
-                  title={<Skeleton width="80%" />}
-                  subheader={<Skeleton width="40%" />}
-                />
-                <CardContent>
-                  <Skeleton width="100%" />
-                  <Skeleton width="60%" />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    );
   const getStatusColor = (status) => {
     if (!status) return "default";
     const normalized = String(status).toLowerCase();
@@ -193,26 +167,190 @@ function Requests({ onRequestCountChange = () => {} }) {
     return "info";
   };
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const renderLoadingState = () => (
+    <Stack spacing={spacing.section}>
+      <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+      <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+      <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+    </Stack>
+  );
+
+  const renderReceivedRequestItem = (request, index) => {
+    const profile = profiles[request.sender_id] || {};
+    const username =
+      request.sender_username || profile.username || "Unknown user";
+    const bio = profile.bio || "No bio available";
+    const description = request.description || "No message provided.";
+    const highlight = index === 0;
+    const avatarFallback = username.charAt(0)?.toUpperCase() || "?";
+
+    return (
+      <Box
+        key={request.id}
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          bgcolor: (theme) =>
+            highlight ? theme.palette.action.hover : theme.palette.background.paper,
+        }}
+      >
+        <Stack spacing={spacing.section}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar
+              variant="rounded"
+              src={profile.profile_image_url || profile.profile_image}
+              alt={username}
+              sx={{ width: highlight ? 72 : 56, height: highlight ? 72 : 56 }}
+            >
+              {avatarFallback}
+            </Avatar>
+            <Stack spacing={0.5} flexGrow={1} minWidth={0}>
+              {highlight && (
+                <Typography variant="subtitle2" color="text.secondary">
+                  Newest request
+                </Typography>
+              )}
+              <Typography
+                variant={highlight ? "h6" : "subtitle1"}
+                sx={{ fontWeight: 600 }}
+                noWrap
+              >
+                {username}
+              </Typography>
+              {bio && (
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {bio}
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {description}
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleAccept(request.id)}
+            >
+              Accept
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => handleReject(request.id)}
+            >
+              Reject
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
+    );
+  };
+
+  const renderSentRequestItem = (request, index) => {
+    const profile = sentProfiles[request.receiver_id] || {};
+    const username =
+      request.receiver_username || profile.username || "Unknown user";
+    const bio = profile.bio || "No bio available";
+    const description = request.description || "No message provided.";
+    const highlight = index === 0;
+    const avatarFallback = username.charAt(0)?.toUpperCase() || "?";
+
+    return (
+      <Box
+        key={request.id}
+        sx={{
+          p: 2,
+          borderRadius: 2,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          bgcolor: (theme) =>
+            highlight ? theme.palette.action.hover : theme.palette.background.paper,
+        }}
+      >
+        <Stack spacing={spacing.section}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar
+              variant="rounded"
+              src={profile.profile_image_url || profile.profile_image}
+              alt={username}
+              sx={{ width: highlight ? 72 : 56, height: highlight ? 72 : 56 }}
+            >
+              {avatarFallback}
+            </Avatar>
+            <Stack spacing={0.5} flexGrow={1} minWidth={0}>
+              {highlight && (
+                <Typography variant="subtitle2" color="text.secondary">
+                  Most recent request
+                </Typography>
+              )}
+              <Typography
+                variant={highlight ? "h6" : "subtitle1"}
+                sx={{ fontWeight: 600 }}
+                noWrap
+              >
+                {username}
+              </Typography>
+              {bio && (
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {bio}
+                </Typography>
+              )}
+            </Stack>
+            {request.status && (
+              <Chip
+                label={request.status}
+                color={getStatusColor(request.status)}
+                size="small"
+                sx={{ textTransform: "capitalize", fontWeight: 600 }}
+              />
+            )}
+          </Stack>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {description}
+          </Typography>
+        </Stack>
+      </Box>
+    );
   };
 
   const renderReceivedRequests = () => {
+    if (loading) {
+      return renderLoadingState();
+    }
+
     if (receivedError) {
       return (
-        <Stack alignItems="center" spacing={1}>
-          <Typography color="error" variant="body1">
-            {receivedError}
-          </Typography>
-        </Stack>
+        <Typography color="error" variant="body2">
+          {receivedError}
+        </Typography>
       );
     }
 
     if (!requests.length) {
       return (
-        <Stack alignItems="center" spacing={1}>
+        <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
           <HourglassEmpty color="disabled" fontSize="large" />
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body2" color="text.secondary">
             You have no pending requests.
           </Typography>
         </Stack>
@@ -220,75 +358,33 @@ function Requests({ onRequestCountChange = () => {} }) {
     }
 
     return (
-      <Grid container spacing={3}>
-        {requests.map((request) => {
-          const profile = profiles[request.sender_id];
-          const username = request.sender_username || "Unknown user";
-          return (
-            <Grid item xs={12} sm={6} md={4} key={request.id}>
-              <Card variant="outlined" sx={{ maxWidth: 345 }}>
-                <CardHeader
-                  avatar={
-                    <Avatar variant="rounded">
-                      {username.charAt(0).toUpperCase()}
-                    </Avatar>
-                  }
-                  title={username}
-                  subheader={profile?.bio || "No bio available"}
-                />
-                <CardContent>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ marginY: 1 }}
-                  >
-                    {request.description || "No message provided."}
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleAccept(request.id)}
-                      >
-                        Accept
-                      </Button>
-                    </Grid>
-                    <Grid item>
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={() => handleReject(request.id)}
-                      >
-                        Reject
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-          );
-        })}
-      </Grid>
+      <Stack
+        spacing={spacing.section}
+        divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
+      >
+        {requests.map((request, index) => renderReceivedRequestItem(request, index))}
+      </Stack>
     );
   };
 
   const renderSentRequests = () => {
+    if (loading) {
+      return renderLoadingState();
+    }
+
     if (sentError) {
       return (
-        <Stack alignItems="center" spacing={1}>
-          <Typography color="error" variant="body1">
-            {sentError}
-          </Typography>
-        </Stack>
+        <Typography color="error" variant="body2">
+          {sentError}
+        </Typography>
       );
     }
 
     if (!sentRequests.length) {
       return (
-        <Stack alignItems="center" spacing={1}>
+        <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
           <HourglassEmpty color="disabled" fontSize="large" />
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body2" color="text.secondary">
             You haven't sent any requests yet.
           </Typography>
         </Stack>
@@ -296,63 +392,46 @@ function Requests({ onRequestCountChange = () => {} }) {
     }
 
     return (
-      <Grid container spacing={3}>
-        {sentRequests.map((request) => {
-          const profile = sentProfiles[request.receiver_id];
-          const username = request.receiver_username || "Unknown user";
-          return (
-            <Grid item xs={12} sm={6} md={4} key={request.id}>
-              <Card variant="outlined" sx={{ maxWidth: 345 }}>
-                <CardHeader
-                  avatar={
-                    <Avatar variant="rounded">
-                      {username.charAt(0).toUpperCase()}
-                    </Avatar>
-                  }
-                  title={username}
-                  subheader={profile?.bio || "No bio available"}
-                />
-                <CardContent>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ marginY: 1 }}
-                  >
-                    {request.description || "No message provided."}
-                  </Typography>
-                  {request.status && (
-                    <Chip
-                      label={request.status}
-                      color={getStatusColor(request.status)}
-                      size="small"
-                      sx={{ textTransform: "capitalize" }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          );
-        })}
-      </Grid>
+      <Stack
+        spacing={spacing.section}
+        divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
+      >
+        {sentRequests.map((request, index) => renderSentRequestItem(request, index))}
+      </Stack>
     );
   };
 
   return (
-    <Box sx={{ padding: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Match Requests
-      </Typography>
-      <Tabs
-        value={activeTab}
-        onChange={handleTabChange}
-        aria-label="Match request categories"
-        sx={{ marginBottom: 2 }}
-      >
-        <Tab label={`Received (${requests.length})`} />
-        <Tab label={`Sent (${sentRequests.length})`} />
-      </Tabs>
-      {activeTab === 0 ? renderReceivedRequests() : renderSentRequests()}
-    </Box>
+    <Container sx={{ p: spacing.pagePadding }}>
+      <Stack spacing={spacing.section}>
+        <Card elevation={3} sx={{ borderRadius: 3 }}>
+          <CardHeader
+            title="Incoming Requests"
+            subheader="Respond to new connection invites"
+            avatar={
+              <Avatar sx={{ bgcolor: "primary.main" }}>
+                <PersonAddAlt1 />
+              </Avatar>
+            }
+          />
+          <Divider />
+          <CardContent>{renderReceivedRequests()}</CardContent>
+        </Card>
+        <Card elevation={3} sx={{ borderRadius: 3 }}>
+          <CardHeader
+            title="Sent Requests"
+            subheader="Track the status of your recent invites"
+            avatar={
+              <Avatar sx={{ bgcolor: "secondary.main" }}>
+                <Send />
+              </Avatar>
+            }
+          />
+          <Divider />
+          <CardContent>{renderSentRequests()}</CardContent>
+        </Card>
+      </Stack>
+    </Container>
   );
 }
 
