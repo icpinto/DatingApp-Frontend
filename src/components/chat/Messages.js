@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from "react";
 import {
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   Avatar,
-  Typography,
   Box,
-  CircularProgress,
-  Grid,
-  Paper,
+  Card,
+  CardContent,
+  CardHeader,
+  Container,
   Divider,
+  Grid,
+  Skeleton,
+  Stack,
+  Typography,
   useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
+import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
+import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import ChatDrawer from "./ChatDrawer";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
+import { spacing } from "../../styles";
 
 const pickFirst = (...values) =>
   values.find((value) => value !== undefined && value !== null);
@@ -546,217 +549,283 @@ function Messages() {
         profiles
       )
     : null;
-
-  if (loading) return <CircularProgress />;
-  if (error) return <Typography color="error">{error}</Typography>;
-
   return (
-    <Box sx={{ padding: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Messages
-      </Typography>
-      <Grid
-        container
-        spacing={2}
-        sx={{
-          mt: 2,
-          minHeight: { xs: "60vh", md: "70vh" },
-          height: { xs: "calc(100vh - 200px)", md: "calc(100vh - 220px)" },
-          overflow: "hidden",
-        }}
-        alignItems="stretch"
-      >
-        {showListPane && (
-          <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
-            <Paper
-              elevation={3}
-              sx={{
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                p: 2,
-                flexGrow: 1,
-                minHeight: 0,
-                overflow: "hidden",
-              }}
-            >
-              <Typography variant="h6">Conversations</Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box
+    <Container sx={{ p: spacing.pagePadding }}>
+      <Stack spacing={spacing.section} sx={{ height: "100%" }}>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          Messages
+        </Typography>
+        <Grid
+          container
+          spacing={3}
+          sx={{
+            minHeight: { xs: "60vh", md: "70vh" },
+          }}
+          alignItems="stretch"
+        >
+          {showListPane && (
+            <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
+              <Card
+                elevation={3}
                 sx={{
-                  flex: "1 1 0",
-                  minHeight: 0,
+                  width: "100%",
                   display: "flex",
                   flexDirection: "column",
+                  borderRadius: 3,
+                  overflow: "hidden",
                 }}
               >
-                {Array.isArray(conversations) && conversations.length > 0 ? (
-                  <List
-                    sx={{
-                      flex: "1 1 0",
-                      minHeight: 0,
-                      overflowY: "auto",
-                      pr: 1,
-                    }}
-                  >
-                    {conversations.map((conversation) => {
-                      const { displayName } =
-                        getConversationPartnerDetails(
-                          conversation,
-                          currentUserId,
-                          profiles
-                        );
-                      const { body, mime_type, timestamp } =
-                        extractLastMessageInfo(conversation);
-                      const messagePreview = buildMessagePreview(
-                        body,
-                        mime_type
-                      );
-                      const formattedTimestamp =
-                        formatLastMessageTimestamp(timestamp);
-                      const avatarInitial = displayName
-                        ? displayName.charAt(0).toUpperCase()
-                        : "?";
-                      return (
-                        <ListItem
-                          key={`${conversation.id}-panel`}
-                          button
-                          onClick={() => handleOpenConversation(conversation)}
-                          selected={selectedConversation?.id === conversation.id}
-                          sx={{
-                            borderRadius: 2,
-                            mb: 1,
-                            '&.Mui-selected': {
-                              bgcolor: 'primary.light',
-                              color: 'primary.contrastText',
-                              '& .MuiListItemText-secondary': {
-                                color: 'inherit',
-                                opacity: 0.85,
-                              },
-                            },
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar variant="rounded">{avatarInitial}</Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <Typography
-                                  component="span"
-                                  variant="subtitle1"
-                                  noWrap
-                                  sx={{
-                                    flexGrow: 1,
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {displayName}
-                                </Typography>
-                                {formattedTimestamp ? (
-                                  <Typography
-                                    component="span"
-                                    variant="caption"
-                                    color="text.secondary"
-                                    noWrap
-                                  >
-                                    {formattedTimestamp}
-                                  </Typography>
-                                ) : null}
-                              </Box>
-                            }
-                            secondary={
-                              <Typography
-                                component="span"
-                                variant="body2"
-                                color="text.secondary"
-                                noWrap
-                              >
-                                {messagePreview}
-                              </Typography>
-                            }
-                          />
-                        </ListItem>
-                      );
-                    })}
-                  </List>
-                ) : (
-                  <Box
-                    sx={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      textAlign: "center",
-                      color: "text.secondary",
-                      px: 2,
-                    }}
-                  >
-                    <Typography variant="body1">
-                      You have no conversations yet.
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-        )}
-        {showChatPane && (
-          <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
-            <Paper
-              elevation={3}
-              sx={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                p: 2,
-                flexGrow: 1,
-                minHeight: 0,
-                overflow: "hidden",
-              }}
-            >
-              {selectedConversation ? (
-                <ChatDrawer
-                  conversationId={selectedConversation.id}
-                  user1_id={selectedConversation.user1_id}
-                  user2_id={selectedConversation.user2_id}
-                  open={Boolean(selectedConversation)}
-                  onClose={handleCloseConversation}
-                  partnerName={selectedConversationDetails?.displayName}
-                  partnerBio={selectedConversationDetails?.bio}
+                <CardHeader
+                  title="Conversations"
+                  subheader="Stay in touch with people you've connected with"
+                  avatar={
+                    <Avatar
+                      variant="rounded"
+                      sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}
+                    >
+                      <ForumRoundedIcon />
+                    </Avatar>
+                  }
+                  sx={{ px: spacing.section, py: spacing.section }}
                 />
-              ) : (
-                <Box
+                <Divider sx={{ borderStyle: "dashed" }} />
+                <CardContent
                   sx={{
                     flexGrow: 1,
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                    color: "text.secondary",
+                    p: 0,
+                    minHeight: 0,
                   }}
                 >
-                  <Typography variant="h6" gutterBottom>
-                    Select a conversation
-                  </Typography>
-                  <Typography variant="body2">
-                    Choose someone from the list to start chatting.
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Grid>
-        )}
-      </Grid>
-    </Box>
+                  <Box
+                    sx={{
+                      flexGrow: 1,
+                      minHeight: 0,
+                      overflowY: "auto",
+                      px: spacing.section,
+                      py: spacing.section,
+                      display: "flex",
+                    }}
+                  >
+                    {loading ? (
+                      <Stack spacing={spacing.section} sx={{ width: "100%" }}>
+                        <Skeleton variant="rounded" height={72} sx={{ borderRadius: 2 }} />
+                        <Skeleton variant="rounded" height={72} sx={{ borderRadius: 2 }} />
+                        <Skeleton variant="rounded" height={72} sx={{ borderRadius: 2 }} />
+                      </Stack>
+                    ) : error ? (
+                      <Stack
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{
+                          flexGrow: 1,
+                          textAlign: "center",
+                          color: "error.main",
+                        }}
+                      >
+                        <Typography color="inherit">{error}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Try refreshing the page to load your conversations again.
+                        </Typography>
+                      </Stack>
+                    ) : Array.isArray(conversations) && conversations.length > 0 ? (
+                      <Stack
+                        spacing={spacing.section}
+                        divider={<Divider flexItem sx={{ borderStyle: "dashed", opacity: 0.4 }} />}
+                        sx={{ width: "100%" }}
+                      >
+                        {conversations.map((conversation, index) => {
+                          const { displayName } = getConversationPartnerDetails(
+                            conversation,
+                            currentUserId,
+                            profiles
+                          );
+                          const { body, mime_type, timestamp } =
+                            extractLastMessageInfo(conversation);
+                          const messagePreview = buildMessagePreview(body, mime_type);
+                          const formattedTimestamp = formatLastMessageTimestamp(timestamp);
+                          const avatarInitial = displayName
+                            ? displayName.charAt(0).toUpperCase()
+                            : "?";
+                          const isSelected = selectedConversation?.id === conversation.id;
+                          const isTopConversation = index === 0;
+
+                          return (
+                            <Box
+                              key={`${conversation.id}-panel`}
+                              onClick={() => handleOpenConversation(conversation)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  handleOpenConversation(conversation);
+                                }
+                              }}
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                px: 2,
+                                py: 1.75,
+                                borderRadius: 2,
+                                cursor: "pointer",
+                                border: (theme) =>
+                                  `1px solid ${
+                                    isSelected
+                                      ? theme.palette.primary.main
+                                      : alpha(theme.palette.divider, 0.8)
+                                  }`,
+                                bgcolor: (theme) =>
+                                  isSelected
+                                    ? alpha(theme.palette.primary.main, 0.08)
+                                    : isTopConversation
+                                    ? alpha(theme.palette.primary.main, 0.04)
+                                    : theme.palette.background.paper,
+                                boxShadow: (theme) =>
+                                  isSelected
+                                    ? `0px 12px 24px ${alpha(
+                                        theme.palette.primary.main,
+                                        0.18
+                                      )}`
+                                    : `0px 6px 18px ${alpha(
+                                        theme.palette.common.black,
+                                        0.05
+                                      )}`,
+                                transition: "all 0.2s ease",
+                                '&:hover': {
+                                  transform: "translateY(-2px)",
+                                  borderColor: (theme) => theme.palette.primary.main,
+                                  boxShadow: (theme) =>
+                                    `0px 12px 24px ${alpha(theme.palette.primary.main, 0.25)}`,
+                                },
+                                outline: "none",
+                              }}
+                            >
+                              <Avatar variant="rounded" sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}>
+                                {avatarInitial}
+                              </Avatar>
+                              <Stack spacing={0.5} flexGrow={1} minWidth={0}>
+                                {isTopConversation && (
+                                  <Typography variant="subtitle2" color="text.secondary">
+                                    Most recent conversation
+                                  </Typography>
+                                )}
+                                <Typography
+                                  variant="subtitle1"
+                                  noWrap
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  {displayName}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" noWrap>
+                                  {messagePreview}
+                                </Typography>
+                              </Stack>
+                              {formattedTimestamp ? (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ whiteSpace: "nowrap" }}
+                                >
+                                  {formattedTimestamp}
+                                </Typography>
+                              ) : null}
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    ) : (
+                      <Stack
+                        alignItems="center"
+                        spacing={1}
+                        justifyContent="center"
+                        sx={{
+                          flexGrow: 1,
+                          textAlign: "center",
+                          color: "text.secondary",
+                        }}
+                      >
+                        <Typography variant="body1">
+                          You have no conversations yet.
+                        </Typography>
+                        <Typography variant="body2">
+                          Start connecting to see your messages here.
+                        </Typography>
+                      </Stack>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+          {showChatPane && (
+            <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
+              <Card
+                elevation={3}
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  minHeight: { xs: "50vh", md: "100%" },
+                  overflow: "hidden",
+                }}
+              >
+                {selectedConversation ? (
+                  <ChatDrawer
+                    conversationId={selectedConversation.id}
+                    user1_id={selectedConversation.user1_id}
+                    user2_id={selectedConversation.user2_id}
+                    open={Boolean(selectedConversation)}
+                    onClose={handleCloseConversation}
+                    partnerName={selectedConversationDetails?.displayName}
+                    partnerBio={selectedConversationDetails?.bio}
+                  />
+                ) : (
+                  <>
+                    <CardHeader
+                      title="Select a conversation"
+                      subheader="Choose someone from the list to start chatting"
+                      avatar={
+                        <Avatar
+                          variant="rounded"
+                          sx={{ bgcolor: "secondary.light", color: "secondary.dark" }}
+                        >
+                          <ChatBubbleOutlineRoundedIcon />
+                        </Avatar>
+                      }
+                      sx={{ px: spacing.section, py: spacing.section }}
+                    />
+                    <Divider sx={{ borderStyle: "dashed" }} />
+                    <CardContent
+                      sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Stack spacing={1.5} alignItems="center" color="text.secondary">
+                        <Typography variant="body1">
+                          Select a conversation from the left to view messages.
+                        </Typography>
+                        <Typography variant="body2">
+                          Once you pick someone, you can continue your conversation here.
+                        </Typography>
+                      </Stack>
+                    </CardContent>
+                  </>
+                )}
+              </Card>
+            </Grid>
+          )}
+        </Grid>
+      </Stack>
+    </Container>
   );
 }
 

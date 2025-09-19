@@ -1,21 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
+  Avatar,
   Box,
-  Typography,
-  TextField,
   Button,
-  List,
-  ListItem,
-  Paper,
-  IconButton,
+  CardHeader,
   Divider,
+  IconButton,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
   useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
+import { spacing } from "../../styles";
 
 const formatMessageTimestamp = (message) => {
   if (!message) return "";
@@ -137,7 +139,9 @@ function ChatDrawer({
     if (newMessage.trim() === "") return;
 
     // Message displayed locally in the UI
-    const clientMsgId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const clientMsgId = `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
     const timestamp = new Date().toISOString();
     const displayMessage = {
       body: newMessage,
@@ -167,6 +171,7 @@ function ChatDrawer({
   }
 
   const headerTitle = partnerName || "Conversation";
+  const headerInitial = headerTitle?.charAt(0)?.toUpperCase() || "?";
 
   return (
     <Box
@@ -178,113 +183,197 @@ function ChatDrawer({
         minHeight: 0,
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h6">{headerTitle}</Typography>
-          {partnerBio && (
+      <CardHeader
+        avatar={
+          <Avatar
+            variant="rounded"
+            sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}
+          >
+            {headerInitial}
+          </Avatar>
+        }
+        action={
+          <IconButton
+            onClick={onClose}
+            aria-label={
+              isMobile ? "Back to conversations" : "Close conversation"
+            }
+          >
+            {isMobile ? <ArrowBackIcon /> : <CloseIcon />}
+          </IconButton>
+        }
+        title={
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {headerTitle}
+          </Typography>
+        }
+        subheader={
+          partnerBio ? (
             <Typography variant="body2" color="text.secondary">
               {partnerBio}
             </Typography>
-          )}
-        </Box>
-        <IconButton
-          onClick={onClose}
-          aria-label={isMobile ? "Back to conversations" : "Close conversation"}
-        >
-          {isMobile ? <ArrowBackIcon /> : <CloseIcon />}
-        </IconButton>
-      </Box>
-      <Divider sx={{ mt: 2 }} />
+          ) : undefined
+        }
+        sx={{
+          alignItems: "flex-start",
+          px: spacing.section,
+          pt: spacing.section,
+          pb: spacing.section / 2,
+        }}
+      />
+      <Divider sx={{ mx: spacing.section, borderStyle: "dashed" }} />
       <Box
         ref={messagesContainerRef}
         sx={{
           flex: "1 1 0",
           overflowY: "auto",
-          mt: 2,
-          pr: 1,
           minHeight: 0,
+          mx: spacing.section,
+          my: spacing.section / 2,
+          px: spacing.section,
+          py: spacing.section,
+          display: "flex",
+          flexDirection: "column",
+          gap: spacing.section,
+          bgcolor: (theme) =>
+            alpha(
+              theme.palette.primary.main,
+              theme.palette.mode === "light" ? 0.04 : 0.16
+            ),
+          borderRadius: 3,
+          boxShadow: (theme) =>
+            `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.12)}`,
         }}
       >
         {error && (
-          <Typography color="error" variant="body2" sx={{ mb: 2 }}>
+          <Typography color="error" variant="body2">
             {error}
           </Typography>
         )}
-        {Array.isArray(conversationMessages) && conversationMessages.length === 0 ? (
-          <Typography variant="body1" color="text.secondary">
-            No messages yet. Start the conversation!
-          </Typography>
+        {Array.isArray(conversationMessages) &&
+        conversationMessages.length === 0 ? (
+          <Stack
+            spacing={1}
+            alignItems="center"
+            justifyContent="center"
+            sx={{
+              textAlign: "center",
+              color: "text.secondary",
+              flexGrow: 1,
+            }}
+          >
+            <Typography variant="body1">
+              No messages yet. Start the conversation!
+            </Typography>
+          </Stack>
         ) : (
-          <List sx={{ pb: 2 }}>
+          <Stack spacing={spacing.section}>
             {conversationMessages.map((message, index) => {
               const messageKey =
                 message.message_id || message.client_msg_id || index;
               const isSender = message.sender_id === sender_id;
               return (
-                <ListItem
+                <Box
                   key={messageKey}
                   sx={{
                     display: "flex",
                     justifyContent: isSender ? "flex-end" : "flex-start",
-                    mb: 1.5,
                   }}
                 >
                   <Paper
-                    elevation={2}
+                    elevation={0}
                     sx={{
-                      padding: 1.5,
-                      maxWidth: "75%",
-                      bgcolor: isSender ? "primary.main" : "grey.200",
-                      color: isSender ? "primary.contrastText" : "text.primary",
-                      borderRadius: "16px",
-                      borderTopRightRadius: isSender ? 0 : "16px",
-                      borderTopLeftRadius: isSender ? "16px" : 0,
+                      px: 2,
+                      py: 1.5,
+                      maxWidth: { xs: "88%", sm: "75%" },
+                      bgcolor: (theme) =>
+                        isSender
+                          ? theme.palette.primary.main
+                          : alpha(theme.palette.background.paper, 0.92),
+                      color: (theme) =>
+                        isSender
+                          ? theme.palette.primary.contrastText
+                          : theme.palette.text.primary,
+                      borderRadius: "20px",
+                      borderTopRightRadius: isSender ? "8px" : "20px",
+                      borderTopLeftRadius: isSender ? "20px" : "8px",
+                      border: (theme) =>
+                        `1px solid ${
+                          isSender
+                            ? alpha(theme.palette.primary.dark, 0.6)
+                            : theme.palette.divider
+                        }`,
+                      boxShadow: (theme) =>
+                        isSender
+                          ? `0px 8px 20px ${alpha(
+                              theme.palette.primary.main,
+                              0.2
+                            )}`
+                          : `0px 6px 18px ${alpha(
+                              theme.palette.common.black,
+                              0.06
+                            )}`,
                       opacity: message.pending ? 0.6 : 1,
+                      transition: "all 0.2s ease",
                     }}
                   >
-                    <Typography variant="body2">{message.body}</Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                      {message.body}
+                    </Typography>
                     <Typography
                       variant="caption"
                       sx={{
                         display: "block",
                         textAlign: "right",
                         mt: 1,
-                        color: "text.secondary",
+                        color: (theme) =>
+                          isSender
+                            ? alpha(theme.palette.primary.contrastText, 0.8)
+                            : theme.palette.text.secondary,
                       }}
                     >
                       {formatMessageTimestamp(message)}
                     </Typography>
                   </Paper>
-                </ListItem>
+                </Box>
               );
             })}
-          </List>
+          </Stack>
         )}
       </Box>
-      <Divider sx={{ mt: 2 }} />
-      <Box sx={{ display: "flex", mt: 2, gap: 2 }}>
-        <TextField
-          variant="outlined"
-          fullWidth
-          placeholder="Type a message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSendMessage();
-            }
-          }}
-        />
-        <Button variant="contained" color="primary" onClick={handleSendMessage}>
-          Send
-        </Button>
+      <Divider sx={{ mx: spacing.section, borderStyle: "dashed" }} />
+      <Box sx={{ px: spacing.section, pb: spacing.section }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1.5}
+          alignItems={{ xs: "stretch", sm: "center" }}
+        >
+          <TextField
+            variant="outlined"
+            fullWidth
+            placeholder="Type a message..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSendMessage}
+            sx={{
+              px: 4,
+              py: 1.25,
+              alignSelf: { xs: "stretch", sm: "flex-end" },
+            }}
+          >
+            Send
+          </Button>
+        </Stack>
       </Box>
     </Box>
   );
