@@ -549,6 +549,16 @@ function Messages() {
         profiles
       )
     : null;
+  const selectedConversationBlocked = selectedConversation
+    ? Boolean(
+        pickFirst(
+          selectedConversation.blocked,
+          selectedConversation.is_blocked,
+          selectedConversation.isBlocked,
+          selectedConversation.Blocked
+        )
+      )
+    : false;
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section} sx={{ height: "100%" }}>
@@ -783,6 +793,7 @@ function Messages() {
                     onClose={handleCloseConversation}
                     partnerName={selectedConversationDetails?.displayName}
                     partnerBio={selectedConversationDetails?.bio}
+                    blocked={selectedConversationBlocked}
                   />
                 ) : (
                   <>
