@@ -4,12 +4,15 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import ThemeContext from './context/ThemeContext';
+import { I18nextProvider } from './i18n';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <ThemeContext>
-    <App />
-  </ThemeContext>
+  <I18nextProvider>
+    <ThemeContext>
+      <App />
+    </ThemeContext>
+  </I18nextProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function

@@ -1,0 +1,209 @@
+{
+  "app": {
+    "name": "MatchUp",
+    "alt": "MatchUp ලාංඡනය",
+    "themeToggle": "ආලෝක සහ අන්ධකාර ප්‍රභේද මාරු කරන්න",
+    "language": {
+      "label": "භාෂාව",
+      "english": "ඉංග්‍රීසි",
+      "sinhala": "සිංහල",
+      "tamil": "දෙමළ"
+    }
+  },
+  "common": {
+    "actions": {
+      "cancel": "අවලංගු කරන්න",
+      "saveProfile": "පැතිකඩ සුරකින්න",
+      "editProfile": "පැතිකඩ සංස්කරණය කරන්න",
+      "addLanguage": "භාෂාවක් එක් කරන්න",
+      "addInterest": "අභිරුචියක් එක් කරන්න",
+      "applyFilters": "පෙරහන් යොදන්න",
+      "clearFilters": "පෙරහන් හිස් කරන්න",
+      "accept": "පිළිගන්න",
+      "reject": "ප්‍රතික්ෂේප කරන්න"
+    },
+    "placeholders": {
+      "user": "පරිශීලකයා",
+      "userNumber": "පරිශීලක #{{id}}",
+      "unknownUser": "හඳුනා නොගත් පරිශීලකයා",
+      "noBio": "ජීවන රේඛාව නොමැත",
+      "noMessage": "පණිවිඩයක් සැපයී නැත.",
+      "notAvailable": "නැත"
+    },
+    "messages": {
+      "profileCreatedOn": "පැතිකඩ තනන ලද්දේ: {{date}}",
+      "noAdditionalInfo": "අමතර තොරතුරු නොමැත."
+    }
+  },
+  "home": {
+    "headers": {
+      "activeUsers": "සක්‍රීය පරිශීලකයන්",
+      "activeUsersSub": "මෑතකදී සක්‍රීයව සිටි අය බලන්න",
+      "filterTitle": "සක්‍රීය පරිශීලකයන් පෙරන්න"
+    },
+    "filters": {
+      "show": "පෙරහන් පෙන්වන්න",
+      "hide": "පෙරහන් සඟවන්න",
+      "gender": "ස්ත්‍රී පුරුෂ භාවය",
+      "civilStatus": "සිවිල් තත්ත්වය",
+      "religion": "ආගම",
+      "dietaryPreference": "ආහාර අභිරුචිය",
+      "smoking": "ධූමපානය පිළිබඳ අභිරුචිය",
+      "country": "රට",
+      "highestEducation": "උච්චතම අධ්‍යාපනය",
+      "employmentStatus": "රැකියා තත්ත්වය",
+      "age": "වයස",
+      "horoscope": "ජාතකය ඇත්ද",
+      "any": "කවදාවත්",
+      "yes": "ඔව්",
+      "no": "නැහැ"
+    },
+    "labels": {
+      "mostRecent": "නවතම සක්‍රීය පරිශීලකයා",
+      "bio": "ජීවන රේඛාව",
+      "age": "වයස",
+      "location": "පදිංචි ස්ථානය",
+      "requestSent": "ඉල්ලීම යවා ඇත",
+      "sendRequest": "ඉල්ලීම යවන්න",
+      "noActiveUsers": "සක්‍රීය පරිශීලකයන් නොමැත."
+    },
+    "messages": {
+      "loadActiveError": "සක්‍රීය පරිශීලකයන් ලබා ගැනීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.",
+      "profileError": "පරිශීලක පැතිකඩ ලබා ගැනීමට නොහැකි විය.",
+      "requestSuccess": "මිතුරු ඉල්ලීම සාර්ථකව යවා ඇත!",
+      "requestError": "මිතුරු ඉල්ලීම යැවීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න."
+    }
+  },
+  "requests": {
+    "headers": {
+      "incoming": "ලැබී ඇති ඉල්ලීම්",
+      "incomingSub": "නව සම්බන්ධතා ආරාධනා සඳහා ප්‍රතිචාර දෙන්න",
+      "sent": "යවා ඇති ඉල්ලීම්",
+      "sentSub": "ඔබගේ නවතම ආරාධනා වල තත්ත්වය අනුගමනය කරන්න"
+    },
+    "labels": {
+      "newest": "නවතම ඉල්ලීම",
+      "mostRecent": "ඉතා මෑත ඉල්ලීම"
+    },
+    "messages": {
+      "receivedError": "ලැබී ඇති ඉල්ලීම් ලබා ගැනීමට නොහැකි විය.",
+      "sentError": "යවා ඇති ඉල්ලීම් ලබා ගැනීමට නොහැකි විය.",
+      "noPending": "ඔබට මෙතෙක් අසම්පූර්ණ ඉල්ලීම් නොමැත.",
+      "noSent": "ඔබ මෙතෙක් කිසිදු ඉල්ලීමක් යවා නැත.",
+      "acceptFailed": "ඉල්ලීම පිළිගැනීමට නොහැකි විය. නැවත උත්සාහ කරන්න.",
+      "rejectFailed": "ඉල්ලීම ප්‍රතික්ෂේප කිරීමට නොහැකි විය. නැවත උත්සාහ කරන්න."
+    },
+    "status": {
+      "accepted": "අනුමතයි",
+      "pending": "අත්හිටුවා ඇත",
+      "rejected": "ප්‍රතික්ෂේපයි"
+    }
+  },
+  "matches": {
+    "headers": {
+      "title": "ඔබට වඩාත් සුදුසු ගැලපීම්",
+      "subheader": "ඔබගේ ප්‍රශ්නාවලියෙහි පිළිතුරු මත පදනම්ව"
+    },
+    "messages": {
+      "noActiveUser": "ක්‍රියාත්මක පරිශීලකයාව හඳුනාගත නොහැකි විය.",
+      "loadError": "දැන් ගැලපීම් නිර්දේශ ලබා ගැනීමට නොහැක.",
+      "noMatches": "දැන් පෙන්වීමට ගැලපීම් නොමැත. කරුණාකර පසුව නැවත බලන්න."
+    },
+    "labels": {
+      "topMatch": "ඉහළම ගැලපීම",
+      "otherMatches": "වෙනත් හොඳ ගැලපීම්",
+      "matchScore": "{{score}}% ගැලපීම",
+      "scoreOnly": "{{score}}%",
+      "scoreTooltip": "ගැලපීම් ලකුණු"
+    }
+  },
+  "profile": {
+    "headers": {
+      "create": "පැතිකඩ තනන්න",
+      "edit": "පැතිකඩ සංස්කරණය කරන්න",
+      "view": "ඔබගේ පැතිකඩ",
+      "formSubheader": "ගැලපීම් ඔබ ගැන වැඩිදුර දැන ගන්නා ලෙස තොරතුරු යාවත්කාලීනව තබාගන්න",
+      "viewSubheader": "අනෙකුට දකින්නට ඇති විස්තර සමාලෝචනය කරන්න",
+      "personal": "පෞද්ගලික",
+      "residency": "පදිංචි",
+      "education": "අධ්‍යාපන",
+      "family": "කుటుంబ",
+      "horoscope": "ජාතක",
+      "languages": "භාෂා සහ අභිරුචි"
+    },
+    "fields": {
+      "bio": "ජීවන රේඛාව",
+      "gender": "ස්ත්‍රී පුරුෂ භාවය",
+      "dateOfBirth": "උපන් දිනය",
+      "civilStatus": "සිවිල් තත්ත්වය",
+      "religion": "ආගම",
+      "religionDetail": "ආගමික විස්තර",
+      "caste": "ජාතිය",
+      "heightCm": "උස (සෙ.මි.)",
+      "weightKg": "බර (කි.ග්‍රෑ.)",
+      "dietaryPreference": "ආහාර අභිරුචිය",
+      "smoking": "ධූමපානය",
+      "alcohol": "මත්පැන්",
+      "languages": "භාෂා",
+      "addLanguage": "භාෂාවක් එක් කරන්න",
+      "interests": "අභිරුචි",
+      "addInterest": "අභිරුචියක් එක් කරන්න",
+      "location": "පදිංචිය",
+      "countryCode": "රටේ කේතය",
+      "province": "පළාත",
+      "district": "දිස්ත්‍රික්කය",
+      "city": "නගරය",
+      "postalCode": "තැපැල් කේතය",
+      "highestEducation": "උච්චතම අධ්‍යාපනය",
+      "fieldOfStudy": "ඉගෙනුම් විෂයය",
+      "institution": "ආයතනය",
+      "employmentStatus": "රැකියා තත්ත්වය",
+      "occupation": "උපයාමේ ක්ෂේත්‍රය",
+      "fatherOccupation": "පියාගේ රැකියාව",
+      "motherOccupation": "මවගේ රැකියාව",
+      "siblingsCount": "සහෝදර සංඛ්‍යාව",
+      "siblings": "සහෝදර විස්තර",
+      "horoscopeAvailable": "ජාතකය තිබේද",
+      "birthTime": "උපන් වේලාව",
+      "birthPlace": "උපන් ස්ථානය",
+      "sinhalaRaasi": "සිංහල රාශිය",
+      "nakshatra": "නක්ෂත්‍රය",
+      "horoscope": "ජාතක විස්තර",
+      "profileImage": "පැතිකඩ පින්තූරය"
+    },
+    "helpers": {
+      "bio": "ඔබ ගැන කියන්න",
+      "gender": "ඔබගේ ස්ත්‍රී පුරුෂ භාවය තෝරන්න",
+      "dateOfBirth": "ඔබ උපන් දිනය සඳහන් කරන්න",
+      "location": "ඔබ සිටින ස්ථානය කුමක්ද?"
+    },
+    "validation": {
+      "bioRequired": "ජීවන රේඛාව අවශ්‍යයයි",
+      "genderRequired": "ස්ත්‍රී පුරුෂ භාවය අවශ්‍යයයි",
+      "dateOfBirthRequired": "උපන් දිනය අවශ්‍යයයි",
+      "locationRequired": "පදිංචිය අවශ්‍යයයි"
+    },
+    "buttons": {
+      "addLanguage": "භාෂාවක් එක් කරන්න",
+      "addInterest": "අභිරුචියක් එක් කරන්න",
+      "cancel": "අවලංගු කරන්න",
+      "save": "පැතිකඩ සුරකින්න",
+      "saving": "සුරක්ෂිත කරමින්..."
+    },
+    "messages": {
+      "saved": "පැතිකඩ සුරැකිණි",
+      "saveFailed": "පැතිකඩ සුරැකීමට නොහැකි විය"
+    },
+    "options": {
+      "gender": {
+        "male": "පුරුෂ",
+        "female": "ස්ත්‍රී",
+        "other": "වෙනත්"
+      },
+      "boolean": {
+        "yes": "ඔව්",
+        "no": "නැහැ"
+      }
+    }
+  }
+}
