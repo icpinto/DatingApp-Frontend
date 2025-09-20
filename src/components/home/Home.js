@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -13,11 +13,27 @@ import {
   Grow,
   Skeleton,
   Divider,
+  Grid,
+  TextField,
+  MenuItem,
 } from "@mui/material";
 import { Group } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 import MatchRecommendations from "../matches/MatchRecommendations";
+
+const FILTER_DEFAULTS = {
+  gender: "",
+  civil_status: "",
+  religion: "",
+  dietary_preference: "",
+  smoking: "",
+  country_code: "",
+  highest_education: "",
+  employment_status: "",
+  age: "",
+  horoscope_available: "",
+};
 
 function Home() {
   const [activeUsers, setActiveUsers] = useState([]);
@@ -26,8 +42,9 @@ function Home() {
   const [message, setMessage] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [filters, setFilters] = useState(() => ({ ...FILTER_DEFAULTS }));
 
-  const getUserIdentifier = (user) => {
+  const getUserIdentifier = useCallback((user) => {
     if (!user) {
       return undefined;
     }
@@ -37,10 +54,10 @@ function Home() {
     }
     const numericValue = Number(value);
     return Number.isNaN(numericValue) ? value : numericValue;
-  };
+  }, []);
 
-  useEffect(() => {
-    const fetchActiveUsers = async () => {
+  const fetchActiveUsers = useCallback(
+    async (params = {}) => {
       setLoadingUsers(true);
       try {
         const token = localStorage.getItem("token");
@@ -48,6 +65,7 @@ function Home() {
           headers: {
             Authorization: `${token}`,
           },
+          params,
         });
         const rawUsers = Array.isArray(response.data) ? response.data : [];
         const currentUserId = Number(localStorage.getItem("user_id"));
@@ -61,16 +79,57 @@ function Home() {
             profile_image: user.profile_image_url,
           }));
         setActiveUsers(users);
-        // No active users message handled in render
+        setExpandedUserId(null);
+        setProfileData({});
       } catch (error) {
         setMessage("Failed to load active users. Please try again.");
       } finally {
         setLoadingUsers(false);
       }
-    };
+    },
+    [getUserIdentifier]
+  );
 
-    fetchActiveUsers();
+  const buildFilterParams = useCallback(() => {
+    const params = {};
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      if (key === "age") {
+        const numericValue = Number(value);
+        if (!Number.isNaN(numericValue) && numericValue > 0) {
+          params[key] = numericValue;
+        }
+        return;
+      }
+
+      params[key] = value;
+    });
+
+    return params;
+  }, [filters]);
+
+  const handleFilterChange = useCallback((event) => {
+    const { name, value } = event.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
   }, []);
+
+  const handleApplyFilters = useCallback(() => {
+    const params = buildFilterParams();
+    fetchActiveUsers(params);
+  }, [buildFilterParams, fetchActiveUsers]);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters({ ...FILTER_DEFAULTS });
+    fetchActiveUsers();
+  }, [fetchActiveUsers]);
+
+  useEffect(() => {
+    fetchActiveUsers();
+  }, [fetchActiveUsers]);
 
   // Toggle and fetch detailed profile data
   const handleToggleExpand = async (rawUserId) => {
@@ -292,6 +351,84 @@ function Home() {
           />
           <Divider />
           <CardContent>
+            <Box sx={{ mb: spacing.section }}>
+              <Stack spacing={spacing.section}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Filter Active Users
+                </Typography>
+                <Grid container spacing={2}>
+                  {[
+                    { name: "gender", label: "Gender" },
+                    { name: "civil_status", label: "Civil Status" },
+                    { name: "religion", label: "Religion" },
+                    { name: "dietary_preference", label: "Dietary Preference" },
+                    { name: "smoking", label: "Smoking Preference" },
+                    { name: "country_code", label: "Country" },
+                    { name: "highest_education", label: "Highest Education" },
+                    { name: "employment_status", label: "Employment Status" },
+                  ].map((field) => (
+                    <Grid item xs={12} sm={6} md={4} key={field.name}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label={field.label}
+                        name={field.name}
+                        value={filters[field.name]}
+                        onChange={handleFilterChange}
+                      />
+                    </Grid>
+                  ))}
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Age"
+                      name="age"
+                      type="number"
+                      value={filters.age}
+                      onChange={handleFilterChange}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Horoscope Available"
+                      name="horoscope_available"
+                      value={filters.horoscope_available}
+                      onChange={handleFilterChange}
+                    >
+                      <MenuItem value="">Any</MenuItem>
+                      <MenuItem value="true">Yes</MenuItem>
+                      <MenuItem value="false">No</MenuItem>
+                    </TextField>
+                  </Grid>
+                </Grid>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="flex-end"
+                  spacing={2}
+                >
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={handleClearFilters}
+                    disabled={loadingUsers}
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleApplyFilters}
+                    disabled={loadingUsers}
+                  >
+                    Apply Filters
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
             {message && !loadingUsers && (
               <Typography
                 variant="body2"
