@@ -73,3 +73,8 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## QA Checklist
+
+- [ ] Verify that the language selector in the app bar switches between English, Sinhala, and Tamil, and that the selection persists after refreshing the page.
+- [ ] Review high-traffic screens (home feed, requests, matches, and profile) in each supported language to ensure text wraps cleanly without clipping or layout shifts.

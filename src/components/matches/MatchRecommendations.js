@@ -16,6 +16,7 @@ import {
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { fetchMatches } from "../../services/matchmaking";
 import { spacing } from "../../styles";
+import { useTranslation } from "../../i18n";
 
 const MAX_SCORE = 100;
 
@@ -90,17 +91,18 @@ const clampScore = (score) => {
 
 const MatchRecommendations = ({ limit = 10 }) => {
   const [matches, setMatches] = useState([]);
-  const [status, setStatus] = useState({ loading: false, error: "" });
+  const [status, setStatus] = useState({ loading: false, errorKey: "" });
+  const { t } = useTranslation();
 
   useEffect(() => {
     const userId = localStorage.getItem("user_id");
     if (!userId) {
-      setStatus({ loading: false, error: "Unable to detect the active user." });
+      setStatus({ loading: false, errorKey: "matches.messages.noActiveUser" });
       return;
     }
 
     const loadMatches = async () => {
-      setStatus({ loading: true, error: "" });
+      setStatus({ loading: true, errorKey: "" });
       try {
         const results = await fetchMatches(userId, { limit });
         const normalizedMatches = Array.isArray(results)
@@ -110,14 +112,11 @@ const MatchRecommendations = ({ limit = 10 }) => {
           (a, b) => Number(b.score) - Number(a.score)
         );
         setMatches(orderedMatches);
-        setStatus({ loading: false, error: "" });
+        setStatus({ loading: false, errorKey: "" });
       } catch (error) {
         setStatus({
           loading: false,
-          error:
-            error?.response?.data?.message ||
-            error?.message ||
-            "We could not load match recommendations right now.",
+          errorKey: "matches.messages.loadError",
         });
       }
     };
@@ -135,8 +134,8 @@ const MatchRecommendations = ({ limit = 10 }) => {
   return (
     <Card elevation={3} sx={{ borderRadius: 3 }}>
       <CardHeader
-        title="Your Best Matches"
-        subheader="Based on your questionnaire responses"
+        title={t("matches.headers.title")}
+        subheader={t("matches.headers.subheader")}
         avatar={
           <Avatar sx={{ bgcolor: "primary.main" }}>
             <TrendingUpIcon />
@@ -151,14 +150,13 @@ const MatchRecommendations = ({ limit = 10 }) => {
             <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
             <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
           </Stack>
-        ) : status.error ? (
+        ) : status.errorKey ? (
           <Typography color="error" variant="body2">
-            {status.error}
+            {t(status.errorKey)}
           </Typography>
         ) : !topMatch ? (
           <Typography variant="body2" color="text.secondary">
-            We do not have any matches to show right now. Please check back
-            later.
+            {t("matches.messages.noMatches")}
           </Typography>
         ) : (
           <Stack spacing={spacing.section}>
@@ -183,7 +181,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
                   </Avatar>
                   <Stack spacing={0.5} flexGrow={1}>
                     <Typography variant="subtitle2" color="text.secondary">
-                      Top Match
+                      {t("matches.labels.topMatch")}
                     </Typography>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       {topMatch.username || `User #${topMatch.user_id}`}
@@ -196,7 +194,9 @@ const MatchRecommendations = ({ limit = 10 }) => {
                   </Stack>
                   <Chip
                     color="primary"
-                    label={`${formatScore(topMatch.score)}% match`}
+                    label={t("matches.labels.matchScore", {
+                      score: formatScore(topMatch.score),
+                    })}
                     sx={{ fontWeight: 600 }}
                   />
                 </Stack>
@@ -223,7 +223,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
             {otherMatches.length > 0 && (
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  Other great matches
+                  {t("matches.labels.otherMatches")}
                 </Typography>
                 {otherMatches.map((match, index) => (
                   <Box
@@ -256,9 +256,11 @@ const MatchRecommendations = ({ limit = 10 }) => {
                             </Typography>
                           )}
                         </Stack>
-                        <Tooltip title="Match score">
+                        <Tooltip title={t("matches.labels.scoreTooltip")}>
                           <Chip
-                            label={`${formatScore(match.score)}%`}
+                            label={t("matches.labels.scoreOnly", {
+                              score: formatScore(match.score),
+                            })}
                             size="small"
                             variant="outlined"
                           />

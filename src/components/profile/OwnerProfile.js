@@ -33,6 +33,7 @@ import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
 import ProfileSections from "./ProfileSections";
 import { spacing } from "../../styles";
+import { useTranslation } from "../../i18n";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -80,13 +81,14 @@ function ProfilePage() {
   const [profileImage, setProfileImage] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: "",
+    messageKey: "",
     severity: "success",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const userId = localStorage.getItem("user_id");
+  const { t } = useTranslation();
 
   const populateFormData = (data) => {
     setFormData({
@@ -217,15 +219,22 @@ function ProfilePage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: value ? "" : prev[name] }));
+    setErrors((prev) => {
+      if (value) {
+        const { [name]: removed, ...rest } = prev;
+        return rest;
+      }
+      return prev;
+    });
   };
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.bio) newErrors.bio = "Bio is required";
-    if (!formData.gender) newErrors.gender = "Gender is required";
-    if (!formData.date_of_birth) newErrors.date_of_birth = "Date of birth is required";
-    if (!formData.location) newErrors.location = "Location is required";
+    if (!formData.bio) newErrors.bio = "profile.validation.bioRequired";
+    if (!formData.gender) newErrors.gender = "profile.validation.genderRequired";
+    if (!formData.date_of_birth)
+      newErrors.date_of_birth = "profile.validation.dateOfBirthRequired";
+    if (!formData.location) newErrors.location = "profile.validation.locationRequired";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -359,10 +368,18 @@ function ProfilePage() {
         ...formatted,
       });
       setIsEditing(false);
-      setSnackbar({ open: true, message: "Profile saved", severity: "success" });
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.saved",
+        severity: "success",
+      });
     } catch (error) {
       console.error("Error saving profile data:", error);
-      setSnackbar({ open: true, message: "Failed to save profile", severity: "error" });
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.saveFailed",
+        severity: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -384,8 +401,8 @@ function ProfilePage() {
           {(!profile || isEditing) ? (
             <Card elevation={4} sx={{ borderRadius: 3 }}>
               <CardHeader
-                title={profile ? "Edit Profile" : "Create Profile"}
-                subheader="Keep your information up to date so matches can learn more about you"
+                title={profile ? t("profile.headers.edit") : t("profile.headers.create")}
+                subheader={t("profile.headers.formSubheader")}
               />
               <Divider />
               <CardContent>
@@ -393,13 +410,13 @@ function ProfilePage() {
                   <Stack spacing={spacing.section}>
                     <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">Personal</Typography>
+                      <Typography variant="h6">{t("profile.headers.personal")}</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <TextField
-                            label="Bio"
+                            label={t("profile.fields.bio")}
                             name="bio"
                             value={formData.bio}
                             onChange={handleChange}
@@ -408,7 +425,9 @@ function ProfilePage() {
                             fullWidth
                             required
                             error={Boolean(errors.bio)}
-                            helperText={errors.bio || "Tell us about yourself"}
+                            helperText={
+                              errors.bio ? t(errors.bio) : t("profile.helpers.bio")
+                            }
                             InputProps={{
                               startAdornment: (
                                 <InputAdornment position="start">
@@ -420,7 +439,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Gender"
+                            label={t("profile.fields.gender")}
                             name="gender"
                             value={formData.gender}
                             onChange={handleChange}
@@ -428,7 +447,11 @@ function ProfilePage() {
                             fullWidth
                             required
                             error={Boolean(errors.gender)}
-                            helperText={errors.gender || "Select your gender"}
+                            helperText={
+                              errors.gender
+                                ? t(errors.gender)
+                                : t("profile.helpers.gender")
+                            }
                             InputProps={{
                               startAdornment: (
                                 <InputAdornment position="start">
@@ -437,14 +460,20 @@ function ProfilePage() {
                               ),
                             }}
                           >
-                            <MenuItem value="Male">Male</MenuItem>
-                            <MenuItem value="Female">Female</MenuItem>
-                            <MenuItem value="Other">Other</MenuItem>
+                            <MenuItem value="Male">
+                              {t("profile.options.gender.male")}
+                            </MenuItem>
+                            <MenuItem value="Female">
+                              {t("profile.options.gender.female")}
+                            </MenuItem>
+                            <MenuItem value="Other">
+                              {t("profile.options.gender.other")}
+                            </MenuItem>
                           </TextField>
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Date of Birth"
+                            label={t("profile.fields.dateOfBirth")}
                             name="date_of_birth"
                             value={formData.date_of_birth}
                             onChange={handleChange}
@@ -453,7 +482,11 @@ function ProfilePage() {
                             fullWidth
                             required
                             error={Boolean(errors.date_of_birth)}
-                            helperText={errors.date_of_birth || "When were you born?"}
+                            helperText={
+                              errors.date_of_birth
+                                ? t(errors.date_of_birth)
+                                : t("profile.helpers.dateOfBirth")
+                            }
                             InputProps={{
                               startAdornment: (
                                 <InputAdornment position="start">
@@ -465,7 +498,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Civil Status"
+                            label={t("profile.fields.civilStatus")}
                             name="civil_status"
                             value={formData.civil_status}
                             onChange={handleChange}
@@ -481,7 +514,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Religion"
+                            label={t("profile.fields.religion")}
                             name="religion"
                             value={formData.religion}
                             onChange={handleChange}
@@ -497,7 +530,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Religion Detail"
+                            label={t("profile.fields.religionDetail")}
                             name="religion_detail"
                             value={formData.religion_detail}
                             onChange={handleChange}
@@ -506,7 +539,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Caste"
+                            label={t("profile.fields.caste")}
                             name="caste"
                             value={formData.caste}
                             onChange={handleChange}
@@ -515,7 +548,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Height (cm)"
+                            label={t("profile.fields.heightCm")}
                             name="height_cm"
                             value={formData.height_cm}
                             onChange={handleChange}
@@ -525,7 +558,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Weight (kg)"
+                            label={t("profile.fields.weightKg")}
                             name="weight_kg"
                             value={formData.weight_kg}
                             onChange={handleChange}
@@ -535,7 +568,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Dietary Preference"
+                            label={t("profile.fields.dietaryPreference")}
                             name="dietary_preference"
                             value={formData.dietary_preference}
                             onChange={handleChange}
@@ -551,7 +584,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Smoking"
+                            label={t("profile.fields.smoking")}
                             name="smoking"
                             value={formData.smoking}
                             onChange={handleChange}
@@ -567,7 +600,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Alcohol"
+                            label={t("profile.fields.alcohol")}
                             name="alcohol"
                             value={formData.alcohol}
                             onChange={handleChange}
@@ -583,7 +616,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12}>
                           <TextField
-                            label="Add Language"
+                            label={t("profile.fields.addLanguage")}
                             value={newLanguage}
                             onChange={(e) => setNewLanguage(e.target.value)}
                             fullWidth
@@ -597,7 +630,7 @@ function ProfilePage() {
                             }}
                           />
                           <Button variant="contained" onClick={handleAddLanguage} sx={{ mt: 1 }}>
-                            Add Language
+                            {t("profile.buttons.addLanguage")}
                           </Button>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 1 }}>
                             {formData.languages.map((lang, index) => (
@@ -617,7 +650,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12}>
                           <TextField
-                            label="Add Interest"
+                            label={t("profile.fields.addInterest")}
                             value={newInterest}
                             onChange={(e) => setNewInterest(e.target.value)}
                             fullWidth
@@ -630,8 +663,13 @@ function ProfilePage() {
                               ),
                             }}
                           />
-                          <Button variant="contained" color="primary" onClick={handleAddInterest} sx={{ mt: 1 }}>
-                            Add Interest
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleAddInterest}
+                            sx={{ mt: 1 }}
+                          >
+                            {t("profile.buttons.addInterest")}
                           </Button>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 1 }}>
                             {formData.interests.map((interest, index) => (
@@ -655,20 +693,24 @@ function ProfilePage() {
 
                   <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">Residency</Typography>
+                      <Typography variant="h6">{t("profile.headers.residency")}</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <TextField
-                            label="Location"
+                            label={t("profile.fields.location")}
                             name="location"
                             value={formData.location}
                             onChange={handleChange}
                             fullWidth
                             required
                             error={Boolean(errors.location)}
-                            helperText={errors.location || "Where do you live?"}
+                            helperText={
+                              errors.location
+                                ? t(errors.location)
+                                : t("profile.helpers.location")
+                            }
                             InputProps={{
                               startAdornment: (
                                 <InputAdornment position="start">
@@ -680,7 +722,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Country Code"
+                            label={t("profile.fields.countryCode")}
                             name="country_code"
                             value={formData.country_code}
                             onChange={handleChange}
@@ -689,7 +731,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Province"
+                            label={t("profile.fields.province")}
                             name="province"
                             value={formData.province}
                             onChange={handleChange}
@@ -698,7 +740,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="District"
+                            label={t("profile.fields.district")}
                             name="district"
                             value={formData.district}
                             onChange={handleChange}
@@ -707,7 +749,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="City"
+                            label={t("profile.fields.city")}
                             name="city"
                             value={formData.city}
                             onChange={handleChange}
@@ -716,7 +758,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Postal Code"
+                            label={t("profile.fields.postalCode")}
                             name="postal_code"
                             value={formData.postal_code}
                             onChange={handleChange}
@@ -729,13 +771,13 @@ function ProfilePage() {
 
                   <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">Education</Typography>
+                      <Typography variant="h6">{t("profile.headers.education")}</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Highest Education"
+                            label={t("profile.fields.highestEducation")}
                             name="highest_education"
                             value={formData.highest_education}
                             onChange={handleChange}
@@ -751,7 +793,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Field of Study"
+                            label={t("profile.fields.fieldOfStudy")}
                             name="field_of_study"
                             value={formData.field_of_study}
                             onChange={handleChange}
@@ -760,7 +802,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Institution"
+                            label={t("profile.fields.institution")}
                             name="institution"
                             value={formData.institution}
                             onChange={handleChange}
@@ -769,7 +811,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Employment Status"
+                            label={t("profile.fields.employmentStatus")}
                             name="employment_status"
                             value={formData.employment_status}
                             onChange={handleChange}
@@ -785,7 +827,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Occupation"
+                            label={t("profile.fields.occupation")}
                             name="occupation"
                             value={formData.occupation}
                             onChange={handleChange}
@@ -798,13 +840,13 @@ function ProfilePage() {
 
                   <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">Family</Typography>
+                      <Typography variant="h6">{t("profile.headers.family")}</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Father's Occupation"
+                            label={t("profile.fields.fatherOccupation")}
                             name="father_occupation"
                             value={formData.father_occupation}
                             onChange={handleChange}
@@ -813,7 +855,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Mother's Occupation"
+                            label={t("profile.fields.motherOccupation")}
                             name="mother_occupation"
                             value={formData.mother_occupation}
                             onChange={handleChange}
@@ -822,7 +864,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Number of Siblings"
+                            label={t("profile.fields.siblingsCount")}
                             name="siblings_count"
                             value={formData.siblings_count}
                             onChange={handleChange}
@@ -832,7 +874,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Siblings Details"
+                            label={t("profile.fields.siblings")}
                             name="siblings"
                             value={formData.siblings}
                             onChange={handleChange}
@@ -845,26 +887,30 @@ function ProfilePage() {
 
                   <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">Horoscope</Typography>
+                      <Typography variant="h6">{t("profile.headers.horoscope")}</Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Horoscope Available"
+                            label={t("profile.fields.horoscopeAvailable")}
                             name="horoscope_available"
                             value={formData.horoscope_available}
                             onChange={handleChange}
                             select
                             fullWidth
                           >
-                            <MenuItem value="true">Yes</MenuItem>
-                            <MenuItem value="false">No</MenuItem>
+                            <MenuItem value="true">
+                              {t("profile.options.boolean.yes")}
+                            </MenuItem>
+                            <MenuItem value="false">
+                              {t("profile.options.boolean.no")}
+                            </MenuItem>
                           </TextField>
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Birth Time"
+                            label={t("profile.fields.birthTime")}
                             name="birth_time"
                             value={formData.birth_time}
                             onChange={handleChange}
@@ -873,7 +919,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Birth Place"
+                            label={t("profile.fields.birthPlace")}
                             name="birth_place"
                             value={formData.birth_place}
                             onChange={handleChange}
@@ -882,7 +928,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Sinhala Raasi"
+                            label={t("profile.fields.sinhalaRaasi")}
                             name="sinhala_raasi"
                             value={formData.sinhala_raasi}
                             onChange={handleChange}
@@ -898,7 +944,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Nakshatra"
+                            label={t("profile.fields.nakshatra")}
                             name="nakshatra"
                             value={formData.nakshatra}
                             onChange={handleChange}
@@ -914,7 +960,7 @@ function ProfilePage() {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <TextField
-                            label="Horoscope Details"
+                            label={t("profile.fields.horoscope")}
                             name="horoscope"
                             value={formData.horoscope}
                             onChange={handleChange}
@@ -928,6 +974,7 @@ function ProfilePage() {
                             inputProps={{ accept: "image/*" }}
                             onChange={handleFileChange}
                             fullWidth
+                            label={t("profile.fields.profileImage")}
                             InputLabelProps={{ shrink: true }}
                           />
                         </Grid>
@@ -946,7 +993,7 @@ function ProfilePage() {
                         color="secondary"
                         onClick={handleCancelEdit}
                       >
-                        Cancel
+                        {t("profile.buttons.cancel")}
                       </Button>
                     )}
                     <Button
@@ -958,7 +1005,9 @@ function ProfilePage() {
                         saving ? <CircularProgress size={16} color="inherit" /> : null
                       }
                     >
-                      {saving ? "Saving..." : "Save Profile"}
+                      {saving
+                        ? t("profile.buttons.saving")
+                        : t("profile.buttons.save")}
                     </Button>
                   </Stack>
                   </Stack>
@@ -968,11 +1017,11 @@ function ProfilePage() {
           ) : (
             <Card elevation={4} sx={{ borderRadius: 3 }}>
               <CardHeader
-                title="Your Profile"
-                subheader="Review the details other members can see"
+                title={t("profile.headers.view")}
+                subheader={t("profile.headers.viewSubheader")}
                 action={
                   <Button variant="contained" onClick={handleEdit}>
-                    Edit Profile
+                    {t("common.actions.editProfile")}
                   </Button>
                 }
               />
@@ -984,14 +1033,16 @@ function ProfilePage() {
                       <Avatar
                         variant="rounded"
                         src={profile.profile_image}
-                        alt="Profile"
+                        alt={t("profile.fields.profileImage")}
                         sx={{ width: 150, height: 150 }}
                       />
                     </Box>
                   )}
                   <ProfileSections data={profile} />
                   <Typography variant="caption" color="text.secondary">
-                    Profile created on: {new Date(profile.created_at).toLocaleDateString()}
+                    {t("common.messages.profileCreatedOn", {
+                      date: new Date(profile.created_at).toLocaleDateString(),
+                    })}
                   </Typography>
                 </Stack>
               </CardContent>
@@ -1010,7 +1061,7 @@ function ProfilePage() {
             severity={snackbar.severity}
             sx={{ width: "100%" }}
           >
-            {snackbar.message}
+            {snackbar.messageKey ? t(snackbar.messageKey) : ""}
           </Alert>
         </Snackbar>
       </Container>

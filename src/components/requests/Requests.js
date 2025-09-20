@@ -16,6 +16,7 @@ import {
 import { HourglassEmpty, PersonAddAlt1, Send } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
+import { useTranslation } from "../../i18n";
 
 function Requests({ onRequestCountChange = () => {} }) {
   const [requests, setRequests] = useState([]);
@@ -25,6 +26,7 @@ function Requests({ onRequestCountChange = () => {} }) {
   const [sentError, setSentError] = useState(null);
   const [profiles, setProfiles] = useState({});
   const [sentProfiles, setSentProfiles] = useState({});
+  const { t } = useTranslation();
 
   const normalizeRequests = (payload) => {
     if (!payload) return [];
@@ -50,7 +52,7 @@ function Requests({ onRequestCountChange = () => {} }) {
         setReceivedError(null);
       } else {
         setRequests([]);
-        setReceivedError("Failed to fetch received requests.");
+        setReceivedError("requests.messages.receivedError");
       }
 
       if (sentRes.status === "fulfilled") {
@@ -58,7 +60,7 @@ function Requests({ onRequestCountChange = () => {} }) {
         setSentError(null);
       } else {
         setSentRequests([]);
-        setSentError("Failed to fetch sent requests.");
+        setSentError("requests.messages.sentError");
       }
 
       setLoading(false);
@@ -136,7 +138,7 @@ function Requests({ onRequestCountChange = () => {} }) {
       );
       setRequests((prev) => prev.filter((request) => request.id !== id));
     } catch (err) {
-      alert("Failed to accept the request. Please try again.");
+      alert(t("requests.messages.acceptFailed"));
     }
   };
 
@@ -154,7 +156,7 @@ function Requests({ onRequestCountChange = () => {} }) {
       );
       setRequests((prev) => prev.filter((request) => request.id !== id));
     } catch (err) {
-      alert("Failed to reject the request. Please try again.");
+      alert(t("requests.messages.rejectFailed"));
     }
   };
 
@@ -178,9 +180,9 @@ function Requests({ onRequestCountChange = () => {} }) {
   const renderReceivedRequestItem = (request, index) => {
     const profile = profiles[request.sender_id] || {};
     const username =
-      request.sender_username || profile.username || "Unknown user";
-    const bio = profile.bio || "No bio available";
-    const description = request.description || "No message provided.";
+      request.sender_username || profile.username || t("common.placeholders.unknownUser");
+    const bio = profile.bio || t("common.placeholders.noBio");
+    const description = request.description || t("common.placeholders.noMessage");
     const highlight = index === 0;
     const avatarFallback = username.charAt(0)?.toUpperCase() || "?";
 
@@ -208,7 +210,7 @@ function Requests({ onRequestCountChange = () => {} }) {
             <Stack spacing={0.5} flexGrow={1} minWidth={0}>
               {highlight && (
                 <Typography variant="subtitle2" color="text.secondary">
-                  Newest request
+                  {t("requests.labels.newest")}
                 </Typography>
               )}
               <Typography
@@ -243,14 +245,14 @@ function Requests({ onRequestCountChange = () => {} }) {
               color="primary"
               onClick={() => handleAccept(request.id)}
             >
-              Accept
+              {t("common.actions.accept")}
             </Button>
             <Button
               variant="outlined"
               color="secondary"
               onClick={() => handleReject(request.id)}
             >
-              Reject
+              {t("common.actions.reject")}
             </Button>
           </Stack>
         </Stack>
@@ -261,11 +263,16 @@ function Requests({ onRequestCountChange = () => {} }) {
   const renderSentRequestItem = (request, index) => {
     const profile = sentProfiles[request.receiver_id] || {};
     const username =
-      request.receiver_username || profile.username || "Unknown user";
-    const bio = profile.bio || "No bio available";
-    const description = request.description || "No message provided.";
+      request.receiver_username || profile.username || t("common.placeholders.unknownUser");
+    const bio = profile.bio || t("common.placeholders.noBio");
+    const description = request.description || t("common.placeholders.noMessage");
     const highlight = index === 0;
     const avatarFallback = username.charAt(0)?.toUpperCase() || "?";
+    const statusLabel = request.status
+      ? t(`requests.status.${String(request.status).toLowerCase()}`, {
+          defaultValue: request.status,
+        })
+      : null;
 
     return (
       <Box
@@ -289,14 +296,14 @@ function Requests({ onRequestCountChange = () => {} }) {
               {avatarFallback}
             </Avatar>
             <Stack spacing={0.5} flexGrow={1} minWidth={0}>
-              {highlight && (
-                <Typography variant="subtitle2" color="text.secondary">
-                  Most recent request
-                </Typography>
-              )}
-              <Typography
-                variant={highlight ? "h6" : "subtitle1"}
-                sx={{ fontWeight: 600 }}
+                {highlight && (
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {t("requests.labels.mostRecent")}
+                  </Typography>
+                )}
+                <Typography
+                  variant={highlight ? "h6" : "subtitle1"}
+                  sx={{ fontWeight: 600 }}
                 noWrap
               >
                 {username}
@@ -307,9 +314,9 @@ function Requests({ onRequestCountChange = () => {} }) {
                 </Typography>
               )}
             </Stack>
-            {request.status && (
+            {statusLabel && (
               <Chip
-                label={request.status}
+                label={statusLabel}
                 color={getStatusColor(request.status)}
                 size="small"
                 sx={{ textTransform: "capitalize", fontWeight: 600 }}
@@ -341,7 +348,7 @@ function Requests({ onRequestCountChange = () => {} }) {
     if (receivedError) {
       return (
         <Typography color="error" variant="body2">
-          {receivedError}
+          {t(receivedError)}
         </Typography>
       );
     }
@@ -351,7 +358,7 @@ function Requests({ onRequestCountChange = () => {} }) {
         <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
           <HourglassEmpty color="disabled" fontSize="large" />
           <Typography variant="body2" color="text.secondary">
-            You have no pending requests.
+            {t("requests.messages.noPending")}
           </Typography>
         </Stack>
       );
@@ -375,7 +382,7 @@ function Requests({ onRequestCountChange = () => {} }) {
     if (sentError) {
       return (
         <Typography color="error" variant="body2">
-          {sentError}
+          {t(sentError)}
         </Typography>
       );
     }
@@ -385,7 +392,7 @@ function Requests({ onRequestCountChange = () => {} }) {
         <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
           <HourglassEmpty color="disabled" fontSize="large" />
           <Typography variant="body2" color="text.secondary">
-            You haven't sent any requests yet.
+            {t("requests.messages.noSent")}
           </Typography>
         </Stack>
       );
@@ -406,8 +413,8 @@ function Requests({ onRequestCountChange = () => {} }) {
       <Stack spacing={spacing.section}>
         <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardHeader
-            title="Incoming Requests"
-            subheader="Respond to new connection invites"
+            title={t("requests.headers.incoming")}
+            subheader={t("requests.headers.incomingSub")}
             avatar={
               <Avatar sx={{ bgcolor: "primary.main" }}>
                 <PersonAddAlt1 />
@@ -419,8 +426,8 @@ function Requests({ onRequestCountChange = () => {} }) {
         </Card>
         <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardHeader
-            title="Sent Requests"
-            subheader="Track the status of your recent invites"
+            title={t("requests.headers.sent")}
+            subheader={t("requests.headers.sentSub")}
             avatar={
               <Avatar sx={{ bgcolor: "secondary.main" }}>
                 <Send />

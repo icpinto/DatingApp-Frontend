@@ -21,6 +21,7 @@ import { Group } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 import MatchRecommendations from "../matches/MatchRecommendations";
+import { useTranslation } from "../../i18n";
 
 const FILTER_DEFAULTS = {
   gender: "",
@@ -35,15 +36,27 @@ const FILTER_DEFAULTS = {
   horoscope_available: "",
 };
 
+const FILTER_FIELDS = [
+  { name: "gender", labelKey: "home.filters.gender" },
+  { name: "civil_status", labelKey: "home.filters.civilStatus" },
+  { name: "religion", labelKey: "home.filters.religion" },
+  { name: "dietary_preference", labelKey: "home.filters.dietaryPreference" },
+  { name: "smoking", labelKey: "home.filters.smoking" },
+  { name: "country_code", labelKey: "home.filters.country" },
+  { name: "highest_education", labelKey: "home.filters.highestEducation" },
+  { name: "employment_status", labelKey: "home.filters.employmentStatus" },
+];
+
 function Home() {
   const [activeUsers, setActiveUsers] = useState([]);
   const [expandedUserId, setExpandedUserId] = useState(null); // Track expanded user ID
   const [profileData, setProfileData] = useState({}); // Store profile data
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(null);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [filters, setFilters] = useState(() => ({ ...FILTER_DEFAULTS }));
   const [showFilters, setShowFilters] = useState(false);
+  const { t } = useTranslation();
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -82,8 +95,9 @@ function Home() {
         setActiveUsers(users);
         setExpandedUserId(null);
         setProfileData({});
+        setMessage(null);
       } catch (error) {
-        setMessage("Failed to load active users. Please try again.");
+        setMessage({ type: "error", key: "home.messages.loadActiveError" });
       } finally {
         setLoadingUsers(false);
       }
@@ -165,7 +179,7 @@ function Home() {
           requestStatus: requestStatusResponse.data.requestStatus,
         });
       } catch (error) {
-        setMessage("Failed to load user profile.");
+        setMessage({ type: "error", key: "home.messages.profileError" });
       } finally {
         setLoadingProfile(false);
       }
@@ -190,9 +204,9 @@ function Home() {
         { headers: { Authorization: `${token}` } }
       );
       setProfileData((prev) => ({ ...prev, requestStatus: true }));
-      setMessage("Friend request sent successfully!");
+      setMessage({ type: "success", key: "home.messages.requestSuccess" });
     } catch (error) {
-      setMessage("Failed to send friend request. Please try again.");
+      setMessage({ type: "error", key: "home.messages.requestError" });
     }
   };
 
@@ -204,7 +218,11 @@ function Home() {
     const userId = getUserIdentifier(user);
     const isExpanded = expandedUserId === userId;
     const isTopUser = index === 0;
-    const displayName = user?.username || (userId ? `User #${userId}` : "User");
+    const displayName =
+      user?.username ||
+      (userId
+        ? t("common.placeholders.userNumber", { id: userId })
+        : t("common.placeholders.user"));
     const avatarFallback = displayName.charAt(0)?.toUpperCase() || "?";
 
     return (
@@ -242,7 +260,7 @@ function Home() {
             <Stack spacing={0.5} flexGrow={1} minWidth={0}>
               {isTopUser && (
                 <Typography variant="subtitle2" color="text.secondary">
-                  Most recently active
+                  {t("home.labels.mostRecent")}
                 </Typography>
               )}
               <Typography
@@ -269,7 +287,7 @@ function Home() {
               overflow: "hidden",
             }}
           >
-            {user?.bio || "No bio available"}
+            {user?.bio || t("common.placeholders.noBio")}
           </Typography>
         </Stack>
         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
@@ -288,13 +306,16 @@ function Home() {
                 <Box sx={{ mt: spacing.section }}>
                   <Stack spacing={spacing.section}>
                     <Typography variant="body1">
-                      <strong>Bio:</strong> {profileData.bio || "No bio available"}
+                      <strong>{t("home.labels.bio")}:</strong>{" "}
+                      {profileData.bio || t("common.placeholders.noBio")}
                     </Typography>
                     <Typography variant="body1">
-                      <strong>Age:</strong> {profileData.age || "N/A"}
+                      <strong>{t("home.labels.age")}:</strong>{" "}
+                      {profileData.age || t("common.placeholders.notAvailable")}
                     </Typography>
                     <Typography variant="body1">
-                      <strong>Location:</strong> {profileData.location || "N/A"}
+                      <strong>{t("home.labels.location")}:</strong>{" "}
+                      {profileData.location || t("common.placeholders.notAvailable")}
                     </Typography>
                     <Button
                       variant="contained"
@@ -313,17 +334,15 @@ function Home() {
                       }
                       sx={{ alignSelf: "flex-start" }}
                     >
-                      {profileData.requestStatus ? "Request Sent" : "Send Request"}
+                      {profileData.requestStatus
+                        ? t("home.labels.requestSent")
+                        : t("home.labels.sendRequest")}
                     </Button>
-                    {message && (
+                    {message?.key && (
                       <Typography
-                        color={
-                          message.toLowerCase().includes("failed")
-                            ? "error.main"
-                            : "success.main"
-                        }
+                        color={message.type === "error" ? "error.main" : "success.main"}
                       >
-                        {message}
+                        {t(message.key)}
                       </Typography>
                     )}
                   </Stack>
@@ -342,8 +361,8 @@ function Home() {
         <MatchRecommendations limit={12} />
         <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardHeader
-            title="Active Users"
-            subheader="See who has been active recently"
+            title={t("home.headers.activeUsers")}
+            subheader={t("home.headers.activeUsersSub")}
             avatar={
               <Avatar sx={{ bgcolor: "primary.main" }}>
                 <Group />
@@ -360,34 +379,25 @@ function Home() {
                   justifyContent="space-between"
                 >
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Filter Active Users
+                    {t("home.headers.filterTitle")}
                   </Typography>
                   <Button
                     size="small"
                     variant="text"
                     onClick={() => setShowFilters((prev) => !prev)}
                   >
-                    {showFilters ? "Hide Filters" : "Show Filters"}
+                    {showFilters ? t("home.filters.hide") : t("home.filters.show")}
                   </Button>
                 </Stack>
                 <Collapse in={showFilters} timeout="auto" unmountOnExit>
                   <Stack spacing={spacing.section}>
                     <Grid container spacing={2}>
-                      {[
-                        { name: "gender", label: "Gender" },
-                        { name: "civil_status", label: "Civil Status" },
-                        { name: "religion", label: "Religion" },
-                        { name: "dietary_preference", label: "Dietary Preference" },
-                        { name: "smoking", label: "Smoking Preference" },
-                        { name: "country_code", label: "Country" },
-                        { name: "highest_education", label: "Highest Education" },
-                        { name: "employment_status", label: "Employment Status" },
-                      ].map((field) => (
+                      {FILTER_FIELDS.map((field) => (
                         <Grid item xs={12} sm={6} md={4} key={field.name}>
                           <TextField
                             fullWidth
                             size="small"
-                            label={field.label}
+                            label={t(field.labelKey)}
                             name={field.name}
                             value={filters[field.name]}
                             onChange={handleFilterChange}
@@ -398,7 +408,7 @@ function Home() {
                         <TextField
                           fullWidth
                           size="small"
-                          label="Age"
+                          label={t("home.filters.age")}
                           name="age"
                           type="number"
                           value={filters.age}
@@ -411,14 +421,14 @@ function Home() {
                           select
                           fullWidth
                           size="small"
-                          label="Horoscope Available"
+                          label={t("home.filters.horoscope")}
                           name="horoscope_available"
                           value={filters.horoscope_available}
                           onChange={handleFilterChange}
                         >
-                          <MenuItem value="">Any</MenuItem>
-                          <MenuItem value="true">Yes</MenuItem>
-                          <MenuItem value="false">No</MenuItem>
+                          <MenuItem value="">{t("home.filters.any")}</MenuItem>
+                          <MenuItem value="true">{t("home.filters.yes")}</MenuItem>
+                          <MenuItem value="false">{t("home.filters.no")}</MenuItem>
                         </TextField>
                       </Grid>
                     </Grid>
@@ -433,31 +443,27 @@ function Home() {
                         onClick={handleClearFilters}
                         disabled={loadingUsers}
                       >
-                        Clear Filters
+                        {t("common.actions.clearFilters")}
                       </Button>
                       <Button
                         variant="contained"
                         onClick={handleApplyFilters}
                         disabled={loadingUsers}
                       >
-                        Apply Filters
+                        {t("common.actions.applyFilters")}
                       </Button>
                     </Stack>
                   </Stack>
                 </Collapse>
               </Stack>
             </Box>
-            {message && !loadingUsers && (
+            {message?.key && !loadingUsers && (
               <Typography
                 variant="body2"
-                color={
-                  message.toLowerCase().includes("failed")
-                    ? "error.main"
-                    : "success.main"
-                }
+                color={message.type === "error" ? "error.main" : "success.main"}
                 sx={{ mb: spacing.section }}
               >
-                {message}
+                {t(message.key)}
               </Typography>
             )}
             {loadingUsers ? (
@@ -477,7 +483,7 @@ function Home() {
               <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
                 <Group fontSize="large" color="disabled" />
                 <Typography color="text.secondary">
-                  No active users available.
+                  {t("home.labels.noActiveUsers")}
                 </Typography>
               </Stack>
             )}

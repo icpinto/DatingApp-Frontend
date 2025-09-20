@@ -1,0 +1,209 @@
+{
+  "app": {
+    "name": "MatchUp",
+    "alt": "MatchUp logo",
+    "themeToggle": "Toggle light and dark mode",
+    "language": {
+      "label": "Language",
+      "english": "English",
+      "sinhala": "Sinhala",
+      "tamil": "Tamil"
+    }
+  },
+  "common": {
+    "actions": {
+      "cancel": "Cancel",
+      "saveProfile": "Save Profile",
+      "editProfile": "Edit Profile",
+      "addLanguage": "Add Language",
+      "addInterest": "Add Interest",
+      "applyFilters": "Apply Filters",
+      "clearFilters": "Clear Filters",
+      "accept": "Accept",
+      "reject": "Reject"
+    },
+    "placeholders": {
+      "user": "User",
+      "userNumber": "User #{{id}}",
+      "unknownUser": "Unknown user",
+      "noBio": "No bio available",
+      "noMessage": "No message provided.",
+      "notAvailable": "N/A"
+    },
+    "messages": {
+      "profileCreatedOn": "Profile created on: {{date}}",
+      "noAdditionalInfo": "No additional information available."
+    }
+  },
+  "home": {
+    "headers": {
+      "activeUsers": "Active Users",
+      "activeUsersSub": "See who has been active recently",
+      "filterTitle": "Filter Active Users"
+    },
+    "filters": {
+      "show": "Show Filters",
+      "hide": "Hide Filters",
+      "gender": "Gender",
+      "civilStatus": "Civil Status",
+      "religion": "Religion",
+      "dietaryPreference": "Dietary Preference",
+      "smoking": "Smoking Preference",
+      "country": "Country",
+      "highestEducation": "Highest Education",
+      "employmentStatus": "Employment Status",
+      "age": "Age",
+      "horoscope": "Horoscope Available",
+      "any": "Any",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "labels": {
+      "mostRecent": "Most recently active",
+      "bio": "Bio",
+      "age": "Age",
+      "location": "Location",
+      "requestSent": "Request Sent",
+      "sendRequest": "Send Request",
+      "noActiveUsers": "No active users available."
+    },
+    "messages": {
+      "loadActiveError": "Failed to load active users. Please try again.",
+      "profileError": "Failed to load user profile.",
+      "requestSuccess": "Friend request sent successfully!",
+      "requestError": "Failed to send friend request. Please try again."
+    }
+  },
+  "requests": {
+    "headers": {
+      "incoming": "Incoming Requests",
+      "incomingSub": "Respond to new connection invites",
+      "sent": "Sent Requests",
+      "sentSub": "Track the status of your recent invites"
+    },
+    "labels": {
+      "newest": "Newest request",
+      "mostRecent": "Most recent request"
+    },
+    "messages": {
+      "receivedError": "Failed to fetch received requests.",
+      "sentError": "Failed to fetch sent requests.",
+      "noPending": "You have no pending requests.",
+      "noSent": "You haven't sent any requests yet.",
+      "acceptFailed": "Failed to accept the request. Please try again.",
+      "rejectFailed": "Failed to reject the request. Please try again."
+    },
+    "status": {
+      "accepted": "Accepted",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    }
+  },
+  "matches": {
+    "headers": {
+      "title": "Your Best Matches",
+      "subheader": "Based on your questionnaire responses"
+    },
+    "messages": {
+      "noActiveUser": "Unable to detect the active user.",
+      "loadError": "We could not load match recommendations right now.",
+      "noMatches": "We do not have any matches to show right now. Please check back later."
+    },
+    "labels": {
+      "topMatch": "Top Match",
+      "otherMatches": "Other great matches",
+      "matchScore": "{{score}}% match",
+      "scoreOnly": "{{score}}%",
+      "scoreTooltip": "Match score"
+    }
+  },
+  "profile": {
+    "headers": {
+      "create": "Create Profile",
+      "edit": "Edit Profile",
+      "view": "Your Profile",
+      "formSubheader": "Keep your information up to date so matches can learn more about you",
+      "viewSubheader": "Review the details other members can see",
+      "personal": "Personal",
+      "residency": "Residency",
+      "education": "Education",
+      "family": "Family",
+      "horoscope": "Horoscope",
+      "languages": "Languages & Interests"
+    },
+    "fields": {
+      "bio": "Bio",
+      "gender": "Gender",
+      "dateOfBirth": "Date of Birth",
+      "civilStatus": "Civil Status",
+      "religion": "Religion",
+      "religionDetail": "Religion Detail",
+      "caste": "Caste",
+      "heightCm": "Height (cm)",
+      "weightKg": "Weight (kg)",
+      "dietaryPreference": "Dietary Preference",
+      "smoking": "Smoking",
+      "alcohol": "Alcohol",
+      "languages": "Languages",
+      "addLanguage": "Add Language",
+      "interests": "Interests",
+      "addInterest": "Add Interest",
+      "location": "Location",
+      "countryCode": "Country Code",
+      "province": "Province",
+      "district": "District",
+      "city": "City",
+      "postalCode": "Postal Code",
+      "highestEducation": "Highest Education",
+      "fieldOfStudy": "Field of Study",
+      "institution": "Institution",
+      "employmentStatus": "Employment Status",
+      "occupation": "Occupation",
+      "fatherOccupation": "Father's Occupation",
+      "motherOccupation": "Mother's Occupation",
+      "siblingsCount": "Number of Siblings",
+      "siblings": "Siblings Details",
+      "horoscopeAvailable": "Horoscope Available",
+      "birthTime": "Birth Time",
+      "birthPlace": "Birth Place",
+      "sinhalaRaasi": "Sinhala Raasi",
+      "nakshatra": "Nakshatra",
+      "horoscope": "Horoscope Details",
+      "profileImage": "Profile Image"
+    },
+    "helpers": {
+      "bio": "Tell us about yourself",
+      "gender": "Select your gender",
+      "dateOfBirth": "When were you born?",
+      "location": "Where do you live?"
+    },
+    "validation": {
+      "bioRequired": "Bio is required",
+      "genderRequired": "Gender is required",
+      "dateOfBirthRequired": "Date of birth is required",
+      "locationRequired": "Location is required"
+    },
+    "buttons": {
+      "addLanguage": "Add Language",
+      "addInterest": "Add Interest",
+      "cancel": "Cancel",
+      "save": "Save Profile",
+      "saving": "Saving..."
+    },
+    "messages": {
+      "saved": "Profile saved",
+      "saveFailed": "Failed to save profile"
+    },
+    "options": {
+      "gender": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "boolean": {
+        "yes": "Yes",
+        "no": "No"
+      }
+    }
+  }
+}
