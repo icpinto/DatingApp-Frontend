@@ -43,6 +43,7 @@ function Home() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [filters, setFilters] = useState(() => ({ ...FILTER_DEFAULTS }));
+  const [showFilters, setShowFilters] = useState(false);
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -353,80 +354,97 @@ function Home() {
           <CardContent>
             <Box sx={{ mb: spacing.section }}>
               <Stack spacing={spacing.section}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Filter Active Users
-                </Typography>
-                <Grid container spacing={2}>
-                  {[
-                    { name: "gender", label: "Gender" },
-                    { name: "civil_status", label: "Civil Status" },
-                    { name: "religion", label: "Religion" },
-                    { name: "dietary_preference", label: "Dietary Preference" },
-                    { name: "smoking", label: "Smoking Preference" },
-                    { name: "country_code", label: "Country" },
-                    { name: "highest_education", label: "Highest Education" },
-                    { name: "employment_status", label: "Employment Status" },
-                  ].map((field) => (
-                    <Grid item xs={12} sm={6} md={4} key={field.name}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label={field.label}
-                        name={field.name}
-                        value={filters[field.name]}
-                        onChange={handleFilterChange}
-                      />
-                    </Grid>
-                  ))}
-                  <Grid item xs={12} sm={6} md={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Age"
-                      name="age"
-                      type="number"
-                      value={filters.age}
-                      onChange={handleFilterChange}
-                      inputProps={{ min: 0 }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      label="Horoscope Available"
-                      name="horoscope_available"
-                      value={filters.horoscope_available}
-                      onChange={handleFilterChange}
-                    >
-                      <MenuItem value="">Any</MenuItem>
-                      <MenuItem value="true">Yes</MenuItem>
-                      <MenuItem value="false">No</MenuItem>
-                    </TextField>
-                  </Grid>
-                </Grid>
                 <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  justifyContent="flex-end"
-                  spacing={2}
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
                 >
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Filter Active Users
+                  </Typography>
                   <Button
-                    variant="outlined"
-                    color="secondary"
-                    onClick={handleClearFilters}
-                    disabled={loadingUsers}
+                    size="small"
+                    variant="text"
+                    onClick={() => setShowFilters((prev) => !prev)}
                   >
-                    Clear Filters
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={handleApplyFilters}
-                    disabled={loadingUsers}
-                  >
-                    Apply Filters
+                    {showFilters ? "Hide Filters" : "Show Filters"}
                   </Button>
                 </Stack>
+                <Collapse in={showFilters} timeout="auto" unmountOnExit>
+                  <Stack spacing={spacing.section}>
+                    <Grid container spacing={2}>
+                      {[
+                        { name: "gender", label: "Gender" },
+                        { name: "civil_status", label: "Civil Status" },
+                        { name: "religion", label: "Religion" },
+                        { name: "dietary_preference", label: "Dietary Preference" },
+                        { name: "smoking", label: "Smoking Preference" },
+                        { name: "country_code", label: "Country" },
+                        { name: "highest_education", label: "Highest Education" },
+                        { name: "employment_status", label: "Employment Status" },
+                      ].map((field) => (
+                        <Grid item xs={12} sm={6} md={4} key={field.name}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label={field.label}
+                            name={field.name}
+                            value={filters[field.name]}
+                            onChange={handleFilterChange}
+                          />
+                        </Grid>
+                      ))}
+                      <Grid item xs={12} sm={6} md={4}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Age"
+                          name="age"
+                          type="number"
+                          value={filters.age}
+                          onChange={handleFilterChange}
+                          inputProps={{ min: 0 }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <TextField
+                          select
+                          fullWidth
+                          size="small"
+                          label="Horoscope Available"
+                          name="horoscope_available"
+                          value={filters.horoscope_available}
+                          onChange={handleFilterChange}
+                        >
+                          <MenuItem value="">Any</MenuItem>
+                          <MenuItem value="true">Yes</MenuItem>
+                          <MenuItem value="false">No</MenuItem>
+                        </TextField>
+                      </Grid>
+                    </Grid>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      justifyContent="flex-end"
+                      spacing={2}
+                    >
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleClearFilters}
+                        disabled={loadingUsers}
+                      >
+                        Clear Filters
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={handleApplyFilters}
+                        disabled={loadingUsers}
+                      >
+                        Apply Filters
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Collapse>
               </Stack>
             </Box>
             {message && !loadingUsers && (
