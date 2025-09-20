@@ -124,6 +124,7 @@
       "view": "ඔබගේ පැතිකඩ",
       "formSubheader": "ගැලපීම් ඔබ ගැන වැඩිදුර දැන ගන්නා ලෙස තොරතුරු යාවත්කාලීනව තබාගන්න",
       "viewSubheader": "අනෙකුට දකින්නට ඇති විස්තර සමාලෝචනය කරන්න",
+      "verification": "හැඳුනුම් සහ සම්බන්ධතා සත්‍යාපනය",
       "personal": "පෞද්ගලික",
       "residency": "පදිංචි",
       "education": "අධ්‍යාපන",
@@ -169,30 +170,62 @@
       "sinhalaRaasi": "සිංහල රාශිය",
       "nakshatra": "නක්ෂත්‍රය",
       "horoscope": "ජාතක විස්තර",
-      "profileImage": "පැතිකඩ පින්තූරය"
+      "profileImage": "පැතිකඩ පින්තූරය",
+      "identityCard": "හැඳුනුම්පත",
+      "selfie": "Selfie",
+      "phoneNumber": "දුරකථන අංකය",
+      "otpCode": "සත්‍යාපන කේතය",
+      "identityStatus": "හැඳුනුම් තත්ත්වය",
+      "contactStatus": "සම්බන්ධතා තත්ත්වය"
     },
     "helpers": {
       "bio": "ඔබ ගැන කියන්න",
       "gender": "ඔබගේ ස්ත්‍රී පුරුෂ භාවය තෝරන්න",
       "dateOfBirth": "ඔබ උපන් දිනය සඳහන් කරන්න",
-      "location": "ඔබ සිටින ස්ථානය කුමක්ද?"
+      "location": "ඔබ සිටින ස්ථානය කුමක්ද?",
+      "phoneNumber": "ආන්තරජාතික කේතය සමඟ දුරකථන අංකය ඇතුල් කරන්න",
+      "otpCode": "ලැබුණු එක්වරක් භාවිත කළ හැකි කේතය ඇතුල් කරන්න.",
+      "verificationRequirement": "පැතිකඩ සුරැකීමට පෙර හැඳුනුමක් හෝ දුරකථන අංකයක් සත්‍යාපනය කරන්න."
     },
     "validation": {
       "bioRequired": "ජීවන රේඛාව අවශ්‍යයයි",
       "genderRequired": "ස්ත්‍රී පුරුෂ භාවය අවශ්‍යයයි",
       "dateOfBirthRequired": "උපන් දිනය අවශ්‍යයයි",
-      "locationRequired": "පදිංචිය අවශ්‍යයයි"
+      "locationRequired": "පදිංචිය අවශ්‍යයයි",
+      "phoneRequired": "දුරකථන අංකය අවශ්‍යයයි",
+      "otpCodeRequired": "සත්‍යාපන කේතය අවශ්‍යයයි",
+      "identityDocsRequired": "හැඳුනුම්පත සහ selfie අවශ්‍යයි",
+      "verificationRequired": "සුරකීමට පෙර හැඳුනුම හෝ දුරකථන අංකය සත්‍යාපනය කරන්න"
     },
     "buttons": {
       "addLanguage": "භාෂාවක් එක් කරන්න",
       "addInterest": "අභිරුචියක් එක් කරන්න",
       "cancel": "අවලංගු කරන්න",
       "save": "පැතිකඩ සුරකින්න",
-      "saving": "සුරක්ෂිත කරමින්..."
+      "saving": "සුරක්ෂිත කරමින්...",
+      "submitIdentity": "හැඳුනුම ඉදිරිපත් කරන්න",
+      "sendOtp": "OTP යවන්න",
+      "verifyOtp": "OTP සත්‍යාපනය කරන්න"
     },
     "messages": {
       "saved": "පැතිකඩ සුරැකිණි",
-      "saveFailed": "පැතිකඩ සුරැකීමට නොහැකි විය"
+      "saveFailed": "පැතිකඩ සුරැකීමට නොහැකි විය",
+      "otpSent": "සත්‍යාපන කේතය යවා ඇත",
+      "otpFailed": "සත්‍යාපන කේතය ලබා ගැනීමට නොහැකි විය",
+      "otpVerified": "දුරකථන අංකය සත්‍යයයි",
+      "identityReady": "හැඳුනුම් ලේඛන සමාලෝචනය සඳහා සුරැකිණි",
+      "verificationRequired": "කරුණාකර පළමුව සත්‍යාපනය කරන්න"
+    },
+    "status": {
+      "verified": "සත්‍යයයි",
+      "pending": "අත්හිටුවා ඇත",
+      "notVerified": "සත්‍යාපනය වී නැත"
+    },
+    "verification": {
+      "identityTitle": "හැඳුනුම්පත සත්‍යාපනය",
+      "identityDescription": "හැඳුනුම්පත් පින්තූරයක් සහ selfie එකක් උඩුගත කර ඔබගේ හැඳුනුම තහවුරු කරන්න.",
+      "contactTitle": "සම්බන්ධතා සත්‍යාපනය",
+      "contactDescription": "SMS හරහා ලැබෙන එකවර කේතයක් භාවිතයෙන් දුරකථන අංකය සත්‍යාපනය කරන්න."
     },
     "options": {
       "gender": {

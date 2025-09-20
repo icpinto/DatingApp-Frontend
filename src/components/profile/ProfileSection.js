@@ -10,6 +10,11 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
 
 const FIELD_LABELS = {
+  verification: {
+    identity_status: "profile.fields.identityStatus",
+    contact_status: "profile.fields.contactStatus",
+    phone_number: "profile.fields.phoneNumber",
+  },
   personal: {
     bio: "profile.fields.bio",
     gender: "profile.fields.gender",
@@ -58,6 +63,12 @@ const FIELD_LABELS = {
 };
 
 const BOOLEAN_FIELDS = new Set(["horoscope_available"]);
+const STATUS_FIELDS = new Set(["identity_status", "contact_status"]);
+const STATUS_LABEL_MAP = {
+  verified: "profile.status.verified",
+  pending: "profile.status.pending",
+  not_verified: "profile.status.notVerified",
+};
 
 const formatLabel = (key) =>
   key
@@ -95,6 +106,10 @@ function ProfileSection({ label, data, sectionKey }) {
                   ? t("profile.options.boolean.yes")
                   : t("profile.options.boolean.no");
               }
+            }
+
+            if (sectionKey === "verification" && STATUS_FIELDS.has(field)) {
+              displayValue = t(STATUS_LABEL_MAP[displayValue] || STATUS_LABEL_MAP.not_verified);
             }
 
             if (displayValue === undefined || displayValue === null || displayValue === "") {
