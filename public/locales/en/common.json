@@ -124,6 +124,7 @@
       "view": "Your Profile",
       "formSubheader": "Keep your information up to date so matches can learn more about you",
       "viewSubheader": "Review the details other members can see",
+      "verification": "Identity & Contact Verification",
       "personal": "Personal",
       "residency": "Residency",
       "education": "Education",
@@ -169,30 +170,62 @@
       "sinhalaRaasi": "Sinhala Raasi",
       "nakshatra": "Nakshatra",
       "horoscope": "Horoscope Details",
-      "profileImage": "Profile Image"
+      "profileImage": "Profile Image",
+      "identityCard": "Identity Card",
+      "selfie": "Selfie",
+      "phoneNumber": "Phone Number",
+      "otpCode": "Verification Code",
+      "identityStatus": "Identity Status",
+      "contactStatus": "Contact Status"
     },
     "helpers": {
       "bio": "Tell us about yourself",
       "gender": "Select your gender",
       "dateOfBirth": "When were you born?",
-      "location": "Where do you live?"
+      "location": "Where do you live?",
+      "phoneNumber": "Include the country code, e.g., +353123456789",
+      "otpCode": "Enter the one-time password you received.",
+      "verificationRequirement": "Verify your identity or phone number before saving your profile."
     },
     "validation": {
       "bioRequired": "Bio is required",
       "genderRequired": "Gender is required",
       "dateOfBirthRequired": "Date of birth is required",
-      "locationRequired": "Location is required"
+      "locationRequired": "Location is required",
+      "phoneRequired": "Phone number is required",
+      "otpCodeRequired": "Verification code is required",
+      "identityDocsRequired": "Identity card and selfie are required",
+      "verificationRequired": "Verify your identity or phone number before saving"
     },
     "buttons": {
       "addLanguage": "Add Language",
       "addInterest": "Add Interest",
       "cancel": "Cancel",
       "save": "Save Profile",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "submitIdentity": "Submit Identity",
+      "sendOtp": "Send OTP",
+      "verifyOtp": "Verify OTP"
     },
     "messages": {
       "saved": "Profile saved",
-      "saveFailed": "Failed to save profile"
+      "saveFailed": "Failed to save profile",
+      "otpSent": "Verification code sent",
+      "otpFailed": "Unable to process the verification code request",
+      "otpVerified": "Phone number verified",
+      "identityReady": "Identity documents recorded for review",
+      "verificationRequired": "Please verify your identity or phone number first."
+    },
+    "status": {
+      "verified": "Verified",
+      "pending": "Pending",
+      "notVerified": "Not verified"
+    },
+    "verification": {
+      "identityTitle": "Identity card verification",
+      "identityDescription": "Upload a photo of your government issued identity card and a selfie to help us confirm who you are.",
+      "contactTitle": "Contact verification",
+      "contactDescription": "Verify your phone number using a one-time password sent via SMS."
     },
     "options": {
       "gender": {

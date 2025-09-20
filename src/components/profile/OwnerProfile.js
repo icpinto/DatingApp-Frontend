@@ -29,6 +29,8 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import InterestsIcon from "@mui/icons-material/Interests";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LanguageIcon from "@mui/icons-material/Language";
+import BadgeIcon from "@mui/icons-material/Badge";
+import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import api from "../../services/api";
 import QuestionsComponent from "../questions/Questions";
 import ProfileSections from "./ProfileSections";
@@ -79,6 +81,16 @@ function ProfilePage() {
   const [newInterest, setNewInterest] = useState("");
   const [newLanguage, setNewLanguage] = useState("");
   const [profileImage, setProfileImage] = useState(null);
+  const [identityCardFile, setIdentityCardFile] = useState(null);
+  const [identitySelfieFile, setIdentitySelfieFile] = useState(null);
+  const [identityVerified, setIdentityVerified] = useState(false);
+  const [contactVerified, setContactVerified] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [contactVerificationToken, setContactVerificationToken] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     messageKey: "",
@@ -89,6 +101,8 @@ function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const userId = localStorage.getItem("user_id");
   const { t } = useTranslation();
+  const verificationServiceUrl =
+    process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
 
   const populateFormData = (data) => {
     setFormData({
@@ -128,6 +142,16 @@ function ProfilePage() {
       interests: data.interests || [],
       languages: data.languages || [],
     });
+    setIdentityCardFile(null);
+    setIdentitySelfieFile(null);
+    setIdentityVerified(Boolean(data.identity_verified));
+    setContactVerified(Boolean(data.contact_verified));
+    setPhoneNumber(data.phone_number || "");
+    setOtpCode("");
+    setOtpSent(false);
+    setOtpSending(false);
+    setOtpVerifying(false);
+    setContactVerificationToken(null);
   };
 
   useEffect(() => {
@@ -156,6 +180,11 @@ function ProfilePage() {
         setRawProfile(data);
         populateFormData(data);
         const formatted = {
+          verification: {
+            identity_status: data.identity_verified ? "verified" : "not_verified",
+            contact_status: data.contact_verified ? "verified" : "not_verified",
+            phone_number: data.phone_number || "",
+          },
           personal: {
             bio: data.bio,
             gender: data.gender,
@@ -228,6 +257,195 @@ function ProfilePage() {
     });
   };
 
+  useEffect(() => {
+    if (identityVerified || contactVerified) {
+      setErrors((prev) => {
+        if (!prev.verification) return prev;
+        const { verification, ...rest } = prev;
+        return rest;
+      });
+    }
+    if (identityVerified) {
+      setErrors((prev) => {
+        if (!prev.identity) return prev;
+        const { identity, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [identityVerified, contactVerified]);
+
+  const handleIdentityCardChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setIdentityCardFile(file);
+    if (file) {
+      setErrors((prev) => {
+        const { identity, ...rest } = prev;
+        return rest;
+      });
+    }
+    setIdentityVerified(false);
+  };
+
+  const handleIdentitySelfieChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setIdentitySelfieFile(file);
+    if (file) {
+      setErrors((prev) => {
+        const { identity, ...rest } = prev;
+        return rest;
+      });
+    }
+    setIdentityVerified(false);
+  };
+
+  const handleIdentityVerification = () => {
+    if (!identityCardFile || !identitySelfieFile) {
+      setErrors((prev) => ({
+        ...prev,
+        identity: "profile.validation.identityDocsRequired",
+      }));
+      return;
+    }
+
+    setIdentityVerified(true);
+    setErrors((prev) => {
+      const { identity, ...rest } = prev;
+      return rest;
+    });
+    setSnackbar({
+      open: true,
+      messageKey: "profile.messages.identityReady",
+      severity: "success",
+    });
+  };
+
+  const handlePhoneNumberChange = (event) => {
+    const value = event.target.value;
+    setPhoneNumber(value);
+    setErrors((prev) => {
+      const { phoneNumber: removed, verification, ...rest } = prev;
+      return rest;
+    });
+    setOtpSent(false);
+    setOtpCode("");
+    setContactVerificationToken(null);
+    if (contactVerified) {
+      setContactVerified(false);
+    }
+  };
+
+  const handleOtpCodeChange = (event) => {
+    const value = event.target.value;
+    setOtpCode(value);
+    setErrors((prev) => {
+      const { otpCode: removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const handleSendOtp = async () => {
+    if (!phoneNumber.trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        phoneNumber: "profile.validation.phoneRequired",
+      }));
+      return;
+    }
+
+    setOtpSending(true);
+    try {
+      const response = await fetch(`${verificationServiceUrl}/v1/otp/send`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel: "sms",
+          destination: phoneNumber.trim(),
+          purpose: "profile_verification",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("OTP send failed");
+      }
+
+      setOtpSent(true);
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.otpSent",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.otpFailed",
+        severity: "error",
+      });
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode.trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        otpCode: "profile.validation.otpCodeRequired",
+      }));
+      return;
+    }
+
+    setOtpVerifying(true);
+    try {
+      const response = await fetch(`${verificationServiceUrl}/v1/otp/verify`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          destination: phoneNumber.trim(),
+          purpose: "profile_verification",
+          code: otpCode.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("OTP verify failed");
+      }
+
+      const data = await response.json();
+      const token =
+        typeof data === "string" ? data : data?.token || data?.jwt || null;
+      setContactVerificationToken(token);
+      setContactVerified(true);
+      setOtpSent(false);
+      setOtpCode("");
+      setErrors((prev) => {
+        const { otpCode: removed, verification, ...rest } = prev;
+        return rest;
+      });
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.otpVerified",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      setContactVerified(false);
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.otpFailed",
+        severity: "error",
+      });
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.bio) newErrors.bio = "profile.validation.bioRequired";
@@ -235,6 +453,8 @@ function ProfilePage() {
     if (!formData.date_of_birth)
       newErrors.date_of_birth = "profile.validation.dateOfBirthRequired";
     if (!formData.location) newErrors.location = "profile.validation.locationRequired";
+    if (!identityVerified && !contactVerified)
+      newErrors.verification = "profile.validation.verificationRequired";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -264,6 +484,14 @@ function ProfilePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    if (!identityVerified && !contactVerified) {
+      setSnackbar({
+        open: true,
+        messageKey: "profile.messages.verificationRequired",
+        severity: "error",
+      });
+      return;
+    }
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
@@ -306,6 +534,18 @@ function ProfilePage() {
       if (profileImage) {
         data.append("profile_image", profileImage);
       }
+      if (identityVerified && identityCardFile) {
+        data.append("identity_card", identityCardFile);
+      }
+      if (identityVerified && identitySelfieFile) {
+        data.append("identity_selfie", identitySelfieFile);
+      }
+      if (phoneNumber) {
+        data.append("phone_number", phoneNumber);
+      }
+      if (contactVerified && contactVerificationToken) {
+        data.append("contact_verification_token", contactVerificationToken);
+      }
       await api.post(`/user/profile`, data, {
         headers: { Authorization: `${token}`, "Content-Type": "multipart/form-data" },
       });
@@ -316,6 +556,11 @@ function ProfilePage() {
       setRawProfile(updated);
       populateFormData(updated);
       const formatted = {
+        verification: {
+          identity_status: updated.identity_verified ? "verified" : "not_verified",
+          contact_status: updated.contact_verified ? "verified" : "not_verified",
+          phone_number: updated.phone_number || "",
+        },
         personal: {
           bio: updated.bio,
           gender: updated.gender,
@@ -395,6 +640,34 @@ function ProfilePage() {
     setIsEditing(false);
   };
 
+  const statusLabelKey = {
+    verified: "profile.status.verified",
+    pending: "profile.status.pending",
+    not_verified: "profile.status.notVerified",
+  };
+
+  const statusColorMap = {
+    verified: "success",
+    pending: "warning",
+    not_verified: "default",
+  };
+
+  const identityStatus = identityVerified
+    ? "verified"
+    : identityCardFile && identitySelfieFile
+    ? "pending"
+    : "not_verified";
+
+  const contactStatus = contactVerified
+    ? "verified"
+    : otpSent
+    ? "pending"
+    : "not_verified";
+
+  const identityChipColor = statusColorMap[identityStatus] || "default";
+  const contactChipColor = statusColorMap[contactStatus] || "default";
+  const verificationSatisfied = identityVerified || contactVerified;
+
     return (
       <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
         <Stack spacing={spacing.section}>
@@ -408,6 +681,180 @@ function ProfilePage() {
               <CardContent>
                 <form onSubmit={handleSubmit}>
                   <Stack spacing={spacing.section}>
+                    <Accordion defaultExpanded>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography variant="h6">
+                          {t("profile.headers.verification")}
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Stack spacing={3}>
+                          <Box>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <BadgeIcon color="action" />
+                              <Typography variant="subtitle1">
+                                {t("profile.verification.identityTitle")}
+                              </Typography>
+                              <Chip
+                                size="small"
+                                color={identityChipColor}
+                                label={t(statusLabelKey[identityStatus])}
+                              />
+                            </Stack>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                              {t("profile.verification.identityDescription")}
+                            </Typography>
+                            <Grid container spacing={2} sx={{ mt: 1 }}>
+                              <Grid item xs={12} sm={6}>
+                                <TextField
+                                  type="file"
+                                  label={t("profile.fields.identityCard")}
+                                  inputProps={{ accept: "image/*" }}
+                                  InputLabelProps={{ shrink: true }}
+                                  fullWidth
+                                  onChange={handleIdentityCardChange}
+                                />
+                              </Grid>
+                              <Grid item xs={12} sm={6}>
+                                <TextField
+                                  type="file"
+                                  label={t("profile.fields.selfie")}
+                                  inputProps={{ accept: "image/*" }}
+                                  InputLabelProps={{ shrink: true }}
+                                  fullWidth
+                                  onChange={handleIdentitySelfieChange}
+                                />
+                              </Grid>
+                            </Grid>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={2}
+                              alignItems={{ xs: "stretch", sm: "center" }}
+                              sx={{ mt: 2 }}
+                            >
+                              <Button
+                                variant="contained"
+                                onClick={handleIdentityVerification}
+                                disabled={identityVerified}
+                              >
+                                {t("profile.buttons.submitIdentity")}
+                              </Button>
+                            </Stack>
+                            {errors.identity && (
+                              <Alert severity="error" sx={{ mt: 2 }}>
+                                {t(errors.identity)}
+                              </Alert>
+                            )}
+                            {identityVerified && (
+                              <Alert severity="success" sx={{ mt: 2 }}>
+                                {t("profile.messages.identityReady")}
+                              </Alert>
+                            )}
+                          </Box>
+                          <Divider />
+                          <Box>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <PhoneIphoneIcon color="action" />
+                              <Typography variant="subtitle1">
+                                {t("profile.verification.contactTitle")}
+                              </Typography>
+                              <Chip
+                                size="small"
+                                color={contactChipColor}
+                                label={t(statusLabelKey[contactStatus])}
+                              />
+                            </Stack>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                              {t("profile.verification.contactDescription")}
+                            </Typography>
+                            <Grid container spacing={2} sx={{ mt: 1 }}>
+                              <Grid item xs={12} sm={6}>
+                                <TextField
+                                  label={t("profile.fields.phoneNumber")}
+                                  value={phoneNumber}
+                                  onChange={handlePhoneNumberChange}
+                                  type="tel"
+                                  fullWidth
+                                  error={Boolean(errors.phoneNumber)}
+                                  helperText={
+                                    errors.phoneNumber
+                                      ? t(errors.phoneNumber)
+                                      : t("profile.helpers.phoneNumber")
+                                  }
+                                  InputProps={{
+                                    startAdornment: (
+                                      <InputAdornment position="start">
+                                        <PhoneIphoneIcon />
+                                      </InputAdornment>
+                                    ),
+                                  }}
+                                  disabled={contactVerified}
+                                />
+                              </Grid>
+                              <Grid item xs={12} sm={6}>
+                                <TextField
+                                  label={t("profile.fields.otpCode")}
+                                  value={otpCode}
+                                  onChange={handleOtpCodeChange}
+                                  fullWidth
+                                  disabled={!otpSent || contactVerified}
+                                  error={Boolean(errors.otpCode)}
+                                  helperText={
+                                    errors.otpCode
+                                      ? t(errors.otpCode)
+                                      : t("profile.helpers.otpCode")
+                                  }
+                                />
+                              </Grid>
+                            </Grid>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={2}
+                              alignItems={{ xs: "stretch", sm: "center" }}
+                              sx={{ mt: 2 }}
+                            >
+                              <Button
+                                variant="outlined"
+                                onClick={handleSendOtp}
+                                disabled={otpSending || contactVerified}
+                                startIcon={
+                                  otpSending ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                  ) : null
+                                }
+                              >
+                                {t("profile.buttons.sendOtp")}
+                              </Button>
+                              <Button
+                                variant="contained"
+                                onClick={handleVerifyOtp}
+                                disabled={!otpSent || otpVerifying || contactVerified}
+                                startIcon={
+                                  otpVerifying ? (
+                                    <CircularProgress size={16} color="inherit" />
+                                  ) : null
+                                }
+                              >
+                                {t("profile.buttons.verifyOtp")}
+                              </Button>
+                            </Stack>
+                            {contactVerified && (
+                              <Alert severity="success" sx={{ mt: 2 }}>
+                                {t("profile.messages.otpVerified")}
+                              </Alert>
+                            )}
+                          </Box>
+                          {errors.verification && (
+                            <Alert severity="error">{t(errors.verification)}</Alert>
+                          )}
+                          {!verificationSatisfied && (
+                            <Typography variant="body2" color="text.secondary">
+                              {t("profile.helpers.verificationRequirement")}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </AccordionDetails>
+                    </Accordion>
                     <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                       <Typography variant="h6">{t("profile.headers.personal")}</Typography>
