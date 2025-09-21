@@ -51,7 +51,9 @@ function Home() {
   const [activeUsers, setActiveUsers] = useState([]);
   const [expandedUserId, setExpandedUserId] = useState(null); // Track expanded user ID
   const [profileData, setProfileData] = useState({}); // Store profile data
-  const [message, setMessage] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [requestMessageError, setRequestMessageError] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [filters, setFilters] = useState(() => ({ ...FILTER_DEFAULTS }));
@@ -95,9 +97,11 @@ function Home() {
         setActiveUsers(users);
         setExpandedUserId(null);
         setProfileData({});
-        setMessage(null);
+        setFeedback(null);
+        setRequestMessage("");
+        setRequestMessageError("");
       } catch (error) {
-        setMessage({ type: "error", key: "home.messages.loadActiveError" });
+        setFeedback({ type: "error", key: "home.messages.loadActiveError" });
       } finally {
         setLoadingUsers(false);
       }
@@ -161,6 +165,9 @@ function Home() {
       setExpandedUserId(normalizedUserId);
       setLoadingProfile(true);
       setProfileData({});
+      setRequestMessage("");
+      setRequestMessageError("");
+      setFeedback(null);
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(`/user/profile/${normalizedUserId}`, {
@@ -179,7 +186,7 @@ function Home() {
           requestStatus: requestStatusResponse.data.requestStatus,
         });
       } catch (error) {
-        setMessage({ type: "error", key: "home.messages.profileError" });
+        setFeedback({ type: "error", key: "home.messages.profileError" });
       } finally {
         setLoadingProfile(false);
       }
@@ -193,6 +200,14 @@ function Home() {
     if (normalizedUserId === undefined || normalizedUserId === null || normalizedUserId === "") {
       return;
     }
+
+    const trimmedMessage = requestMessage.trim();
+    if (!trimmedMessage) {
+      setRequestMessageError("home.validation.requestMessageRequired");
+      return;
+    }
+
+    setRequestMessageError("");
     try {
       const token = localStorage.getItem("token");
       const parsedId = parseInt(normalizedUserId, 10);
@@ -200,13 +215,15 @@ function Home() {
         `/user/sendRequest`,
         {
           receiver_id: Number.isNaN(parsedId) ? normalizedUserId : parsedId,
+          description: trimmedMessage,
         },
         { headers: { Authorization: `${token}` } }
       );
       setProfileData((prev) => ({ ...prev, requestStatus: true }));
-      setMessage({ type: "success", key: "home.messages.requestSuccess" });
+      setFeedback({ type: "success", key: "home.messages.requestSuccess" });
+      setRequestMessage(trimmedMessage);
     } catch (error) {
-      setMessage({ type: "error", key: "home.messages.requestError" });
+      setFeedback({ type: "error", key: "home.messages.requestError" });
     }
   };
 
@@ -339,6 +356,26 @@ function Home() {
                       <strong>{t("home.labels.location")}:</strong>{" "}
                       {profileData.location || t("common.placeholders.notAvailable")}
                     </Typography>
+                    <Box onClick={(event) => event.stopPropagation()}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        label={t("home.labels.requestMessage")}
+                        value={requestMessage}
+                        onChange={(event) => {
+                          setRequestMessage(event.target.value);
+                          setRequestMessageError("");
+                        }}
+                        helperText={
+                          requestMessageError
+                            ? t(requestMessageError)
+                            : t("home.helpers.requestMessage")
+                        }
+                        error={Boolean(requestMessageError)}
+                        disabled={profileData.requestStatus}
+                      />
+                    </Box>
                     <Button
                       variant="contained"
                       color={profileData.requestStatus ? "secondary" : "primary"}
@@ -360,11 +397,11 @@ function Home() {
                         ? t("home.labels.requestSent")
                         : t("home.labels.sendRequest")}
                     </Button>
-                    {message?.key && (
+                    {feedback?.key && (
                       <Typography
-                        color={message.type === "error" ? "error.main" : "success.main"}
+                        color={feedback.type === "error" ? "error.main" : "success.main"}
                       >
-                        {t(message.key)}
+                        {t(feedback.key)}
                       </Typography>
                     )}
                   </Stack>
@@ -479,13 +516,13 @@ function Home() {
                 </Collapse>
               </Stack>
             </Box>
-            {message?.key && !loadingUsers && (
+            {feedback?.key && !loadingUsers && (
               <Typography
                 variant="body2"
-                color={message.type === "error" ? "error.main" : "success.main"}
+                color={feedback.type === "error" ? "error.main" : "success.main"}
                 sx={{ mb: spacing.section }}
               >
-                {t(message.key)}
+                {t(feedback.key)}
               </Typography>
             )}
             {loadingUsers ? (
