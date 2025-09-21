@@ -20,7 +20,8 @@
       "applyFilters": "පෙරහන් යොදන්න",
       "clearFilters": "පෙරහන් හිස් කරන්න",
       "accept": "පිළිගන්න",
-      "reject": "ප්‍රතික්ෂේප කරන්න"
+      "reject": "ප්‍රතික්ෂේප කරන්න",
+      "back": "ආපසු"
     },
     "placeholders": {
       "user": "පරිශීලකයා",
@@ -66,7 +67,8 @@
       "requestMessage": "පණිවිඩය",
       "requestSent": "ඉල්ලීම යවා ඇත",
       "sendRequest": "ඉල්ලීම යවන්න",
-      "noActiveUsers": "සක්‍රීය පරිශීලකයන් නොමැත."
+      "noActiveUsers": "සක්‍රීය පරිශීලකයන් නොමැත.",
+      "viewProfile": "පැතිකඩ නැරඹීම"
     },
     "helpers": {
       "requestMessage": "සම්බන්ධ වීමට ඔබට ඇවැසි හේතුව පැහැදිලි කරන හිතකාමී පණිවිඩයක් ලියන්න."
@@ -244,6 +246,18 @@
         "yes": "ඔව්",
         "no": "නැහැ"
       }
+    },
+    "viewer": {
+      "back": "සක්‍රීය පරිශීලකයින් වෙත ආපසු",
+      "detailsTitle": "පැතිකඩ විස්තර",
+      "requestCard": {
+        "title": "{{name}} සමඟ සම්බන්ධ වන්න",
+        "description": "සංවාදයක් ආරම්භ කිරීමට පුද්ගලික ඉල්ලීම් පණිවිඩයක් යවන්න."
+      },
+      "ageYears": "වයස අවුරුදු {{count}}",
+      "languagesLabel": "කතා කරන භාෂා",
+      "interestsLabel": "උනන්දුවන්",
+      "noProfile": "පැතිකඩ දත්ත නොමැත."
     }
   }
 }

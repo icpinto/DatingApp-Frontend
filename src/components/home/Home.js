@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Card,
@@ -59,6 +60,7 @@ function Home() {
   const [filters, setFilters] = useState(() => ({ ...FILTER_DEFAULTS }));
   const [showFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -328,6 +330,20 @@ function Home() {
           >
             {user?.bio || t("common.placeholders.noBio")}
           </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (userId === undefined || userId === null || userId === "") {
+                return;
+              }
+              navigate(`/profile/${userId}`);
+            }}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            {t("home.labels.viewProfile")}
+          </Button>
         </Stack>
         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
           {loadingProfile && isExpanded ? (
