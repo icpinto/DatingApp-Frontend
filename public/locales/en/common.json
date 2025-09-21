@@ -63,9 +63,16 @@
       "bio": "Bio",
       "age": "Age",
       "location": "Location",
+      "requestMessage": "Message",
       "requestSent": "Request Sent",
       "sendRequest": "Send Request",
       "noActiveUsers": "No active users available."
+    },
+    "helpers": {
+      "requestMessage": "Let them know why you'd like to connect."
+    },
+    "validation": {
+      "requestMessageRequired": "Please add a message before sending your request."
     },
     "messages": {
       "loadActiveError": "Failed to load active users. Please try again.",
