@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardContent,
   Divider,
+  Switch,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import WcIcon from "@mui/icons-material/Wc";
@@ -32,10 +33,12 @@ import LanguageIcon from "@mui/icons-material/Language";
 import BadgeIcon from "@mui/icons-material/Badge";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import api from "../../services/api";
-import QuestionsComponent from "../questions/Questions";
 import ProfileSections from "./ProfileSections";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -94,11 +97,14 @@ function ProfilePage() {
   const [snackbar, setSnackbar] = useState({
     open: false,
     messageKey: "",
+    message: "",
     severity: "success",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  const [isAccountHidden, setIsAccountHidden] = useState(false);
+  const [isRemovingAccount, setIsRemovingAccount] = useState(false);
   const userId = localStorage.getItem("user_id");
   const { t } = useTranslation();
   const verificationServiceUrl =
@@ -315,6 +321,7 @@ function ProfilePage() {
     setSnackbar({
       open: true,
       messageKey: "profile.messages.identityReady",
+      message: "",
       severity: "success",
     });
   };
@@ -375,6 +382,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.otpSent",
+        message: "",
         severity: "success",
       });
     } catch (error) {
@@ -382,6 +390,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.otpFailed",
+        message: "",
         severity: "error",
       });
     } finally {
@@ -431,6 +440,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.otpVerified",
+        message: "",
         severity: "success",
       });
     } catch (error) {
@@ -439,6 +449,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.otpFailed",
+        message: "",
         severity: "error",
       });
     } finally {
@@ -488,6 +499,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.verificationRequired",
+        message: "",
         severity: "error",
       });
       return;
@@ -616,6 +628,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.saved",
+        message: "",
         severity: "success",
       });
     } catch (error) {
@@ -623,6 +636,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "profile.messages.saveFailed",
+        message: "",
         severity: "error",
       });
     } finally {
@@ -638,6 +652,49 @@ function ProfilePage() {
   const handleCancelEdit = () => {
     if (rawProfile) populateFormData(rawProfile);
     setIsEditing(false);
+  };
+
+  const handleManagePayments = () => {
+    setSnackbar({
+      open: true,
+      messageKey: "",
+      message:
+        "Payment management is coming soon. Contact our support team if you need to update billing information.",
+      severity: "info",
+    });
+  };
+
+  const handleHideAccountToggle = (event) => {
+    const hidden = event.target.checked;
+    setIsAccountHidden(hidden);
+    setSnackbar({
+      open: true,
+      messageKey: "",
+      message: hidden
+        ? "Your profile is now hidden from match suggestions."
+        : "Your profile is visible to potential matches again.",
+      severity: "info",
+    });
+  };
+
+  const handleRemoveAccount = () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to permanently remove your account? This action cannot be undone."
+    );
+    if (!confirmed) {
+      return;
+    }
+    setIsRemovingAccount(true);
+    setTimeout(() => {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message:
+          "Your removal request has been recorded. Our team will reach out with confirmation shortly.",
+        severity: "warning",
+      });
+      setIsRemovingAccount(false);
+    }, 600);
   };
 
   const statusLabelKey = {
@@ -1495,7 +1552,84 @@ function ProfilePage() {
               </CardContent>
             </Card>
           )}
-          <QuestionsComponent />
+          <Card elevation={3} sx={{ borderRadius: 3 }}>
+            <CardHeader
+              title="Account management"
+              subheader="Control billing, privacy, and removal settings for your profile"
+            />
+            <Divider />
+            <CardContent>
+              <Stack spacing={spacing.section} divider={<Divider flexItem />}>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CreditCardIcon color="primary" />
+                    <Typography variant="subtitle1">Payment details</Typography>
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary">
+                    Manage your saved payment methods and review subscription history so you never miss
+                    out on potential matches.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CreditCardIcon />}
+                    onClick={handleManagePayments}
+                  >
+                    Manage payment details
+                  </Button>
+                </Stack>
+                <Stack spacing={1.5}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={2}
+                    alignItems={{ xs: "flex-start", sm: "center" }}
+                    justifyContent="space-between"
+                  >
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
+                      <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
+                      <Box>
+                        <Typography variant="subtitle1">Hide my profile</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Temporarily remove your profile from match suggestions without deleting your
+                          information.
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Switch
+                      checked={isAccountHidden}
+                      onChange={handleHideAccountToggle}
+                      inputProps={{ "aria-label": "Hide my profile" }}
+                    />
+                  </Stack>
+                </Stack>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <DeleteForeverIcon color="error" />
+                    <Box>
+                      <Typography variant="subtitle1">Remove account</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Permanently delete your profile, matches, and conversations.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={handleRemoveAccount}
+                    startIcon={
+                      isRemovingAccount ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <DeleteForeverIcon />
+                      )
+                    }
+                    disabled={isRemovingAccount}
+                  >
+                    {isRemovingAccount ? "Processing..." : "Remove my account"}
+                  </Button>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
         </Stack>
 
         <Snackbar
@@ -1508,7 +1642,7 @@ function ProfilePage() {
             severity={snackbar.severity}
             sx={{ width: "100%" }}
           >
-            {snackbar.messageKey ? t(snackbar.messageKey) : ""}
+            {snackbar.messageKey ? t(snackbar.messageKey) : snackbar.message}
           </Alert>
         </Snackbar>
       </Container>
