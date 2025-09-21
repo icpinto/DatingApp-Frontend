@@ -2,19 +2,23 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
   Chip,
+  Collapse,
   Divider,
   LinearProgress,
   Skeleton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { fetchMatches } from "../../services/matchmaking";
+import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
 
@@ -89,9 +93,47 @@ const clampScore = (score) => {
   return Math.max(0, Math.min(MAX_SCORE, numericScore));
 };
 
+const getMatchIdentifier = (match = {}, fallback) => {
+  const rawIdentifier =
+    match.user_id ??
+    match.id ??
+    match.userId ??
+    match.profile_id ??
+    match.profileId;
+
+  if (
+    rawIdentifier === undefined ||
+    rawIdentifier === null ||
+    rawIdentifier === ""
+  ) {
+    return fallback;
+  }
+
+  return rawIdentifier;
+};
+
+const normalizeUserId = (rawUserId) => {
+  if (rawUserId === undefined || rawUserId === null || rawUserId === "") {
+    return null;
+  }
+
+  const numericId = Number(rawUserId);
+  if (Number.isNaN(numericId)) {
+    return rawUserId;
+  }
+  return numericId;
+};
+
 const MatchRecommendations = ({ limit = 10 }) => {
   const [matches, setMatches] = useState([]);
   const [status, setStatus] = useState({ loading: false, errorKey: "" });
+  const [expandedMatchId, setExpandedMatchId] = useState(null);
+  const [profileDetails, setProfileDetails] = useState({});
+  const [loadingDetailsFor, setLoadingDetailsFor] = useState(null);
+  const [requestMessages, setRequestMessages] = useState({});
+  const [requestErrors, setRequestErrors] = useState({});
+  const [feedback, setFeedback] = useState({});
+  const [sendingRequestFor, setSendingRequestFor] = useState(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -124,12 +166,128 @@ const MatchRecommendations = ({ limit = 10 }) => {
     loadMatches();
   }, [limit]);
 
-  const [topMatch, otherMatches] = useMemo(() => {
-    if (!Array.isArray(matches) || matches.length === 0) {
-      return [null, []];
+  const orderedMatches = useMemo(() => {
+    if (!Array.isArray(matches)) {
+      return [];
     }
-    return [matches[0], matches.slice(1)];
+    return matches;
   }, [matches]);
+
+  const handleToggleExpand = async (matchKey, rawUserId) => {
+    const normalizedUserId = normalizeUserId(rawUserId);
+
+    if (normalizedUserId === null) {
+      return;
+    }
+
+    if (expandedMatchId === matchKey) {
+      setExpandedMatchId(null);
+      return;
+    }
+
+    setExpandedMatchId(matchKey);
+    setFeedback((previous) => ({ ...previous, [matchKey]: null }));
+    setRequestErrors((previous) => ({ ...previous, [matchKey]: "" }));
+    setRequestMessages((previous) => ({
+      ...previous,
+      [matchKey]: previous[matchKey] ?? "",
+    }));
+
+    if (profileDetails[matchKey]) {
+      return;
+    }
+
+    setLoadingDetailsFor(matchKey);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `${token}` } : {};
+
+      const [profileResponse, statusResponse] = await Promise.all([
+        api.get(`/user/profile/${normalizedUserId}`, { headers }),
+        api.get(`/user/checkReqStatus/${normalizedUserId}`, { headers }),
+      ]);
+
+      setProfileDetails((previous) => ({
+        ...previous,
+        [matchKey]: {
+          ...profileResponse.data,
+          requestStatus: statusResponse.data?.requestStatus,
+        },
+      }));
+    } catch (error) {
+      setFeedback((previous) => ({
+        ...previous,
+        [matchKey]: { type: "error", key: "home.messages.profileError" },
+      }));
+    } finally {
+      setLoadingDetailsFor(null);
+    }
+  };
+
+  const handleRequestMessageChange = (matchKey, value) => {
+    setRequestMessages((previous) => ({ ...previous, [matchKey]: value }));
+    setRequestErrors((previous) => ({ ...previous, [matchKey]: "" }));
+    setFeedback((previous) => ({ ...previous, [matchKey]: null }));
+  };
+
+  const handleSendRequest = async (matchKey, rawUserId) => {
+    const normalizedUserId = normalizeUserId(rawUserId);
+    if (normalizedUserId === null) {
+      return;
+    }
+
+    const trimmedMessage = (requestMessages[matchKey] || "").trim();
+    if (!trimmedMessage) {
+      setRequestErrors((previous) => ({
+        ...previous,
+        [matchKey]: "home.validation.requestMessageRequired",
+      }));
+      return;
+    }
+
+    setRequestErrors((previous) => ({ ...previous, [matchKey]: "" }));
+    setSendingRequestFor(matchKey);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `${token}` } : {};
+      const parsedId =
+        typeof normalizedUserId === "number"
+          ? normalizedUserId
+          : parseInt(normalizedUserId, 10);
+
+      await api.post(
+        `/user/sendRequest`,
+        {
+          receiver_id: Number.isNaN(parsedId) ? normalizedUserId : parsedId,
+          description: trimmedMessage,
+        },
+        { headers }
+      );
+
+      setProfileDetails((previous) => ({
+        ...previous,
+        [matchKey]: {
+          ...previous[matchKey],
+          requestStatus: true,
+        },
+      }));
+      setFeedback((previous) => ({
+        ...previous,
+        [matchKey]: { type: "success", key: "home.messages.requestSuccess" },
+      }));
+      setRequestMessages((previous) => ({
+        ...previous,
+        [matchKey]: trimmedMessage,
+      }));
+    } catch (error) {
+      setFeedback((previous) => ({
+        ...previous,
+        [matchKey]: { type: "error", key: "home.messages.requestError" },
+      }));
+    } finally {
+      setSendingRequestFor(null);
+    }
+  };
 
   return (
     <Card elevation={3} sx={{ borderRadius: 3 }}>
@@ -154,144 +312,205 @@ const MatchRecommendations = ({ limit = 10 }) => {
           <Typography color="error" variant="body2">
             {t(status.errorKey)}
           </Typography>
-        ) : !topMatch ? (
+        ) : orderedMatches.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             {t("matches.messages.noMatches")}
           </Typography>
         ) : (
           <Stack spacing={spacing.section}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: (theme) => theme.palette.action.hover,
-              }}
-            >
-              <Stack spacing={spacing.section}>
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Avatar
-                    variant="rounded"
-                    src={topMatch.profile_image}
-                    alt={topMatch.username}
-                    sx={{ width: 72, height: 72 }}
-                  >
-                    {topMatch.username
-                      ? topMatch.username.charAt(0).toUpperCase()
-                      : "?"}
-                  </Avatar>
-                  <Stack spacing={0.5} flexGrow={1}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      {t("matches.labels.topMatch")}
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      {topMatch.username || `User #${topMatch.user_id}`}
-                    </Typography>
-                    {topMatch.location && (
+            {orderedMatches.map((match, index) => {
+              const matchKey = getMatchIdentifier(match, `match-${index}`);
+              const userId = getMatchIdentifier(match);
+              const isExpanded = expandedMatchId === matchKey;
+              const details = profileDetails[matchKey] || {};
+              const requestStatus = Boolean(details.requestStatus);
+              const displayName =
+                match.username ||
+                t("common.placeholders.userNumber", { id: matchKey });
+              const avatarFallback = displayName.charAt(0)?.toUpperCase() || "?";
+              const messageValue = requestMessages[matchKey] || "";
+              const requestErrorKey = requestErrors[matchKey];
+              const feedbackForMatch = feedback[matchKey];
+              const isTopMatch = index === 0;
+              const canInteract =
+                userId !== undefined && userId !== null && userId !== "";
+              const locationText =
+                details.location || match.location || "";
+              const bioText = details.bio || match.bio || "";
+
+              return (
+                <Box
+                  key={matchKey}
+                  onClick={
+                    canInteract
+                      ? () => handleToggleExpand(matchKey, userId)
+                      : undefined
+                  }
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${theme.palette.divider}`,
+                    bgcolor: isTopMatch
+                      ? (theme) => theme.palette.action.hover
+                      : "background.paper",
+                    cursor: canInteract ? "pointer" : "default",
+                    transition: "background-color 0.2s ease, border-color 0.2s ease",
+                    "&:hover": canInteract
+                      ? {
+                          borderColor: (theme) => theme.palette.primary.light,
+                        }
+                      : undefined,
+                  }}
+                >
+                  <Stack spacing={spacing.section}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar
+                        variant="rounded"
+                        src={match.profile_image}
+                        alt={match.username}
+                        sx={{ width: isTopMatch ? 72 : 56, height: isTopMatch ? 72 : 56 }}
+                      >
+                        {avatarFallback}
+                      </Avatar>
+                      <Stack spacing={0.25} flexGrow={1}>
+                        {isTopMatch && (
+                          <Typography variant="subtitle2" color="text.secondary">
+                            {t("matches.labels.topMatch")}
+                          </Typography>
+                        )}
+                        <Typography
+                          variant={isTopMatch ? "h6" : "subtitle1"}
+                          sx={{ fontWeight: 700 }}
+                        >
+                          {displayName}
+                        </Typography>
+                        {locationText && (
+                          <Typography
+                            variant={isTopMatch ? "body2" : "body2"}
+                            color="text.secondary"
+                          >
+                            {locationText}
+                          </Typography>
+                        )}
+                      </Stack>
+                      <Tooltip title={t("matches.labels.scoreTooltip")}>
+                        <Chip
+                          color={isTopMatch ? "primary" : "default"}
+                          label={t("matches.labels.matchScore", {
+                            score: formatScore(match.score),
+                          })}
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </Tooltip>
+                    </Stack>
+
+                    {bioText && (
                       <Typography variant="body2" color="text.secondary">
-                        {topMatch.location}
+                        {bioText}
                       </Typography>
                     )}
-                  </Stack>
-                  <Chip
-                    color="primary"
-                    label={t("matches.labels.matchScore", {
-                      score: formatScore(topMatch.score),
-                    })}
-                    sx={{ fontWeight: 600 }}
-                  />
-                </Stack>
-                {topMatch.bio && (
-                  <Typography variant="body2" color="text.secondary">
-                    {topMatch.bio}
-                  </Typography>
-                )}
-                <LinearProgress
-                  variant="determinate"
-                  value={clampScore(topMatch.score)}
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
-                {topMatch.reasons && (
-                  <Typography variant="body2" color="text.secondary">
-                    {Array.isArray(topMatch.reasons)
-                      ? topMatch.reasons.join(", ")
-                      : topMatch.reasons}
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
 
-            {otherMatches.length > 0 && (
-              <Stack spacing={1.5}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  {t("matches.labels.otherMatches")}
-                </Typography>
-                {otherMatches.map((match, index) => (
-                  <Box
-                    key={`${match.user_id || "match"}-${index}`}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                    }}
-                  >
-                    <Stack spacing={1.25}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Avatar
-                          variant="rounded"
-                          src={match.profile_image}
-                          alt={match.username}
-                          sx={{ width: 48, height: 48 }}
-                        >
-                          {match.username
-                            ? match.username.charAt(0).toUpperCase()
-                            : index + 2}
-                        </Avatar>
-                        <Stack spacing={0.25} flexGrow={1}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {match.username || `User #${match.user_id}`}
-                          </Typography>
-                          {match.location && (
-                            <Typography variant="caption" color="text.secondary">
-                              {match.location}
+                    <LinearProgress
+                      variant="determinate"
+                      value={clampScore(match.score)}
+                      sx={{ height: isTopMatch ? 8 : 6, borderRadius: 4 }}
+                    />
+
+                    {match.reasons && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block" }}
+                      >
+                        {Array.isArray(match.reasons)
+                          ? match.reasons.join(", ")
+                          : match.reasons}
+                      </Typography>
+                    )}
+
+                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                      <Box
+                        sx={{ mt: spacing.section }}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {loadingDetailsFor === matchKey ? (
+                          <Stack spacing={spacing.section}>
+                            <Skeleton width="80%" />
+                            <Skeleton width="60%" />
+                            <Skeleton width="40%" />
+                            <Skeleton variant="rectangular" width={160} height={40} />
+                          </Stack>
+                        ) : (
+                          <Stack spacing={spacing.section}>
+                            <Typography variant="body1">
+                              <strong>{t("home.labels.bio")}:</strong>{" "}
+                              {bioText || t("common.placeholders.noBio")}
                             </Typography>
-                          )}
-                        </Stack>
-                        <Tooltip title={t("matches.labels.scoreTooltip")}>
-                          <Chip
-                            label={t("matches.labels.scoreOnly", {
-                              score: formatScore(match.score),
-                            })}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </Tooltip>
-                      </Stack>
-                      {match.bio && (
-                        <Typography variant="body2" color="text.secondary">
-                          {match.bio}
-                        </Typography>
-                      )}
-                      <LinearProgress
-                        variant="determinate"
-                        value={clampScore(match.score)}
-                        sx={{ height: 6, borderRadius: 3 }}
-                      />
-                      {match.reasons && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block" }}
-                        >
-                          {Array.isArray(match.reasons)
-                            ? match.reasons.join(", ")
-                            : match.reasons}
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            )}
+                            <Typography variant="body1">
+                              <strong>{t("home.labels.location")}:</strong>{" "}
+                              {locationText || t("common.placeholders.notAvailable")}
+                            </Typography>
+                            {details.age && (
+                              <Typography variant="body1">
+                                <strong>{t("home.labels.age")}:</strong>{" "}
+                                {details.age}
+                              </Typography>
+                            )}
+                            <Box>
+                              <TextField
+                                fullWidth
+                                multiline
+                                minRows={2}
+                                label={t("home.labels.requestMessage")}
+                                value={messageValue}
+                                onChange={(event) =>
+                                  handleRequestMessageChange(matchKey, event.target.value)
+                                }
+                                helperText={
+                                  requestErrorKey
+                                    ? t(requestErrorKey)
+                                    : t("home.helpers.requestMessage")
+                                }
+                                error={Boolean(requestErrorKey)}
+                                disabled={requestStatus}
+                              />
+                            </Box>
+                            <Button
+                              variant="contained"
+                              color={requestStatus ? "secondary" : "primary"}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleSendRequest(matchKey, userId);
+                              }}
+                              disabled={
+                                requestStatus ||
+                                sendingRequestFor === matchKey ||
+                                !canInteract
+                              }
+                              sx={{ alignSelf: "flex-start" }}
+                            >
+                              {requestStatus
+                                ? t("home.labels.requestSent")
+                                : t("home.labels.sendRequest")}
+                            </Button>
+                            {feedbackForMatch?.key && (
+                              <Typography
+                                color=
+                                  feedbackForMatch.type === "error"
+                                    ? "error.main"
+                                    : "success.main"
+                              >
+                                {t(feedbackForMatch.key)}
+                              </Typography>
+                            )}
+                          </Stack>
+                        )}
+                      </Box>
+                    </Collapse>
+                  </Stack>
+                </Box>
+              );
+            })}
           </Stack>
         )}
       </CardContent>
