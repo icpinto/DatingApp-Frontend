@@ -20,7 +20,8 @@
       "applyFilters": "Apply Filters",
       "clearFilters": "Clear Filters",
       "accept": "Accept",
-      "reject": "Reject"
+      "reject": "Reject",
+      "back": "Back"
     },
     "placeholders": {
       "user": "User",
@@ -66,7 +67,8 @@
       "requestMessage": "Message",
       "requestSent": "Request Sent",
       "sendRequest": "Send Request",
-      "noActiveUsers": "No active users available."
+      "noActiveUsers": "No active users available.",
+      "viewProfile": "View profile"
     },
     "helpers": {
       "requestMessage": "Let them know why you'd like to connect."
@@ -244,6 +246,18 @@
         "yes": "Yes",
         "no": "No"
       }
+    },
+    "viewer": {
+      "back": "Back to active users",
+      "detailsTitle": "Profile details",
+      "requestCard": {
+        "title": "Connect with {{name}}",
+        "description": "Send a personalized request message to start a conversation."
+      },
+      "ageYears": "{{count}} years old",
+      "languagesLabel": "Speaks",
+      "interestsLabel": "Interests",
+      "noProfile": "No profile data available."
     }
   }
 }
