@@ -142,115 +142,63 @@ const normalizeUserId = (rawUserId) => {
   return numericId;
 };
 
-const RadarChartPreview = ({ data = [], size = 220, theme, title }) => {
-  const dimensionsCount = Array.isArray(data) ? data.length : 0;
-
-  if (!dimensionsCount) {
-    return null;
-  }
-
-  const viewBoxSize = size;
-  const radius = viewBoxSize / 2;
-  const center = radius;
-  const maxValue = 100;
-  const chartRadius = radius * 0.85;
-  const angleStep = (Math.PI * 2) / dimensionsCount;
-
-  const polarToCartesian = (value, index, customRadius = chartRadius) => {
-    const angle = angleStep * index - Math.PI / 2;
-    const normalized = Math.max(0, Math.min(maxValue, value)) / maxValue;
-    const scaledRadius = customRadius * normalized;
-    const x = center + Math.cos(angle) * scaledRadius;
-    const y = center + Math.sin(angle) * scaledRadius;
-    return `${x},${y}`;
-  };
-
-  const polygonPoints = data
-    .map((item, index) => polarToCartesian(item.value, index))
-    .join(" ");
-
-  const rings = [0.25, 0.5, 0.75, 1];
+const DimensionPieChart = ({ value = 0, size = 90, theme, label }) => {
+  const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const clampedValue = Math.max(0, Math.min(100, numericValue));
+  const radius = size / 2;
+  const strokeWidth = size * 0.15;
+  const normalizedRadius = radius - strokeWidth / 2;
+  const circumference = 2 * Math.PI * normalizedRadius;
+  const dashOffset = circumference * (1 - clampedValue / 100);
 
   return (
-    <Box
-      sx={{ width: "100%", height: size, position: "relative" }}
-      aria-hidden={false}
-    >
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
-        role="img"
-        aria-label={title}
-        focusable="false"
-      >
-        <title>{title}</title>
-        <g fill="none">
-          {rings.map((ratio) => {
-            const ringPoints = data
-              .map((_, index) => polarToCartesian(maxValue * ratio, index))
-              .join(" ");
-            return (
-              <polygon
-                key={`ring-${ratio}`}
-                points={ringPoints}
-                stroke={theme.palette.divider}
-                strokeWidth={0.75}
-                fill="none"
-              />
-            );
-          })}
-          {data.map((_, index) => {
-            const [x, y] = polarToCartesian(maxValue, index, chartRadius)
-              .split(",")
-              .map(Number);
-            return (
-              <line
-                key={`axis-${index}`}
-                x1={center}
-                y1={center}
-                x2={x}
-                y2={y}
-                stroke={theme.palette.divider}
-                strokeWidth={0.75}
-              />
-            );
-          })}
-          <polygon
-            points={polygonPoints}
-            fill={theme.palette.primary.main}
-            fillOpacity={0.18}
-            stroke={theme.palette.primary.main}
-            strokeWidth={1.5}
+    <Stack spacing={1} alignItems="center" sx={{ minWidth: size }}>
+      <Box sx={{ position: "relative", width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle
+            cx={radius}
+            cy={radius}
+            r={normalizedRadius}
+            stroke={theme.palette.action.hover}
+            strokeWidth={strokeWidth}
+            fill="none"
           />
-        </g>
-        {data.map((item, index) => {
-          const labelRadius = chartRadius + 12;
-          const angle = angleStep * index - Math.PI / 2;
-          const x = center + Math.cos(angle) * labelRadius;
-          const y = center + Math.sin(angle) * labelRadius;
-          const textAnchor = Math.abs(Math.cos(angle)) < 0.1
-            ? "middle"
-            : Math.cos(angle) > 0
-            ? "start"
-            : "end";
-          const dy = Math.sin(angle) > 0.3 ? 12 : Math.sin(angle) < -0.3 ? -4 : 4;
-          return (
-            <text
-              key={`label-${item.label}`}
-              x={x}
-              y={y}
-              textAnchor={textAnchor}
-              fill={theme.palette.text.secondary}
-              fontSize={10}
-              dy={dy}
-            >
-              {item.label}
-            </text>
-          );
-        })}
-      </svg>
-    </Box>
+          <circle
+            cx={radius}
+            cy={radius}
+            r={normalizedRadius}
+            stroke={theme.palette.primary.main}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={dashOffset}
+            transform={`rotate(-90 ${radius} ${radius})`}
+          />
+        </svg>
+        <Typography
+          variant="subtitle2"
+          component="span"
+          sx={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+          }}
+        >
+          {formatScore(clampedValue)}%
+        </Typography>
+      </Box>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ textAlign: "center", maxWidth: size * 1.5 }}
+      >
+        {label}
+      </Typography>
+    </Stack>
   );
 };
 
@@ -605,44 +553,21 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                 >
                                   {t("matches.labels.compatibilityBreakdown")}
                                 </Typography>
-                                <RadarChartPreview
-                                  data={dimensionBreakdown}
-                                  theme={theme}
-                                  title={t("matches.labels.compatibilityBreakdown")}
-                                />
-                                <Stack spacing={0.5}>
+                                <Stack
+                                  direction="row"
+                                  spacing={2}
+                                  useFlexGap
+                                  flexWrap="wrap"
+                                  justifyContent="flex-start"
+                                >
                                   {dimensionBreakdown.map(
                                     ({ label, value }, dimensionIndex) => (
-                                      <Stack
+                                      <DimensionPieChart
                                         key={`dimension-${dimensionIndex}`}
-                                        direction="row"
-                                        alignItems="center"
-                                        spacing={1}
-                                      >
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{ minWidth: 80 }}
-                                        >
-                                          {label}
-                                        </Typography>
-                                        <LinearProgress
-                                          variant="determinate"
-                                          value={value}
-                                          sx={{
-                                            flexGrow: 1,
-                                            height: 4,
-                                            borderRadius: 2,
-                                          }}
-                                        />
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{ minWidth: 44, textAlign: "right" }}
-                                        >
-                                          {formatScore(value)}%
-                                        </Typography>
-                                      </Stack>
+                                        value={value}
+                                        label={label}
+                                        theme={theme}
+                                      />
                                     )
                                   )}
                                 </Stack>
