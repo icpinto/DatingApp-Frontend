@@ -123,7 +123,10 @@
       "otherMatches": "වෙනත් හොඳ ගැලපීම්",
       "matchScore": "{{score}}% ගැලපීම",
       "scoreOnly": "{{score}}%",
-      "scoreTooltip": "ගැලපීම් ලකුණු"
+      "scoreTooltip": "ගැලපීම් ලකුණු",
+      "overallCompatibility": "මොత్తම ගැලපීම: {{score}}%",
+      "compatibilityBreakdown": "ගැලපීම් විභජනය",
+      "dimensionWithIndex": "මානය {{index}}"
     }
   },
   "profile": {
