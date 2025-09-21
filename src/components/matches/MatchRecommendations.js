@@ -21,6 +21,7 @@ import { fetchMatches } from "../../services/matchmaking";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
+import { useNavigate } from "react-router-dom";
 
 const MAX_SCORE = 100;
 
@@ -135,6 +136,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
   const [feedback, setFeedback] = useState({});
   const [sendingRequestFor, setSendingRequestFor] = useState(null);
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const userId = localStorage.getItem("user_id");
@@ -427,6 +429,22 @@ const MatchRecommendations = ({ limit = 10 }) => {
                           : match.reasons}
                       </Typography>
                     )}
+
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (!canInteract) {
+                          return;
+                        }
+                        navigate(`/profile/${userId}`);
+                      }}
+                      disabled={!canInteract}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      {t("home.labels.viewProfile")}
+                    </Button>
 
                     <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                       <Box
