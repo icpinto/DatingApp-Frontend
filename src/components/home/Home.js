@@ -17,7 +17,7 @@ import {
   TextField,
   MenuItem,
 } from "@mui/material";
-import { Group } from "@mui/icons-material";
+import { Group, Verified as VerifiedIcon } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 import MatchRecommendations from "../matches/MatchRecommendations";
@@ -224,6 +224,7 @@ function Home() {
         ? t("common.placeholders.userNumber", { id: userId })
         : t("common.placeholders.user"));
     const avatarFallback = displayName.charAt(0)?.toUpperCase() || "?";
+    const isVerified = Boolean(user?.contact_verified && user?.identity_verified);
 
     return (
       <Box
@@ -263,13 +264,34 @@ function Home() {
                   {t("home.labels.mostRecent")}
                 </Typography>
               )}
-              <Typography
-                variant={isTopUser ? "h6" : "subtitle1"}
-                sx={{ fontWeight: 600, lineHeight: 1.3 }}
-                noWrap
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  minWidth: 0,
+                }}
               >
-                {displayName}
-              </Typography>
+                <Typography
+                  variant={isTopUser ? "h6" : "subtitle1"}
+                  sx={{
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {displayName}
+                </Typography>
+                {isVerified ? (
+                  <VerifiedIcon
+                    color="primary"
+                    fontSize={isTopUser ? "medium" : "small"}
+                    titleAccess={t("common.status.verified")}
+                  />
+                ) : null}
+              </Box>
               {user?.location && (
                 <Typography variant="body2" color="text.secondary" noWrap>
                   {user.location}
