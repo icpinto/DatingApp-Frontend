@@ -123,7 +123,10 @@
       "otherMatches": "மற்ற சிறந்த பொருத்தங்கள்",
       "matchScore": "{{score}}% பொருத்தம்",
       "scoreOnly": "{{score}}%",
-      "scoreTooltip": "பொருத்த மதிப்பெண்"
+      "scoreTooltip": "பொருத்த மதிப்பெண்",
+      "overallCompatibility": "மொத்த இணக்கத்தன்மை: {{score}}%",
+      "compatibilityBreakdown": "இணக்கத்தன்மை பகுப்பாய்வு",
+      "dimensionWithIndex": "வகை {{index}}"
     }
   },
   "profile": {

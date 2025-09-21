@@ -123,7 +123,10 @@
       "otherMatches": "Other great matches",
       "matchScore": "{{score}}% match",
       "scoreOnly": "{{score}}%",
-      "scoreTooltip": "Match score"
+      "scoreTooltip": "Match score",
+      "overallCompatibility": "Overall compatibility: {{score}}%",
+      "compatibilityBreakdown": "Compatibility breakdown",
+      "dimensionWithIndex": "Dimension {{index}}"
     }
   },
   "profile": {

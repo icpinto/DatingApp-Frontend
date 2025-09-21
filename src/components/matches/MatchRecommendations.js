@@ -94,6 +94,22 @@ const clampScore = (score) => {
   return Math.max(0, Math.min(MAX_SCORE, numericScore));
 };
 
+const convertToPercentage = (value) => {
+  const numericValue = Number(value);
+  if (Number.isNaN(numericValue)) {
+    return 0;
+  }
+
+  if (numericValue <= 1) {
+    return numericValue * 100;
+  }
+
+  return numericValue;
+};
+
+const isPlainObject = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
 const getMatchIdentifier = (match = {}, fallback) => {
   const rawIdentifier =
     match.user_id ??
@@ -339,6 +355,14 @@ const MatchRecommendations = ({ limit = 10 }) => {
               const locationText =
                 details.location || match.location || "";
               const bioText = details.bio || match.bio || "";
+              const reasons = match.reasons;
+              const reasonsAreObject = isPlainObject(reasons);
+              const reasonsAreArrayOrString =
+                Array.isArray(reasons) || typeof reasons === "string";
+              const perDimensionScores =
+                reasonsAreObject && Array.isArray(reasons.per_dimension)
+                  ? reasons.per_dimension
+                  : [];
 
               return (
                 <Box
@@ -418,16 +442,87 @@ const MatchRecommendations = ({ limit = 10 }) => {
                       sx={{ height: isTopMatch ? 8 : 6, borderRadius: 4 }}
                     />
 
-                    {match.reasons && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block" }}
-                      >
-                        {Array.isArray(match.reasons)
-                          ? match.reasons.join(", ")
-                          : match.reasons}
-                      </Typography>
+                    {reasons && (
+                      <Box>
+                        {reasonsAreArrayOrString && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block" }}
+                          >
+                            {Array.isArray(reasons)
+                              ? reasons.join(", ")
+                              : reasons}
+                          </Typography>
+                        )}
+                        {reasonsAreObject && (
+                          <Stack spacing={1} mt={reasonsAreArrayOrString ? 1 : 0}>
+                            {typeof reasons.raw_score === "number" && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontWeight: 600, display: "block" }}
+                              >
+                                {t("matches.labels.overallCompatibility", {
+                                  score: formatScore(
+                                    convertToPercentage(reasons.raw_score)
+                                  ),
+                                })}
+                              </Typography>
+                            )}
+                            {perDimensionScores.length > 0 && (
+                              <Stack spacing={0.75}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  {t("matches.labels.compatibilityBreakdown")}
+                                </Typography>
+                                <Stack spacing={0.5}>
+                                  {perDimensionScores.map((value, dimensionIndex) => {
+                                    const percentage = convertToPercentage(value);
+                                    return (
+                                      <Stack
+                                        key={`dimension-${dimensionIndex}`}
+                                        direction="row"
+                                        alignItems="center"
+                                        spacing={1}
+                                      >
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ minWidth: 80 }}
+                                        >
+                                          {t("matches.labels.dimensionWithIndex", {
+                                            index: dimensionIndex + 1,
+                                          })}
+                                        </Typography>
+                                        <LinearProgress
+                                          variant="determinate"
+                                          value={clampScore(percentage)}
+                                          sx={{
+                                            flexGrow: 1,
+                                            height: 4,
+                                            borderRadius: 2,
+                                          }}
+                                        />
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          sx={{ minWidth: 44, textAlign: "right" }}
+                                        >
+                                          {formatScore(percentage)}%
+                                        </Typography>
+                                      </Stack>
+                                    );
+                                  })}
+                                </Stack>
+                              </Stack>
+                            )}
+                          </Stack>
+                        )}
+                      </Box>
                     )}
 
                     <Button
