@@ -13,7 +13,7 @@ import {
   Skeleton,
   Stack,
   TextField,
-  Tooltip,
+  Tooltip as MuiTooltip,
   Typography,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -22,6 +22,7 @@ import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
 
 const MAX_SCORE = 100;
 
@@ -141,6 +142,118 @@ const normalizeUserId = (rawUserId) => {
   return numericId;
 };
 
+const RadarChartPreview = ({ data = [], size = 220, theme, title }) => {
+  const dimensionsCount = Array.isArray(data) ? data.length : 0;
+
+  if (!dimensionsCount) {
+    return null;
+  }
+
+  const viewBoxSize = size;
+  const radius = viewBoxSize / 2;
+  const center = radius;
+  const maxValue = 100;
+  const chartRadius = radius * 0.85;
+  const angleStep = (Math.PI * 2) / dimensionsCount;
+
+  const polarToCartesian = (value, index, customRadius = chartRadius) => {
+    const angle = angleStep * index - Math.PI / 2;
+    const normalized = Math.max(0, Math.min(maxValue, value)) / maxValue;
+    const scaledRadius = customRadius * normalized;
+    const x = center + Math.cos(angle) * scaledRadius;
+    const y = center + Math.sin(angle) * scaledRadius;
+    return `${x},${y}`;
+  };
+
+  const polygonPoints = data
+    .map((item, index) => polarToCartesian(item.value, index))
+    .join(" ");
+
+  const rings = [0.25, 0.5, 0.75, 1];
+
+  return (
+    <Box
+      sx={{ width: "100%", height: size, position: "relative" }}
+      aria-hidden={false}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
+        role="img"
+        aria-label={title}
+        focusable="false"
+      >
+        <title>{title}</title>
+        <g fill="none">
+          {rings.map((ratio) => {
+            const ringPoints = data
+              .map((_, index) => polarToCartesian(maxValue * ratio, index))
+              .join(" ");
+            return (
+              <polygon
+                key={`ring-${ratio}`}
+                points={ringPoints}
+                stroke={theme.palette.divider}
+                strokeWidth={0.75}
+                fill="none"
+              />
+            );
+          })}
+          {data.map((_, index) => {
+            const [x, y] = polarToCartesian(maxValue, index, chartRadius)
+              .split(",")
+              .map(Number);
+            return (
+              <line
+                key={`axis-${index}`}
+                x1={center}
+                y1={center}
+                x2={x}
+                y2={y}
+                stroke={theme.palette.divider}
+                strokeWidth={0.75}
+              />
+            );
+          })}
+          <polygon
+            points={polygonPoints}
+            fill={theme.palette.primary.main}
+            fillOpacity={0.18}
+            stroke={theme.palette.primary.main}
+            strokeWidth={1.5}
+          />
+        </g>
+        {data.map((item, index) => {
+          const labelRadius = chartRadius + 12;
+          const angle = angleStep * index - Math.PI / 2;
+          const x = center + Math.cos(angle) * labelRadius;
+          const y = center + Math.sin(angle) * labelRadius;
+          const textAnchor = Math.abs(Math.cos(angle)) < 0.1
+            ? "middle"
+            : Math.cos(angle) > 0
+            ? "start"
+            : "end";
+          const dy = Math.sin(angle) > 0.3 ? 12 : Math.sin(angle) < -0.3 ? -4 : 4;
+          return (
+            <text
+              key={`label-${item.label}`}
+              x={x}
+              y={y}
+              textAnchor={textAnchor}
+              fill={theme.palette.text.secondary}
+              fontSize={10}
+              dy={dy}
+            >
+              {item.label}
+            </text>
+          );
+        })}
+      </svg>
+    </Box>
+  );
+};
+
 const MatchRecommendations = ({ limit = 10 }) => {
   const [matches, setMatches] = useState([]);
   const [status, setStatus] = useState({ loading: false, errorKey: "" });
@@ -153,6 +266,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
   const [sendingRequestFor, setSendingRequestFor] = useState(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const theme = useTheme();
 
   useEffect(() => {
     const userId = localStorage.getItem("user_id");
@@ -363,6 +477,18 @@ const MatchRecommendations = ({ limit = 10 }) => {
                 reasonsAreObject && Array.isArray(reasons.per_dimension)
                   ? reasons.per_dimension
                   : [];
+              const dimensionBreakdown = perDimensionScores.map(
+                (value, dimensionIndex) => {
+                  const percentage = convertToPercentage(value);
+                  const clampedPercentage = clampScore(percentage);
+                  return {
+                    label: t("matches.labels.dimensionWithIndex", {
+                      index: dimensionIndex + 1,
+                    }),
+                    value: clampedPercentage,
+                  };
+                }
+              );
 
               return (
                 <Box
@@ -419,7 +545,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
                           </Typography>
                         )}
                       </Stack>
-                      <Tooltip title={t("matches.labels.scoreTooltip")}>
+                      <MuiTooltip title={t("matches.labels.scoreTooltip")}>
                         <Chip
                           color={isTopMatch ? "primary" : "default"}
                           label={t("matches.labels.matchScore", {
@@ -427,7 +553,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
                           })}
                           sx={{ fontWeight: 600 }}
                         />
-                      </Tooltip>
+                      </MuiTooltip>
                     </Stack>
 
                     {bioText && (
@@ -470,7 +596,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                 })}
                               </Typography>
                             )}
-                            {perDimensionScores.length > 0 && (
+                            {dimensionBreakdown.length > 0 && (
                               <Stack spacing={0.75}>
                                 <Typography
                                   variant="caption"
@@ -479,10 +605,14 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                 >
                                   {t("matches.labels.compatibilityBreakdown")}
                                 </Typography>
+                                <RadarChartPreview
+                                  data={dimensionBreakdown}
+                                  theme={theme}
+                                  title={t("matches.labels.compatibilityBreakdown")}
+                                />
                                 <Stack spacing={0.5}>
-                                  {perDimensionScores.map((value, dimensionIndex) => {
-                                    const percentage = convertToPercentage(value);
-                                    return (
+                                  {dimensionBreakdown.map(
+                                    ({ label, value }, dimensionIndex) => (
                                       <Stack
                                         key={`dimension-${dimensionIndex}`}
                                         direction="row"
@@ -494,13 +624,11 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                           color="text.secondary"
                                           sx={{ minWidth: 80 }}
                                         >
-                                          {t("matches.labels.dimensionWithIndex", {
-                                            index: dimensionIndex + 1,
-                                          })}
+                                          {label}
                                         </Typography>
                                         <LinearProgress
                                           variant="determinate"
-                                          value={clampScore(percentage)}
+                                          value={value}
                                           sx={{
                                             flexGrow: 1,
                                             height: 4,
@@ -512,11 +640,11 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                           color="text.secondary"
                                           sx={{ minWidth: 44, textAlign: "right" }}
                                         >
-                                          {formatScore(percentage)}%
+                                          {formatScore(value)}%
                                         </Typography>
                                       </Stack>
-                                    );
-                                  })}
+                                    )
+                                  )}
                                 </Stack>
                               </Stack>
                             )}
