@@ -495,10 +495,11 @@ const MatchRecommendations = ({ limit = 10 }) => {
                             </Button>
                             {feedbackForMatch?.key && (
                               <Typography
-                                color=
+                                color={
                                   feedbackForMatch.type === "error"
                                     ? "error.main"
                                     : "success.main"
+                                }
                               >
                                 {t(feedbackForMatch.key)}
                               </Typography>
