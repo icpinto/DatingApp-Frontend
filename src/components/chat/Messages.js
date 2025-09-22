@@ -20,56 +20,13 @@ import ChatDrawer from "./ChatDrawer";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 import { spacing } from "../../styles";
-
-const pickFirst = (...values) =>
-  values.find((value) => value !== undefined && value !== null);
-
-const normalizeConversationList = (payload) => {
-  const visited = new WeakSet();
-
-  const explore = (value) => {
-    if (Array.isArray(value)) {
-      return value;
-    }
-
-    if (!value || typeof value !== "object") {
-      return [];
-    }
-
-    if (visited.has(value)) {
-      return [];
-    }
-
-    visited.add(value);
-
-    const preferredKeys = ["conversations", "data", "results", "items"];
-    for (const key of preferredKeys) {
-      if (Array.isArray(value[key])) {
-        return value[key];
-      }
-    }
-
-    for (const child of Object.values(value)) {
-      const nested = explore(child);
-      if (nested.length) {
-        return nested;
-      }
-    }
-
-    return [];
-  };
-
-  return explore(payload);
-};
-
-const flattenConversationEntry = (entry) => {
-  if (entry && typeof entry === "object" && entry.conversation) {
-    const { conversation, ...rest } = entry;
-    return { ...conversation, ...rest };
-  }
-
-  return entry;
-};
+import {
+  pickFirst,
+  toNumberOrUndefined,
+  normalizeConversationList,
+  flattenConversationEntry,
+  extractUnreadCount,
+} from "../../utils/conversationUtils";
 
 const extractLastMessageInfo = (conversation = {}) => {
   const lastMessage = pickFirst(
@@ -187,15 +144,6 @@ const formatLastMessageTimestamp = (timestamp) => {
     day: "numeric",
     ...(sameYear ? {} : { year: "numeric" }),
   });
-};
-
-const toNumberOrUndefined = (value) => {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  const numeric = Number(value);
-  return Number.isNaN(numeric) ? undefined : numeric;
 };
 
 const toTrimmedStringOrUndefined = (value) => {
@@ -454,7 +402,7 @@ const getConversationPartnerDetails = (
 const getCurrentUserId = () =>
   toNumberOrUndefined(localStorage.getItem("user_id"));
 
-function Messages() {
+function Messages({ onUnreadCountChange = () => {} }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -530,9 +478,48 @@ function Messages() {
     }
   }, [conversations]);
 
+  // Update unread counts whenever the conversation list changes
+  useEffect(() => {
+    if (typeof onUnreadCountChange !== "function") {
+      return;
+    }
+
+    const totalUnread = Array.isArray(conversations)
+      ? conversations.reduce(
+          (sum, conversation) => sum + extractUnreadCount(conversation),
+          0
+        )
+      : 0;
+
+    onUnreadCountChange(totalUnread);
+  }, [conversations, onUnreadCountChange]);
+
+  const resolveConversationId = (conversation) =>
+    pickFirst(
+      conversation?.id,
+      conversation?.conversation_id,
+      conversation?.conversationId,
+      conversation?.conversationID
+    );
+
   // Handle opening the drawer and selecting a conversation
   const handleOpenConversation = (conversation) => {
-    setSelectedConversation(conversation);
+    const conversationId = resolveConversationId(conversation);
+
+    const updatedConversation = {
+      ...conversation,
+      __localUnreadCount: 0,
+    };
+
+    setSelectedConversation(updatedConversation);
+    setConversations((prev) =>
+      Array.isArray(prev)
+        ? prev.map((conv) => {
+            const convId = resolveConversationId(conv);
+            return convId === conversationId ? updatedConversation : conv;
+          })
+        : prev
+    );
   };
 
   // Handle closing the drawer
@@ -647,6 +634,8 @@ function Messages() {
                         sx={{ width: "100%" }}
                       >
                         {conversations.map((conversation, index) => {
+                          const conversationId = resolveConversationId(conversation);
+                          const selectedId = resolveConversationId(selectedConversation);
                           const { displayName } = getConversationPartnerDetails(
                             conversation,
                             currentUserId,
@@ -659,12 +648,15 @@ function Messages() {
                           const avatarInitial = displayName
                             ? displayName.charAt(0).toUpperCase()
                             : "?";
-                          const isSelected = selectedConversation?.id === conversation.id;
+                          const isSelected =
+                            conversationId !== undefined && selectedId !== undefined
+                              ? conversationId === selectedId
+                              : selectedConversation?.id === conversation.id;
                           const isTopConversation = index === 0;
 
                           return (
                             <Box
-                              key={`${conversation.id}-panel`}
+                              key={`${conversationId ?? conversation.id ?? index}-panel`}
                               onClick={() => handleOpenConversation(conversation)}
                               role="button"
                               tabIndex={0}

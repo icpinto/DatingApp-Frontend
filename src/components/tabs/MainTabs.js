@@ -17,10 +17,17 @@ import Messages from "../chat/Messages";
 import OwnerProfile from "../profile/OwnerProfile";
 import QuestionsComponent from "../questions/Questions";
 import api from "../../services/api";
+import chatService from "../../services/chatService";
+import {
+  normalizeConversationList,
+  flattenConversationEntry,
+  extractUnreadCount,
+} from "../../utils/conversationUtils";
 
 function MainTabs() {
   const [activeTab, setActiveTab] = useState(0);
   const [requestCount, setRequestCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     const fetchRequestCount = async () => {
@@ -41,6 +48,37 @@ function MainTabs() {
     fetchRequestCount();
   }, []);
 
+  useEffect(() => {
+    const fetchUnreadMessages = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setUnreadMessages(0);
+          return;
+        }
+
+        const response = await chatService.get("/conversations", {
+          headers: { Authorization: `${token}` },
+        });
+
+        const conversations = normalizeConversationList(response.data)
+          .map(flattenConversationEntry)
+          .filter(Boolean);
+
+        const totalUnread = conversations.reduce(
+          (sum, conversation) => sum + extractUnreadCount(conversation),
+          0
+        );
+
+        setUnreadMessages(totalUnread);
+      } catch (error) {
+        setUnreadMessages(0);
+      }
+    };
+
+    fetchUnreadMessages();
+  }, []);
+
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
   };
@@ -50,7 +88,9 @@ function MainTabs() {
       {activeTab === 0 && <Home />}
       {activeTab === 1 && <Requests onRequestCountChange={setRequestCount} />}
       {activeTab === 2 && <QuestionsComponent />}
-      {activeTab === 3 && <Messages />}
+      {activeTab === 3 && (
+        <Messages onUnreadCountChange={setUnreadMessages} />
+      )}
       {activeTab === 4 && <OwnerProfile />}
 
       <Paper
@@ -68,7 +108,14 @@ function MainTabs() {
             }
           />
           <BottomNavigationAction label="Match Insights" icon={<QuizIcon />} />
-          <BottomNavigationAction label="Messages" icon={<ChatIcon />} />
+          <BottomNavigationAction
+            label="Messages"
+            icon={
+              <Badge color="error" badgeContent={unreadMessages}>
+                <ChatIcon />
+              </Badge>
+            }
+          />
           <BottomNavigationAction label="Profile" icon={<PersonIcon />} />
         </BottomNavigation>
       </Paper>
