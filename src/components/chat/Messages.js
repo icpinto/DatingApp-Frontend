@@ -415,7 +415,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const currentUserId = getCurrentUserId();
-  const { conversations: wsConversations } = useWebSocket();
+  const { conversations: wsConversations, markRead } = useWebSocket();
 
   // Fetch conversations on component mount
   useEffect(() => {
@@ -657,6 +657,36 @@ function Messages({ onUnreadCountChange = () => {} }) {
           })
         : prev
     );
+
+    let lastMessageId = getExistingLastMessageId(conversation);
+
+    if (
+      lastMessageId === undefined &&
+      conversationId !== undefined &&
+      wsConversations &&
+      typeof wsConversations === "object"
+    ) {
+      const wsConversation =
+        wsConversations[String(conversationId)] ??
+        wsConversations[conversationId];
+
+      if (
+        wsConversation &&
+        typeof wsConversation === "object" &&
+        Array.isArray(wsConversation.messages)
+      ) {
+        const snapshot = getLatestMessageSnapshot(wsConversation.messages);
+        lastMessageId = snapshot.messageId;
+      }
+    }
+
+    if (
+      typeof markRead === "function" &&
+      conversationId !== undefined &&
+      lastMessageId !== undefined
+    ) {
+      markRead(conversationId, lastMessageId);
+    }
   };
 
   // Handle closing the drawer
