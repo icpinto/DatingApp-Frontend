@@ -562,12 +562,20 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                 >
                                   {dimensionBreakdown.map(
                                     ({ label, value }, dimensionIndex) => (
-                                      <DimensionPieChart
+                                      <Box
                                         key={`dimension-${dimensionIndex}`}
-                                        value={value}
-                                        label={label}
-                                        theme={theme}
-                                      />
+                                        sx={{
+                                          flex: "1 1 160px",
+                                          display: "flex",
+                                          justifyContent: "center",
+                                        }}
+                                      >
+                                        <DimensionPieChart
+                                          value={value}
+                                          label={label}
+                                          theme={theme}
+                                        />
+                                      </Box>
                                     )
                                   )}
                                 </Stack>
