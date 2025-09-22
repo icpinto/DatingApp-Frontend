@@ -79,7 +79,16 @@ const resolveMessageSenderId = (message = {}) =>
       message.user_id,
       message.userId,
       message.author_id,
-      message.authorId
+      message.authorId,
+      message.sender?.id,
+      message.sender?.user_id,
+      message.sender?.userId,
+      message.user?.id,
+      message.user?.user_id,
+      message.user?.userId,
+      message.author?.id,
+      message.author?.user_id,
+      message.author?.userId
     )
   );
 

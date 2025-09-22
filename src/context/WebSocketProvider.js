@@ -74,7 +74,16 @@ const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
       message.SenderId,
       message.user_id,
       message.UserID,
-      message.UserId
+      message.UserId,
+      message.sender?.id,
+      message.sender?.user_id,
+      message.sender?.userId,
+      message.user?.id,
+      message.user?.user_id,
+      message.user?.userId,
+      message.author?.id,
+      message.author?.user_id,
+      message.author?.userId
     )
   );
 
@@ -87,7 +96,13 @@ const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
       message.to,
       message.to_id,
       message.ToID,
-      message.ToId
+      message.ToId,
+      message.receiver?.id,
+      message.receiver?.user_id,
+      message.receiver?.userId,
+      message.recipient?.id,
+      message.recipient?.user_id,
+      message.recipient?.userId
     )
   );
 
