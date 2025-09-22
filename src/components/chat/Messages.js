@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Avatar,
   Badge,
@@ -410,7 +410,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [profiles, setProfiles] = useState({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -420,6 +420,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
   // Fetch conversations on component mount
   useEffect(() => {
+    let isActive = true;
+
     const fetchConversations = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -432,27 +434,48 @@ function Messages({ onUnreadCountChange = () => {} }) {
         const normalized = normalizeConversationList(response.data)
           .map(flattenConversationEntry)
           .filter(Boolean);
-        setConversations(normalized);
-        setLoading(false);
+
+        if (isActive) {
+          setConversations(normalized);
+          setError(null);
+        }
       } catch (err) {
-        setError("Failed to fetch conversations");
-        setLoading(false);
+        if (isActive) {
+          setError("Failed to fetch conversations");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     fetchConversations();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   // Fetch profile previews for conversation partners
   useEffect(() => {
+    if (!Array.isArray(conversations) || conversations.length === 0) {
+      setProfiles({});
+      return;
+    }
+
+    let isActive = true;
+
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
       const uniqueIds = new Set();
+
       conversations.forEach((conv) => {
         const { otherUserId } = getConversationPartnerDetails(
           conv,
           normalizedCurrentUserId
         );
+
         if (
           otherUserId !== undefined &&
           otherUserId !== null &&
@@ -461,11 +484,16 @@ function Messages({ onUnreadCountChange = () => {} }) {
           uniqueIds.add(otherUserId);
         }
       });
+
       if (uniqueIds.size === 0) {
-        setProfiles({});
+        if (isActive) {
+          setProfiles({});
+        }
         return;
       }
+
       const profilesData = {};
+
       await Promise.all(
         Array.from(uniqueIds)
           .map((id) => toNumberOrUndefined(id))
@@ -484,11 +512,17 @@ function Messages({ onUnreadCountChange = () => {} }) {
             }
           })
       );
-      setProfiles(profilesData);
+
+      if (isActive) {
+        setProfiles(profilesData);
+      }
     };
-    if (conversations.length > 0) {
-      fetchProfiles();
-    }
+
+    fetchProfiles();
+
+    return () => {
+      isActive = false;
+    };
   }, [conversations, normalizedCurrentUserId]);
 
   // Update unread counts whenever the conversation list changes
@@ -518,6 +552,49 @@ function Messages({ onUnreadCountChange = () => {} }) {
     []
   );
 
+  const getConversationKey = useCallback(
+    (conversation) => {
+      if (!conversation) {
+        return undefined;
+      }
+
+      const resolved = resolveConversationId(conversation);
+      if (resolved !== undefined && resolved !== null) {
+        return String(resolved);
+      }
+
+      const fallback = pickFirst(
+        conversation?.id,
+        conversation?.conversation_id,
+        conversation?.conversationId,
+        conversation?.conversationID
+      );
+
+      return fallback !== undefined && fallback !== null
+        ? String(fallback)
+        : undefined;
+    },
+    [resolveConversationId]
+  );
+
+  const selectedConversation = useMemo(() => {
+    if (selectedConversationId === null || selectedConversationId === undefined) {
+      return null;
+    }
+
+    const targetKey = String(selectedConversationId);
+
+    if (!Array.isArray(conversations)) {
+      return null;
+    }
+
+    return (
+      conversations.find(
+        (conversation) => getConversationKey(conversation) === targetKey
+      ) || null
+    );
+  }, [conversations, getConversationKey, selectedConversationId]);
+
   const getExistingLastMessageId = useCallback(
     (conversation) =>
       toNumberOrUndefined(
@@ -535,6 +612,25 @@ function Messages({ onUnreadCountChange = () => {} }) {
   );
 
   useEffect(() => {
+    if (selectedConversationId === null || selectedConversationId === undefined) {
+      return;
+    }
+
+    if (!Array.isArray(conversations)) {
+      return;
+    }
+
+    const targetKey = String(selectedConversationId);
+    const exists = conversations.some(
+      (conversation) => getConversationKey(conversation) === targetKey
+    );
+
+    if (!exists) {
+      setSelectedConversationId(null);
+    }
+  }, [conversations, getConversationKey, selectedConversationId]);
+
+  useEffect(() => {
     if (!wsConversations || typeof wsConversations !== "object") {
       return;
     }
@@ -543,9 +639,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
     if (wsKeys.length === 0) {
       return;
     }
-
-    const selectedId = resolveConversationId(selectedConversation);
-    let pendingSelectedUpdate = null;
 
     setConversations((prev) => {
       if (!Array.isArray(prev) || prev.length === 0) {
@@ -617,17 +710,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
         if (Object.keys(updates).length > 0) {
           changed = true;
-          const updatedConversation = { ...conversation, ...updates };
-
-          if (
-            selectedId !== undefined &&
-            conversationId !== undefined &&
-            conversationId === selectedId
-          ) {
-            pendingSelectedUpdate = updatedConversation;
-          }
-
-          return updatedConversation;
+          return { ...conversation, ...updates };
         }
 
         return conversation;
@@ -635,92 +718,142 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
       return changed ? updatedList : prev;
     });
-
-    if (pendingSelectedUpdate) {
-      setSelectedConversation(pendingSelectedUpdate);
-    }
   }, [
     wsConversations,
     currentUserId,
-    selectedConversation,
     resolveConversationId,
     getExistingLastMessageId,
   ]);
 
   // Handle opening the drawer and selecting a conversation
-  const handleOpenConversation = (conversation) => {
-    const conversationId = resolveConversationId(conversation);
+  const handleOpenConversation = useCallback(
+    (conversation) => {
+      if (!conversation) {
+        return;
+      }
 
-    const updatedConversation = {
-      ...conversation,
-      __localUnreadCount: 0,
-    };
+      const resolvedId = resolveConversationId(conversation);
+      const conversationKey = getConversationKey(conversation);
 
-    setSelectedConversation(updatedConversation);
-    setConversations((prev) =>
-      Array.isArray(prev)
-        ? prev.map((conv) => {
-            const convId = resolveConversationId(conv);
-            return convId === conversationId ? updatedConversation : conv;
-          })
-        : prev
-    );
+      if (conversationKey !== undefined) {
+        setSelectedConversationId(conversationKey);
+      } else {
+        setSelectedConversationId(null);
+      }
 
-    let lastMessageId = getExistingLastMessageId(conversation);
+      setConversations((prev) => {
+        if (!Array.isArray(prev)) {
+          return prev;
+        }
 
-    if (
-      lastMessageId === undefined &&
-      conversationId !== undefined &&
-      wsConversations &&
-      typeof wsConversations === "object"
-    ) {
-      const wsConversation =
-        wsConversations[String(conversationId)] ??
-        wsConversations[conversationId];
+        return prev.map((conv) => {
+          if (conversationKey === undefined) {
+            return conv === conversation
+              ? { ...conv, __localUnreadCount: 0 }
+              : conv;
+          }
+
+          return getConversationKey(conv) === conversationKey
+            ? { ...conv, __localUnreadCount: 0 }
+            : conv;
+        });
+      });
+
+      let lastMessageId = getExistingLastMessageId(conversation);
 
       if (
-        wsConversation &&
-        typeof wsConversation === "object" &&
-        Array.isArray(wsConversation.messages)
+        lastMessageId === undefined &&
+        wsConversations &&
+        typeof wsConversations === "object"
       ) {
-        const snapshot = getLatestMessageSnapshot(wsConversation.messages);
-        lastMessageId = snapshot.messageId;
-      }
-    }
+        const lookupKey =
+          resolvedId !== undefined && resolvedId !== null
+            ? resolvedId
+            : conversationKey;
 
-    if (
-      typeof markRead === "function" &&
-      conversationId !== undefined &&
-      lastMessageId !== undefined
-    ) {
-      markRead(conversationId, lastMessageId);
-    }
-  };
+        if (lookupKey !== undefined && lookupKey !== null) {
+          const wsConversation =
+            wsConversations[String(lookupKey)] ?? wsConversations[lookupKey];
+
+          if (
+            wsConversation &&
+            typeof wsConversation === "object" &&
+            Array.isArray(wsConversation.messages)
+          ) {
+            const snapshot = getLatestMessageSnapshot(wsConversation.messages);
+            lastMessageId = snapshot.messageId;
+          }
+        }
+      }
+
+      if (typeof markRead === "function" && lastMessageId !== undefined) {
+        const numericId = toNumberOrUndefined(resolvedId ?? conversationKey);
+        const markId =
+          numericId !== undefined
+            ? numericId
+            : conversationKey ?? resolvedId;
+
+        if (markId !== undefined && markId !== null) {
+          markRead(markId, lastMessageId);
+        }
+      }
+    },
+    [
+      getConversationKey,
+      getExistingLastMessageId,
+      markRead,
+      resolveConversationId,
+      wsConversations,
+    ]
+  );
 
   // Handle closing the drawer
-  const handleCloseConversation = () => {
-    setSelectedConversation(null);
-  };
+  const handleCloseConversation = useCallback(() => {
+    setSelectedConversationId(null);
+  }, []);
+
+  const activeConversationKey =
+    selectedConversationId !== null && selectedConversationId !== undefined
+      ? String(selectedConversationId)
+      : null;
 
   const showListPane = !isMobile || !selectedConversation;
   const showChatPane = !isMobile || Boolean(selectedConversation);
-  const selectedConversationDetails = selectedConversation
-    ? getConversationPartnerDetails(
-        selectedConversation,
-        currentUserId,
-        profiles
+
+  const selectedConversationDetails = useMemo(() => {
+    if (!selectedConversation) {
+      return null;
+    }
+
+    return getConversationPartnerDetails(
+      selectedConversation,
+      currentUserId,
+      profiles
+    );
+  }, [currentUserId, profiles, selectedConversation]);
+
+  const selectedConversationBlocked = useMemo(() => {
+    if (!selectedConversation) {
+      return false;
+    }
+
+    return Boolean(
+      pickFirst(
+        selectedConversation.blocked,
+        selectedConversation.is_blocked,
+        selectedConversation.isBlocked,
+        selectedConversation.Blocked
       )
-    : null;
-  const selectedConversationBlocked = selectedConversation
-    ? Boolean(
-        pickFirst(
-          selectedConversation.blocked,
-          selectedConversation.is_blocked,
-          selectedConversation.isBlocked,
-          selectedConversation.Blocked
-        )
-      )
-    : false;
+    );
+  }, [selectedConversation]);
+
+  const selectedConversationUsers = useMemo(() => {
+    if (!selectedConversation) {
+      return { user1: { id: undefined }, user2: { id: undefined } };
+    }
+
+    return getConversationUsers(selectedConversation);
+  }, [selectedConversation]);
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section} sx={{ height: "100%" }}>
@@ -810,7 +943,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
                       >
                         {conversations.map((conversation, index) => {
                           const conversationId = resolveConversationId(conversation);
-                          const selectedId = resolveConversationId(selectedConversation);
+                          const conversationKey = getConversationKey(conversation);
                           const { displayName } = getConversationPartnerDetails(
                             conversation,
                             currentUserId,
@@ -825,14 +958,20 @@ function Messages({ onUnreadCountChange = () => {} }) {
                             ? displayName.charAt(0).toUpperCase()
                             : "?";
                           const isSelected =
-                            conversationId !== undefined && selectedId !== undefined
-                              ? conversationId === selectedId
-                              : selectedConversation?.id === conversation.id;
+                            activeConversationKey !== null &&
+                            conversationKey !== undefined
+                              ? conversationKey === activeConversationKey
+                              : false;
                           const isTopConversation = index === 0;
 
                           return (
                             <Box
-                              key={`${conversationId ?? conversation.id ?? index}-panel`}
+                              key={`${
+                                conversationKey ??
+                                conversationId ??
+                                conversation.id ??
+                                index
+                              }-panel`}
                               onClick={() => handleOpenConversation(conversation)}
                               role="button"
                               tabIndex={0}
@@ -972,9 +1111,9 @@ function Messages({ onUnreadCountChange = () => {} }) {
               >
                 {selectedConversation ? (
                   <ChatDrawer
-                    conversationId={selectedConversation.id}
-                    user1_id={selectedConversation.user1_id}
-                    user2_id={selectedConversation.user2_id}
+                    conversationId={resolveConversationId(selectedConversation)}
+                    user1_id={selectedConversationUsers.user1.id}
+                    user2_id={selectedConversationUsers.user2.id}
                     open={Boolean(selectedConversation)}
                     onClose={handleCloseConversation}
                     partnerName={selectedConversationDetails?.displayName}

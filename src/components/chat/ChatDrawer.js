@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Alert,
   Avatar,
@@ -19,6 +25,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 import { spacing } from "../../styles";
+import { pickFirst, toNumberOrUndefined } from "../../utils/conversationUtils";
 
 const formatMessageTimestamp = (message) => {
   if (!message) return "";
@@ -27,17 +34,17 @@ const formatMessageTimestamp = (message) => {
     return "Sending…";
   }
 
-  const rawTimestamp =
-    message.timestamp ||
-    message.created_at ||
-    message.createdAt ||
-    message.CreatedAt ||
-    message.sent_at ||
-    message.sentAt ||
-    message.SentAt ||
-    message.updated_at ||
-    message.updatedAt ||
-    null;
+  const rawTimestamp = pickFirst(
+    message.timestamp,
+    message.created_at,
+    message.createdAt,
+    message.CreatedAt,
+    message.sent_at,
+    message.sentAt,
+    message.SentAt,
+    message.updated_at,
+    message.updatedAt
+  );
 
   if (!rawTimestamp) {
     return "—";
@@ -50,6 +57,41 @@ const formatMessageTimestamp = (message) => {
 
   return parsed.toLocaleString();
 };
+
+const resolveMessageId = (message = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      message.message_id,
+      message.messageId,
+      message.messageID,
+      message.MessageId,
+      message.MessageID,
+      message.id
+    )
+  );
+
+const resolveMessageSenderId = (message = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      message.sender_id,
+      message.senderId,
+      message.senderID,
+      message.user_id,
+      message.userId,
+      message.author_id,
+      message.authorId
+    )
+  );
+
+const resolveMessageBody = (message = {}) =>
+  pickFirst(
+    message.body,
+    message.message,
+    message.text,
+    message.content,
+    message.Body,
+    message.Message
+  );
 
 function ChatDrawer({
   conversationId,
@@ -78,13 +120,60 @@ function ChatDrawer({
   const [isBlocked, setIsBlocked] = useState(false);
   const messagesContainerRef = useRef(null);
 
-  const conversationMessages =
-    conversations[conversationId]?.messages || [];
+  const normalizedConversationId = useMemo(
+    () => toNumberOrUndefined(conversationId),
+    [conversationId]
+  );
+
+  const conversationMessages = useMemo(() => {
+    const lookupId =
+      normalizedConversationId !== undefined && normalizedConversationId !== null
+        ? normalizedConversationId
+        : conversationId;
+
+    if (lookupId === undefined || lookupId === null) {
+      return [];
+    }
+
+    if (!conversations || typeof conversations !== "object") {
+      return [];
+    }
+
+    const key = String(lookupId);
+    const entry = conversations[key] ?? conversations[lookupId];
+
+    return Array.isArray(entry?.messages) ? entry.messages : [];
+  }, [conversations, conversationId, normalizedConversationId]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const sender_id = Number(localStorage.getItem("user_id"));
-  let receiver_id = sender_id === user1_id ? user2_id : user1_id;
+  const senderId = useMemo(
+    () => toNumberOrUndefined(localStorage.getItem("user_id")),
+    []
+  );
+
+  const receiverId = useMemo(() => {
+    const normalizedUser1 = toNumberOrUndefined(user1_id);
+    const normalizedUser2 = toNumberOrUndefined(user2_id);
+
+    if (
+      senderId !== undefined &&
+      normalizedUser1 !== undefined &&
+      senderId === normalizedUser1
+    ) {
+      return normalizedUser2;
+    }
+
+    if (
+      senderId !== undefined &&
+      normalizedUser2 !== undefined &&
+      senderId === normalizedUser2
+    ) {
+      return normalizedUser1;
+    }
+
+    return normalizedUser1 ?? normalizedUser2 ?? undefined;
+  }, [senderId, user1_id, user2_id]);
 
   useEffect(() => {
     setBlockError(null);
@@ -93,39 +182,85 @@ function ChatDrawer({
     setIsBlocked(Boolean(blocked));
   }, [conversationId, user1_id, user2_id, blocked]);
 
+  const preparedMessages = useMemo(() => {
+    if (!Array.isArray(conversationMessages)) {
+      return [];
+    }
+
+    return conversationMessages.map((message, index) => {
+      const messageId = resolveMessageId(message);
+      const sender = resolveMessageSenderId(message);
+      const rawBody = resolveMessageBody(message);
+      const bodyText =
+        typeof rawBody === "string"
+          ? rawBody
+          : rawBody !== undefined && rawBody !== null
+          ? String(rawBody)
+          : "";
+
+      return {
+        key: messageId ?? message?.client_msg_id ?? index,
+        isSender:
+          senderId !== undefined && sender !== undefined
+            ? sender === senderId
+            : false,
+        body: bodyText,
+        pending: Boolean(message?.pending),
+        timestampLabel: formatMessageTimestamp(message),
+      };
+    });
+  }, [conversationMessages, senderId]);
+
   // Fetch initial messages
   useEffect(() => {
-    if (conversationId) {
-      const fetchMessages = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const response = await chatService.get(
-            `/conversations/${conversationId}/messages`,
-            {
-              headers: {
-                Authorization: `${token}`,
-              },
-            }
-          );
+    if (conversationId === undefined || conversationId === null || !open) {
+      return;
+    }
+
+    let isActive = true;
+
+    const fetchMessages = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await chatService.get(
+          `/conversations/${conversationId}/messages`,
+          {
+            headers: {
+              Authorization: `${token}`,
+            },
+          }
+        );
+
+        if (isActive) {
           setConversationHistory(conversationId, response.data || []);
           setError(null);
-        } catch (err) {
+        }
+      } catch (err) {
+        if (isActive) {
           setError("Failed to fetch messages");
         }
-      };
-      fetchMessages();
-    }
-  }, [conversationId, setConversationHistory]);
+      }
+    };
+
+    fetchMessages();
+
+    return () => {
+      isActive = false;
+    };
+  }, [conversationId, open, setConversationHistory]);
 
   // Join/leave conversation rooms over WebSocket
   useEffect(() => {
-    if (conversationId && open) {
+    if (conversationId === undefined || conversationId === null) {
+      return undefined;
+    }
+
+    if (open) {
       joinConversation(conversationId);
     }
+
     return () => {
-      if (conversationId) {
-        leaveConversation(conversationId);
-      }
+      leaveConversation(conversationId);
     };
   }, [conversationId, open, joinConversation, leaveConversation]);
 
@@ -139,54 +274,88 @@ function ChatDrawer({
 
   // Mark the latest message as read when conversation updates
   useEffect(() => {
-    if (conversationMessages.length > 0) {
-      const last = conversationMessages[conversationMessages.length - 1];
-      if (last.message_id) {
-        markRead(conversationId, last.message_id);
-      }
+    if (
+      conversationId === undefined ||
+      conversationId === null ||
+      !Array.isArray(conversationMessages) ||
+      conversationMessages.length === 0 ||
+      typeof markRead !== "function"
+    ) {
+      return;
     }
-  }, [conversationMessages, conversationId, markRead]);
+
+    const last = conversationMessages[conversationMessages.length - 1];
+    const lastId = resolveMessageId(last);
+
+    if (lastId !== undefined) {
+      markRead(conversationId, lastId);
+    }
+  }, [conversationId, conversationMessages, markRead]);
 
   // Handle sending a new message
-  const handleSendMessage = () => {
-    if (isBlocked || newMessage.trim() === "") return;
+  const handleSendMessage = useCallback(() => {
+    const trimmedMessage = newMessage.trim();
 
-    // Message displayed locally in the UI
+    if (isBlocked || trimmedMessage === "") {
+      return;
+    }
+
+    const conversationIdentifier =
+      normalizedConversationId !== undefined &&
+      normalizedConversationId !== null
+        ? normalizedConversationId
+        : conversationId;
+
+    if (conversationIdentifier === undefined || conversationIdentifier === null) {
+      return;
+    }
+
     const clientMsgId = `${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 10)}`;
     const timestamp = new Date().toISOString();
+
     const displayMessage = {
-      body: newMessage,
-      conversation_id: Number(conversationId),
-      sender_id: Number(sender_id),
-      receiver_id: Number(receiver_id),
+      body: trimmedMessage,
+      conversation_id: conversationIdentifier,
+      sender_id: senderId,
+      receiver_id: receiverId,
       timestamp,
       client_msg_id: clientMsgId,
+      pending: true,
     };
 
-    // Message format expected by the server
     const wsMessage = {
       type: "send_message",
-      conversation_id: String(conversationId),
+      conversation_id: String(conversationIdentifier),
       client_msg_id: clientMsgId,
-      body: newMessage,
+      body: trimmedMessage,
       mime_type: "text/plain",
     };
 
-    addLocalMessage(conversationId, displayMessage);
-    sendMessage(wsMessage); // Send the message over WebSocket
-    setNewMessage(""); // Clear input
-  };
+    addLocalMessage(conversationIdentifier, displayMessage);
+    sendMessage(wsMessage);
+    setNewMessage("");
+  }, [
+    addLocalMessage,
+    conversationId,
+    isBlocked,
+    newMessage,
+    normalizedConversationId,
+    receiverId,
+    senderId,
+    sendMessage,
+  ]);
 
-  const handleBlockUser = async () => {
-    if (!conversationId) {
+  const handleBlockUser = useCallback(async () => {
+    if (conversationId === undefined || conversationId === null) {
       setBlockError("Conversation not found. Please try again.");
       return;
     }
 
-    const targetUserId = Number(receiver_id);
-    if (Number.isNaN(targetUserId)) {
+    const targetUserId = toNumberOrUndefined(receiverId);
+
+    if (targetUserId === undefined) {
       setBlockError("Unable to determine which user to block.");
       return;
     }
@@ -211,7 +380,7 @@ function ChatDrawer({
     } finally {
       setIsBlocking(false);
     }
-  };
+  }, [conversationId, receiverId]);
 
   if (!open) {
     return null;
@@ -341,76 +510,68 @@ function ChatDrawer({
           </Stack>
         ) : (
           <Stack spacing={spacing.section}>
-            {conversationMessages.map((message, index) => {
-              const messageKey =
-                message.message_id || message.client_msg_id || index;
-              const isSender = message.sender_id === sender_id;
-              return (
-                <Box
-                  key={messageKey}
+            {preparedMessages.map((message) => (
+              <Box
+                key={message.key}
+                sx={{
+                  display: "flex",
+                  justifyContent: message.isSender ? "flex-end" : "flex-start",
+                }}
+              >
+                <Paper
+                  elevation={0}
                   sx={{
-                    display: "flex",
-                    justifyContent: isSender ? "flex-end" : "flex-start",
+                    px: 2,
+                    py: 1.5,
+                    maxWidth: { xs: "88%", sm: "75%" },
+                    bgcolor: (theme) =>
+                      message.isSender
+                        ? theme.palette.primary.main
+                        : alpha(theme.palette.background.paper, 0.92),
+                    color: (theme) =>
+                      message.isSender
+                        ? theme.palette.primary.contrastText
+                        : theme.palette.text.primary,
+                    borderRadius: "20px",
+                    borderTopRightRadius: message.isSender ? "8px" : "20px",
+                    borderTopLeftRadius: message.isSender ? "20px" : "8px",
+                    border: (theme) =>
+                      `1px solid ${
+                        message.isSender
+                          ? alpha(theme.palette.primary.dark, 0.6)
+                          : theme.palette.divider
+                      }`,
+                    boxShadow: (theme) =>
+                      message.isSender
+                        ? `0px 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`
+                        : `0px 6px 18px ${alpha(
+                            theme.palette.common.black,
+                            0.06
+                          )}`,
+                    opacity: message.pending ? 0.6 : 1,
+                    transition: "all 0.2s ease",
                   }}
                 >
-                  <Paper
-                    elevation={0}
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                    {message.body}
+                  </Typography>
+                  <Typography
+                    variant="caption"
                     sx={{
-                      px: 2,
-                      py: 1.5,
-                      maxWidth: { xs: "88%", sm: "75%" },
-                      bgcolor: (theme) =>
-                        isSender
-                          ? theme.palette.primary.main
-                          : alpha(theme.palette.background.paper, 0.92),
+                      display: "block",
+                      textAlign: "right",
+                      mt: 1,
                       color: (theme) =>
-                        isSender
-                          ? theme.palette.primary.contrastText
-                          : theme.palette.text.primary,
-                      borderRadius: "20px",
-                      borderTopRightRadius: isSender ? "8px" : "20px",
-                      borderTopLeftRadius: isSender ? "20px" : "8px",
-                      border: (theme) =>
-                        `1px solid ${
-                          isSender
-                            ? alpha(theme.palette.primary.dark, 0.6)
-                            : theme.palette.divider
-                        }`,
-                      boxShadow: (theme) =>
-                        isSender
-                          ? `0px 8px 20px ${alpha(
-                              theme.palette.primary.main,
-                              0.2
-                            )}`
-                          : `0px 6px 18px ${alpha(
-                              theme.palette.common.black,
-                              0.06
-                            )}`,
-                      opacity: message.pending ? 0.6 : 1,
-                      transition: "all 0.2s ease",
+                        message.isSender
+                          ? alpha(theme.palette.primary.contrastText, 0.8)
+                          : theme.palette.text.secondary,
                     }}
                   >
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                      {message.body}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: "block",
-                        textAlign: "right",
-                        mt: 1,
-                        color: (theme) =>
-                          isSender
-                            ? alpha(theme.palette.primary.contrastText, 0.8)
-                            : theme.palette.text.secondary,
-                      }}
-                    >
-                      {formatMessageTimestamp(message)}
-                    </Typography>
-                  </Paper>
-                </Box>
-              );
-            })}
+                    {message.timestampLabel}
+                  </Typography>
+                </Paper>
+              </Box>
+            ))}
           </Stack>
         )}
       </Box>
