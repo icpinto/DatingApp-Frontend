@@ -8,7 +8,11 @@
       "english": "English",
       "sinhala": "Sinhala",
       "tamil": "Tamil"
-    }
+    },
+    "signOut": "Sign out",
+    "signingOut": "Signing out...",
+    "signOutSuccess": "Signed out successfully.",
+    "signOutError": "We couldn't reach the server, but your local session was cleared."
   },
   "common": {
     "actions": {
