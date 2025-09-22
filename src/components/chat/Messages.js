@@ -415,6 +415,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const currentUserId = getCurrentUserId();
+  const normalizedCurrentUserId = toNumberOrUndefined(currentUserId);
   const { conversations: wsConversations, markRead } = useWebSocket();
 
   // Fetch conversations on component mount
@@ -450,9 +451,13 @@ function Messages({ onUnreadCountChange = () => {} }) {
       conversations.forEach((conv) => {
         const { otherUserId } = getConversationPartnerDetails(
           conv,
-          getCurrentUserId()
+          normalizedCurrentUserId
         );
-        if (otherUserId !== undefined) {
+        if (
+          otherUserId !== undefined &&
+          otherUserId !== null &&
+          otherUserId !== normalizedCurrentUserId
+        ) {
           uniqueIds.add(otherUserId);
         }
       });
@@ -464,7 +469,10 @@ function Messages({ onUnreadCountChange = () => {} }) {
       await Promise.all(
         Array.from(uniqueIds)
           .map((id) => toNumberOrUndefined(id))
-          .filter((id) => id !== undefined)
+          .filter(
+            (id) =>
+              id !== undefined && id !== null && id !== normalizedCurrentUserId
+          )
           .map(async (id) => {
             try {
               const res = await api.get(`/user/profile/${id}`, {
@@ -481,7 +489,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
     if (conversations.length > 0) {
       fetchProfiles();
     }
-  }, [conversations]);
+  }, [conversations, normalizedCurrentUserId]);
 
   // Update unread counts whenever the conversation list changes
   useEffect(() => {
