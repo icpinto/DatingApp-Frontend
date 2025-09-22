@@ -117,3 +117,116 @@ export const extractUnreadCount = (conversation = {}) => {
   return Math.max(0, extractNumericValue(candidate));
 };
 
+const extractMessageId = (message = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      message.message_id,
+      message.messageId,
+      message.messageID,
+      message.MessageId,
+      message.MessageID,
+      message.id
+    )
+  );
+
+const extractMessageSenderId = (message = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      message.sender_id,
+      message.senderId,
+      message.senderID,
+      message.user_id,
+      message.userId,
+      message.author_id,
+      message.authorId
+    )
+  );
+
+const extractMessageBody = (message = {}) =>
+  pickFirst(
+    message.body,
+    message.message,
+    message.text,
+    message.content,
+    message.Body,
+    message.Message
+  );
+
+const extractMessageMimeType = (message = {}) =>
+  pickFirst(message.mime_type, message.mimeType, message.MimeType);
+
+const extractMessageTimestamp = (message = {}) =>
+  pickFirst(
+    message.timestamp,
+    message.created_at,
+    message.createdAt,
+    message.sent_at,
+    message.sentAt,
+    message.updated_at,
+    message.updatedAt
+  );
+
+export const getLatestMessageSnapshot = (messages = []) => {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return {
+      message: undefined,
+      messageId: undefined,
+      body: undefined,
+      mimeType: undefined,
+      timestamp: undefined,
+    };
+  }
+
+  const latest = messages[messages.length - 1];
+
+  return {
+    message: latest,
+    messageId: extractMessageId(latest),
+    body: extractMessageBody(latest),
+    mimeType: extractMessageMimeType(latest),
+    timestamp: extractMessageTimestamp(latest),
+  };
+};
+
+export const computeUnreadFromMessageHistory = (
+  messages = [],
+  lastReadId,
+  currentUserId
+) => {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return 0;
+  }
+
+  const normalizedLastRead = toNumberOrUndefined(lastReadId);
+
+  return messages.reduce((count, message) => {
+    if (!message || typeof message !== "object") {
+      return count;
+    }
+
+    if (message.pending) {
+      return count;
+    }
+
+    const senderId = extractMessageSenderId(message);
+    if (
+      currentUserId !== undefined &&
+      senderId !== undefined &&
+      senderId === currentUserId
+    ) {
+      return count;
+    }
+
+    const messageId = extractMessageId(message);
+    if (messageId === undefined) {
+      return count;
+    }
+
+    if (normalizedLastRead !== undefined) {
+      return messageId > normalizedLastRead ? count + 1 : count;
+    }
+
+    return count + 1;
+  }, 0);
+};
+
