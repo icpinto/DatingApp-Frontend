@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Avatar,
+  Badge,
   Box,
   Card,
   CardContent,
@@ -20,12 +21,15 @@ import ChatDrawer from "./ChatDrawer";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 import { spacing } from "../../styles";
+import { useWebSocket } from "../../context/WebSocketProvider";
 import {
   pickFirst,
   toNumberOrUndefined,
   normalizeConversationList,
   flattenConversationEntry,
   extractUnreadCount,
+  computeUnreadFromMessageHistory,
+  getLatestMessageSnapshot,
 } from "../../utils/conversationUtils";
 
 const extractLastMessageInfo = (conversation = {}) => {
@@ -411,6 +415,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const currentUserId = getCurrentUserId();
+  const { conversations: wsConversations } = useWebSocket();
 
   // Fetch conversations on component mount
   useEffect(() => {
@@ -494,13 +499,145 @@ function Messages({ onUnreadCountChange = () => {} }) {
     onUnreadCountChange(totalUnread);
   }, [conversations, onUnreadCountChange]);
 
-  const resolveConversationId = (conversation) =>
-    pickFirst(
-      conversation?.id,
-      conversation?.conversation_id,
-      conversation?.conversationId,
-      conversation?.conversationID
-    );
+  const resolveConversationId = useCallback(
+    (conversation) =>
+      pickFirst(
+        conversation?.id,
+        conversation?.conversation_id,
+        conversation?.conversationId,
+        conversation?.conversationID
+      ),
+    []
+  );
+
+  const getExistingLastMessageId = useCallback(
+    (conversation) =>
+      toNumberOrUndefined(
+        pickFirst(
+          conversation?.__lastMessageId,
+          conversation?.last_message_id,
+          conversation?.lastMessageId,
+          conversation?.last_message?.message_id,
+          conversation?.last_message?.id,
+          conversation?.lastMessage?.message_id,
+          conversation?.lastMessage?.id
+        )
+      ),
+    []
+  );
+
+  useEffect(() => {
+    if (!wsConversations || typeof wsConversations !== "object") {
+      return;
+    }
+
+    const wsKeys = Object.keys(wsConversations);
+    if (wsKeys.length === 0) {
+      return;
+    }
+
+    const selectedId = resolveConversationId(selectedConversation);
+    let pendingSelectedUpdate = null;
+
+    setConversations((prev) => {
+      if (!Array.isArray(prev) || prev.length === 0) {
+        return prev;
+      }
+
+      let changed = false;
+
+      const updatedList = prev.map((conversation) => {
+        const conversationId = resolveConversationId(conversation);
+        if (conversationId === undefined || conversationId === null) {
+          return conversation;
+        }
+
+        const key = String(conversationId);
+        const wsConversation =
+          wsConversations[key] ?? wsConversations[conversationId];
+
+        if (!wsConversation) {
+          return conversation;
+        }
+
+        const { messages = [], lastRead } = wsConversation;
+        const unreadCount = computeUnreadFromMessageHistory(
+          messages,
+          lastRead,
+          currentUserId
+        );
+        const latestSnapshot = getLatestMessageSnapshot(messages);
+
+        const updates = {};
+        const prevUnread = toNumberOrUndefined(
+          conversation.__localUnreadCount
+        );
+
+        if (prevUnread !== unreadCount) {
+          updates.__localUnreadCount = unreadCount;
+        }
+
+        const previousLastId = getExistingLastMessageId(conversation);
+
+        if (
+          latestSnapshot.messageId !== undefined &&
+          latestSnapshot.messageId !== previousLastId
+        ) {
+          updates.__lastMessageId = latestSnapshot.messageId;
+
+          if (latestSnapshot.message) {
+            updates.last_message = latestSnapshot.message;
+          }
+
+          if (latestSnapshot.body !== undefined) {
+            updates.last_message_body = latestSnapshot.body;
+            updates.lastMessageBody = latestSnapshot.body;
+          }
+
+          if (latestSnapshot.mimeType !== undefined) {
+            updates.last_message_mime_type = latestSnapshot.mimeType;
+            updates.lastMessageMimeType = latestSnapshot.mimeType;
+          }
+
+          if (latestSnapshot.timestamp !== undefined) {
+            updates.last_message_timestamp = latestSnapshot.timestamp;
+            updates.lastMessageTimestamp = latestSnapshot.timestamp;
+            updates.last_message_sent_at = latestSnapshot.timestamp;
+            updates.lastMessageSentAt = latestSnapshot.timestamp;
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          changed = true;
+          const updatedConversation = { ...conversation, ...updates };
+
+          if (
+            selectedId !== undefined &&
+            conversationId !== undefined &&
+            conversationId === selectedId
+          ) {
+            pendingSelectedUpdate = updatedConversation;
+          }
+
+          return updatedConversation;
+        }
+
+        return conversation;
+      });
+
+      return changed ? updatedList : prev;
+    });
+
+    if (pendingSelectedUpdate) {
+      setSelectedConversation(pendingSelectedUpdate);
+    }
+  }, [
+    wsConversations,
+    currentUserId,
+    selectedConversation,
+    resolveConversationId,
+    getExistingLastMessageId,
+  ]);
 
   // Handle opening the drawer and selecting a conversation
   const handleOpenConversation = (conversation) => {
@@ -645,6 +782,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
                             extractLastMessageInfo(conversation);
                           const messagePreview = buildMessagePreview(body, mime_type);
                           const formattedTimestamp = formatLastMessageTimestamp(timestamp);
+                          const unreadCount = extractUnreadCount(conversation);
                           const avatarInitial = displayName
                             ? displayName.charAt(0).toUpperCase()
                             : "?";
@@ -706,9 +844,22 @@ function Messages({ onUnreadCountChange = () => {} }) {
                                 outline: "none",
                               }}
                             >
-                              <Avatar variant="rounded" sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}>
-                                {avatarInitial}
-                              </Avatar>
+                              <Badge
+                                color="error"
+                                badgeContent={unreadCount}
+                                invisible={!unreadCount}
+                                overlap="circular"
+                              >
+                                <Avatar
+                                  variant="rounded"
+                                  sx={{
+                                    bgcolor: "primary.main",
+                                    color: "primary.contrastText",
+                                  }}
+                                >
+                                  {avatarInitial}
+                                </Avatar>
+                              </Badge>
                               <Stack spacing={0.5} flexGrow={1} minWidth={0}>
                                 {isTopConversation && (
                                   <Typography variant="subtitle2" color="text.secondary">
@@ -718,11 +869,16 @@ function Messages({ onUnreadCountChange = () => {} }) {
                                 <Typography
                                   variant="subtitle1"
                                   noWrap
-                                  sx={{ fontWeight: 600 }}
+                                  sx={{ fontWeight: unreadCount > 0 ? 700 : 600 }}
                                 >
                                   {displayName}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" noWrap>
+                                <Typography
+                                  variant="body2"
+                                  color={unreadCount > 0 ? "text.primary" : "text.secondary"}
+                                  noWrap
+                                  sx={{ fontWeight: unreadCount > 0 ? 600 : 400 }}
+                                >
                                   {messagePreview}
                                 </Typography>
                               </Stack>
