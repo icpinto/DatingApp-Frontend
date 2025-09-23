@@ -211,11 +211,19 @@ function ChatDrawer({
 
     const last = conversationMessages[conversationMessages.length - 1];
     const lastId = resolveMessageId(last);
+    const lastSenderId = resolveMessageSenderId(last);
+    const isPending = Boolean(last?.pending);
 
-    if (lastId !== undefined) {
+    if (
+      lastId !== undefined &&
+      lastSenderId !== undefined &&
+      senderId !== undefined &&
+      lastSenderId !== senderId &&
+      !isPending
+    ) {
       markRead(conversationId, lastId);
     }
-  }, [conversationId, conversationMessages, markRead]);
+  }, [conversationId, conversationMessages, markRead, senderId]);
 
   const handleSendMessage = useCallback(() => {
     const trimmedMessage = newMessage.trim();
