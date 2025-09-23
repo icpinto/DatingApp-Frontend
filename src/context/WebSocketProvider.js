@@ -146,6 +146,8 @@ export const WebSocketProvider = ({ children }) => {
   const reconnectTimeout = useRef(null);
   const shouldReconnect = useRef(true);
 
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("token"));
+  const latestTokenRef = useRef(authToken);
   const [conversations, setConversations] = useState({});
   const processedMessageIds = useRef(new Set());
   const joinedConversations = useRef(new Set());
@@ -354,16 +356,21 @@ export const WebSocketProvider = ({ children }) => {
     }
   };
 
-  const setupSocket = () => {
-    const token = localStorage.getItem("token");
+  const setupSocket = (token) => {
+    const activeToken = token ?? latestTokenRef.current;
+
+    if (reconnectTimeout.current) {
+      clearTimeout(reconnectTimeout.current);
+      reconnectTimeout.current = null;
+    }
 
     // Close existing connection
     if (ws.current) {
       ws.current.close();
     }
 
-    const wsEndpoint = token
-      ? `${wsUrl}/ws?token=${encodeURIComponent(token)}`
+    const wsEndpoint = activeToken
+      ? `${wsUrl}/ws?token=${encodeURIComponent(activeToken)}`
       : `${wsUrl}/ws`;
 
     const socket = new WebSocket(wsEndpoint);
@@ -382,7 +389,7 @@ export const WebSocketProvider = ({ children }) => {
     socket.addEventListener("close", () => {
       console.log("WebSocket connection closed.");
       if (shouldReconnect.current) {
-        reconnectTimeout.current = setTimeout(setupSocket, 5000);
+        reconnectTimeout.current = setTimeout(() => setupSocket(), 5000);
       }
     });
 
@@ -401,14 +408,39 @@ export const WebSocketProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    const handleTokenChange = () => {
+      const nextToken = localStorage.getItem("token");
+      setAuthToken(nextToken);
+    };
+
+    window.addEventListener("storage", handleTokenChange);
+    window.addEventListener("auth-token-changed", handleTokenChange);
+
+    return () => {
+      window.removeEventListener("storage", handleTokenChange);
+      window.removeEventListener("auth-token-changed", handleTokenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    processedMessageIds.current.clear();
+    joinedConversations.current.clear();
+    setConversations({});
+    setLastError(null);
+    latestTokenRef.current = authToken;
+  }, [authToken]);
+
+  useEffect(() => {
     shouldReconnect.current = true;
-    const cleanup = setupSocket();
+    const cleanup = setupSocket(authToken);
     return () => {
       shouldReconnect.current = false;
       clearTimeout(reconnectTimeout.current);
+      reconnectTimeout.current = null;
       cleanup();
+      ws.current = null;
     };
-  }, []);
+  }, [authToken]);
 
   const contextValue = useMemo(
     () => ({

@@ -58,6 +58,9 @@ function TopBar() {
     const token = localStorage.getItem("token");
     if (!token) {
       localStorage.removeItem("user_id");
+      window.dispatchEvent(
+        new CustomEvent("auth-token-changed", { detail: { token: null } })
+      );
       navigate("/");
       return;
     }
@@ -92,6 +95,9 @@ function TopBar() {
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("user_id");
+      window.dispatchEvent(
+        new CustomEvent("auth-token-changed", { detail: { token: null } })
+      );
       setSigningOut(false);
       navigate("/");
     }

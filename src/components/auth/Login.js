@@ -47,6 +47,11 @@ function Login() {
       });
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user_id", response.data.user_id);
+      window.dispatchEvent(
+        new CustomEvent("auth-token-changed", {
+          detail: { token: response.data.token },
+        })
+      );
       setSnackbar({
         open: true,
         message: "Login successful! Redirecting...",
