@@ -95,6 +95,52 @@ const extractNumericValue = (value) => {
   return 0;
 };
 
+const exploreUnreadFields = (value, visited = new WeakSet()) => {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  if (visited.has(value)) {
+    return undefined;
+  }
+
+  visited.add(value);
+
+  let fallback;
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (typeof key === "string" && key.toLowerCase().includes("unread")) {
+      const numeric = extractNumericValue(nestedValue);
+
+      if (numeric > 0) {
+        return numeric;
+      }
+
+      if (fallback === undefined) {
+        fallback = numeric;
+      }
+    }
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    if (nestedValue && typeof nestedValue === "object") {
+      const nestedNumeric = exploreUnreadFields(nestedValue, visited);
+
+      if (nestedNumeric !== undefined) {
+        if (nestedNumeric > 0) {
+          return nestedNumeric;
+        }
+
+        if (fallback === undefined) {
+          fallback = nestedNumeric;
+        }
+      }
+    }
+  }
+
+  return fallback;
+};
+
 export const extractUnreadCount = (conversation = {}) => {
   const localOverride = toNumberOrUndefined(conversation.__localUnreadCount);
   if (localOverride !== undefined) {
@@ -106,15 +152,26 @@ export const extractUnreadCount = (conversation = {}) => {
     conversation.unreadCount,
     conversation.unread_message_count,
     conversation.unreadMessageCount,
+    conversation.unread_messages_count,
+    conversation.unreadMessagesCount,
+    conversation.unread_messages_total,
+    conversation.unreadMessagesTotal,
+    conversation.unread_message_total,
+    conversation.unreadMessageTotal,
     conversation.unread_messages,
     conversation.unreadMessages,
     conversation.unread_total,
     conversation.unreadTotal,
-    conversation.unread,
-    conversation.unreadMessagesCount
+    conversation.unread
   );
 
-  return Math.max(0, extractNumericValue(candidate));
+  if (candidate !== undefined) {
+    return Math.max(0, extractNumericValue(candidate));
+  }
+
+  const explored = exploreUnreadFields(conversation);
+
+  return Math.max(0, explored ?? 0);
 };
 
 const extractMessageId = (message = {}) =>
