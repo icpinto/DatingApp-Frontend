@@ -330,11 +330,22 @@ function Messages({ onUnreadCountChange = () => {} }) {
         }
 
         const { messages = [], lastRead } = wsConversation;
-        const unreadCount = computeUnreadFromMessageHistory(
+        let unreadCount = computeUnreadFromMessageHistory(
           messages,
           lastRead,
           currentUserId
         );
+        const conversationKey = getConversationKey(conversation);
+        const isCurrentlySelected =
+          conversationKey !== undefined &&
+          conversationKey !== null &&
+          selectedConversationId !== undefined &&
+          selectedConversationId !== null &&
+          String(conversationKey) === String(selectedConversationId);
+
+        if (isCurrentlySelected) {
+          unreadCount = 0;
+        }
         const latestSnapshot = getLatestMessageSnapshot(messages);
 
         const updates = {};
@@ -391,6 +402,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
     currentUserId,
     getExistingLastMessageId,
     resolveConversationId,
+    getConversationKey,
+    selectedConversationId,
   ]);
 
   const handleOpenConversation = useCallback(
