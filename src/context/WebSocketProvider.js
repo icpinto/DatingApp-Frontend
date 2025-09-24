@@ -7,187 +7,88 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { extractUnreadCount as extractConversationUnreadCount } from "../utils/conversationUtils";
+import {
+  extractUnreadCount as extractConversationUnreadCount,
+  pickFirst,
+  toNumberOrUndefined,
+} from "../utils/conversationUtils";
+import {
+  extractLastReadId,
+  hasMessageChanged,
+  normalizeMessage,
+  normalizeMessageHistory,
+  resolveConversationKey,
+} from "../utils/messageUtils";
 
-const pickFirst = (...values) =>
-  values.find((value) => value !== undefined && value !== null);
+const WebSocketContext = createContext(null);
 
-const toNumberOrUndefined = (value) => {
-  if (value === undefined || value === null) return undefined;
-  const numeric = Number(value);
-  return Number.isNaN(numeric) ? undefined : numeric;
-};
+const ensureMessagesArray = (messages) =>
+  Array.isArray(messages) ? messages : [];
 
-const toStringOrUndefined = (value) => {
-  if (value === undefined || value === null) return undefined;
-  return String(value);
-};
-
-const extractTimestamp = (value) => {
-  if (!value && value !== 0) {
-    return null;
+const discardPendingDuplicates = (messages, formatted) => {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return ensureMessagesArray(messages);
   }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
+
+  if (formatted.client_msg_id) {
+    const filtered = messages.filter(
+      (messageItem) => messageItem.client_msg_id !== formatted.client_msg_id
+    );
+    return filtered.length === messages.length ? messages : filtered;
   }
-  return value;
-};
 
-const hasMessageChanged = (previous = {}, next = {}) => {
-  const allKeys = new Set([
-    ...Object.keys(previous || {}),
-    ...Object.keys(next || {}),
-  ]);
+  if (formatted.message_id && formatted.sender_id !== undefined) {
+    const pendingIndex = messages.findIndex(
+      (messageItem) =>
+        !messageItem.message_id &&
+        messageItem.sender_id === formatted.sender_id &&
+        messageItem.body === formatted.body
+    );
 
-  for (const key of allKeys) {
-    if (previous?.[key] !== next?.[key]) {
-      return true;
+    if (pendingIndex !== -1) {
+      return [
+        ...messages.slice(0, pendingIndex),
+        ...messages.slice(pendingIndex + 1),
+      ];
     }
   }
 
-  return false;
+  return messages;
 };
 
-const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
-  const conversation_id =
-    toNumberOrUndefined(
-      pickFirst(
-        message.conversation_id,
-        message.conversationId,
-        message.ConversationID,
-        message.ConversationId
-      )
-    ) ?? toNumberOrUndefined(conversationId);
+const upsertMessageById = (messages, formatted) => {
+  const normalizedMessages = ensureMessagesArray(messages);
 
-  const message_id = toStringOrUndefined(
-    pickFirst(
-      message.message_id,
-      message.id,
-      message.ID,
-      message.MessageID,
-      message.MessageId
-    )
-  );
-
-  const client_msg_id = toStringOrUndefined(
-    pickFirst(
-      message.client_msg_id,
-      message.clientMsgId,
-      message.clientMsgID,
-      message.ClientMsgId,
-      message.ClientMsgID,
-      message.temp_id,
-      message.tempId
-    )
-  );
-
-  const sender_id = toNumberOrUndefined(
-    pickFirst(
-      message.sender_id,
-      message.senderId,
-      message.SenderID,
-      message.SenderId,
-      message.user_id,
-      message.UserID,
-      message.UserId,
-      message.sender?.id,
-      message.sender?.user_id,
-      message.sender?.userId,
-      message.user?.id,
-      message.user?.user_id,
-      message.user?.userId,
-      message.author?.id,
-      message.author?.user_id,
-      message.author?.userId
-    )
-  );
-
-  const receiver_id = toNumberOrUndefined(
-    pickFirst(
-      message.receiver_id,
-      message.receiverId,
-      message.ReceiverID,
-      message.ReceiverId,
-      message.to,
-      message.to_id,
-      message.ToID,
-      message.ToId,
-      message.receiver?.id,
-      message.receiver?.user_id,
-      message.receiver?.userId,
-      message.recipient?.id,
-      message.recipient?.user_id,
-      message.recipient?.userId
-    )
-  );
-
-  const body = pickFirst(message.body, message.message, message.Body, "");
-  const mime_type = pickFirst(
-    message.mime_type,
-    message.mimeType,
-    message.MimeType,
-    "text/plain"
-  );
-
-  const timestamp = extractTimestamp(
-    pickFirst(
-      message.timestamp,
-      message.created_at,
-      message.createdAt,
-      message.CreatedAt,
-      message.sent_at,
-      message.sentAt,
-      message.SentAt
-    )
-  );
-
-  return {
-    conversation_id,
-    message_id,
-    client_msg_id,
-    sender_id,
-    receiver_id,
-    body,
-    mime_type,
-    timestamp,
-    ...overrides,
-  };
-};
-
-const extractLastReadId = (payload = {}) =>
-  toNumberOrUndefined(
-    pickFirst(
-      payload.last_read_message_id,
-      payload.lastReadMessageId,
-      payload.last_read?.message_id,
-      payload.last_read?.messageId,
-      payload.lastRead?.message_id,
-      payload.lastRead?.messageId
-    )
-  );
-
-const resolveConversationKey = (
-  msg = {},
-  formattedMessage = {},
-  payload = {}
-) => {
-  const candidate = pickFirst(
-    msg.conversation_id,
-    payload.conversation_id,
-    payload.conversationId,
-    payload.conversationID,
-    formattedMessage.conversation_id
-  );
-
-  if (candidate === undefined || candidate === null) {
-    return null;
+  if (!formatted.message_id) {
+    return { messages: normalizedMessages, changed: false, found: false };
   }
 
-  return String(candidate);
-};
+  const existingIndex = normalizedMessages.findIndex(
+    (messageItem) => messageItem?.message_id === formatted.message_id
+  );
 
-const WebSocketContext = createContext(null);
+  if (existingIndex === -1) {
+    return {
+      messages: [...normalizedMessages, formatted],
+      changed: true,
+      found: false,
+    };
+  }
+
+  const mergedMessage = {
+    ...normalizedMessages[existingIndex],
+    ...formatted,
+  };
+
+  if (!hasMessageChanged(normalizedMessages[existingIndex], mergedMessage)) {
+    return { messages: normalizedMessages, changed: false, found: true };
+  }
+
+  const nextMessages = [...normalizedMessages];
+  nextMessages.splice(existingIndex, 1, mergedMessage);
+
+  return { messages: nextMessages, changed: true, found: true };
+};
 
 export const WebSocketProvider = ({ children }) => {
   const ws = useRef(null);
@@ -211,30 +112,67 @@ export const WebSocketProvider = ({ children }) => {
     }
   }, []);
 
+  const updateConversationState = useCallback((conversationId, updater) => {
+    if (conversationId === undefined || conversationId === null) {
+      return;
+    }
+
+    setConversations((prev) => {
+      const key = String(conversationId);
+      const existing = prev[key];
+      const previous = existing || { messages: [], lastRead: null };
+      const next = updater(previous);
+
+      if (!next) {
+        return prev;
+      }
+
+      if (existing && next === existing) {
+        return prev;
+      }
+
+      if (!existing && next === previous) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [key]: next,
+      };
+    });
+  }, []);
+
   const joinConversation = useCallback(
     (conversationId) => {
-      joinedConversations.current.add(String(conversationId));
-      send({ type: "join", conversation_id: String(conversationId) });
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+
+      const key = String(conversationId);
+      joinedConversations.current.add(key);
+      send({ type: "join", conversation_id: key });
     },
     [send]
   );
 
   const leaveConversation = useCallback(
     (conversationId) => {
-      joinedConversations.current.delete(String(conversationId));
-      send({ type: "leave", conversation_id: String(conversationId) });
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+
+      const key = String(conversationId);
+      joinedConversations.current.delete(key);
+      send({ type: "leave", conversation_id: key });
     },
     [send]
   );
 
-  const setConversationHistory = useCallback((conversationId, msgs) => {
-    setConversations((prev) => {
-      const convo = prev[conversationId] || { messages: [], lastRead: null };
-      const normalizedMessages = Array.isArray(msgs)
-        ? msgs.map((message) =>
-            normalizeMessage(conversationId, message, { pending: false })
-          )
-        : [];
+  const setConversationHistory = useCallback(
+    (conversationId, messages) => {
+      const normalizedMessages = normalizeMessageHistory(conversationId, messages, {
+        pending: false,
+      });
 
       normalizedMessages.forEach((message) => {
         if (message.message_id) {
@@ -242,377 +180,373 @@ export const WebSocketProvider = ({ children }) => {
         }
       });
 
-      return {
-        ...prev,
-        [conversationId]: {
-          ...convo,
-          messages: normalizedMessages,
-        },
-      };
-    });
-  }, []);
+      updateConversationState(conversationId, (conversation) => ({
+        ...conversation,
+        messages: normalizedMessages,
+      }));
+    },
+    [updateConversationState]
+  );
 
-  const addLocalMessage = useCallback((conversationId, message) => {
-    const normalized = normalizeMessage(conversationId, message, {
-      pending: true,
-    });
+  const addLocalMessage = useCallback(
+    (conversationId, message) => {
+      const normalized = normalizeMessage(conversationId, message, {
+        pending: true,
+      });
 
-    setConversations((prev) => {
-      const convo = prev[conversationId] || { messages: [], lastRead: null };
-      return {
-        ...prev,
-        [conversationId]: {
-          ...convo,
-          messages: [...convo.messages, normalized],
-        },
-      };
-    });
-  }, []);
+      updateConversationState(conversationId, (conversation) => {
+        const history = ensureMessagesArray(conversation.messages);
+
+        return {
+          ...conversation,
+          messages: [...history, normalized],
+        };
+      });
+    },
+    [updateConversationState]
+  );
 
   const markRead = useCallback(
     (conversationId, messageId) => {
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+
       send({
         type: "read",
         conversation_id: String(conversationId),
         message_id: messageId,
       });
-      setConversations((prev) => {
-        const convo = prev[conversationId] || { messages: [], lastRead: null };
+
+      updateConversationState(conversationId, (conversation) => {
+        if (conversation.lastRead === messageId) {
+          return conversation;
+        }
+
         return {
-          ...prev,
-          [conversationId]: { ...convo, lastRead: messageId },
+          ...conversation,
+          lastRead: messageId,
         };
       });
     },
-    [send]
+    [send, updateConversationState]
   );
 
   const sendMessage = useCallback((messageData) => send(messageData), [send]);
 
-  const handleMessage = (event) => {
-    const msg = JSON.parse(event.data);
+  const processIncomingMessage = useCallback(
+    (msg) => {
+      const payload = msg?.payload || {};
+      const formatted = normalizeMessage(msg?.conversation_id, payload, {
+        pending: false,
+      });
+      const conversationKey = resolveConversationKey(msg, formatted, payload);
 
-    switch (msg.type) {
-      case "message": {
-        const payload = msg.payload || {};
-        const formatted = normalizeMessage(msg.conversation_id, payload, {
-          pending: false,
-        });
-        const id = formatted.message_id;
-
-        if (id && processedMessageIds.current.has(id)) {
-          break;
+      if (formatted.message_id) {
+        if (processedMessageIds.current.has(formatted.message_id)) {
+          return;
         }
 
-        if (id) {
-          processedMessageIds.current.add(id);
-        }
-
-        setConversations((prev) => {
-          let conversationKey = null;
-
-          if (msg.conversation_id !== undefined && msg.conversation_id !== null) {
-            conversationKey = String(msg.conversation_id);
-          } else if (
-            formatted.conversation_id !== undefined &&
-            formatted.conversation_id !== null
-          ) {
-            conversationKey = String(formatted.conversation_id);
-          }
-
-          if (!conversationKey) {
-            return prev;
-          }
-
-          const convo = prev[conversationKey] || {
-            messages: [],
-            lastRead: null,
-          };
-          let updatedMessages = [...convo.messages];
-
-          if (formatted.client_msg_id) {
-            updatedMessages = updatedMessages.filter(
-              (messageItem) =>
-                messageItem.client_msg_id !== formatted.client_msg_id
-            );
-          } else if (formatted.message_id && formatted.sender_id !== undefined) {
-            const pendingIndex = updatedMessages.findIndex(
-              (messageItem) =>
-                !messageItem.message_id &&
-                messageItem.sender_id === formatted.sender_id &&
-                messageItem.body === formatted.body
-            );
-
-            if (pendingIndex !== -1) {
-              updatedMessages.splice(pendingIndex, 1);
-            }
-          }
-
-          if (formatted.message_id) {
-            const existingIndex = updatedMessages.findIndex(
-              (messageItem) => messageItem.message_id === formatted.message_id
-            );
-
-            if (existingIndex !== -1) {
-              const mergedMessage = {
-                ...updatedMessages[existingIndex],
-                ...formatted,
-              };
-              updatedMessages.splice(existingIndex, 1, mergedMessage);
-
-              return {
-                ...prev,
-                [conversationKey]: { ...convo, messages: updatedMessages },
-              };
-            }
-          }
-
-          updatedMessages.push(formatted);
-
-          return {
-            ...prev,
-            [conversationKey]: { ...convo, messages: updatedMessages },
-          };
-        });
-        break;
+        processedMessageIds.current.add(formatted.message_id);
       }
-      case "conversation_updated": {
-        const payload = msg.payload || {};
-        const messagePayload =
-          pickFirst(
-            payload.message,
-            payload.last_message,
-            payload.latest_message,
-            payload.lastMessage,
-            payload.latestMessage
-          ) || payload;
-        const formatted = normalizeMessage(msg.conversation_id, messagePayload, {
-          pending: false,
-        });
-        let conversationKey = resolveConversationKey(msg, formatted, payload);
-        if (!conversationKey) {
-          const nestedConversation = pickFirst(
-            payload.conversation,
-            payload.data?.conversation,
-            payload.details,
-            payload.conversation_details,
-            payload.conversationDetails
-          );
-          const nestedId = toNumberOrUndefined(
-            pickFirst(
-              nestedConversation?.conversation_id,
-              nestedConversation?.conversationId,
-              nestedConversation?.conversationID,
-              nestedConversation?.id,
-              nestedConversation?.ID
-            )
-          );
-          if (nestedId !== undefined && nestedId !== null) {
-            conversationKey = String(nestedId);
-          }
-        }
-        const lastReadId = extractLastReadId(payload);
-        const unreadFromPayload = extractConversationUnreadCount(payload);
-        const normalizedUnread = toNumberOrUndefined(unreadFromPayload);
-        const formattedMessageId = toNumberOrUndefined(formatted.message_id);
+
+      if (!conversationKey) {
+        return;
+      }
+
+      updateConversationState(conversationKey, (conversation) => {
+        const existingMessages = ensureMessagesArray(conversation.messages);
+        const withoutPending = discardPendingDuplicates(
+          existingMessages,
+          formatted
+        );
+
+        const { messages: merged, changed, found } = upsertMessageById(
+          withoutPending,
+          formatted
+        );
 
         if (formatted.message_id) {
-          processedMessageIds.current.add(formatted.message_id);
-        }
-
-        if (!conversationKey) {
-          break;
-        }
-
-        setConversations((prev) => {
-          const convo = prev[conversationKey] || { messages: [], lastRead: null };
-          const existingMessages = Array.isArray(convo.messages)
-            ? convo.messages
-            : [];
-
-          let nextMessages = existingMessages;
-          let messagesChanged = false;
-
-          if (formatted.message_id) {
-            const existingIndex = existingMessages.findIndex(
-              (messageItem) => messageItem?.message_id === formatted.message_id
-            );
-
-            if (existingIndex !== -1) {
-              const mergedMessage = {
-                ...existingMessages[existingIndex],
-                ...formatted,
+          if (!changed && found) {
+            if (withoutPending !== existingMessages) {
+              return {
+                ...conversation,
+                messages: withoutPending,
               };
-
-              if (
-                hasMessageChanged(existingMessages[existingIndex], mergedMessage)
-              ) {
-                nextMessages = [...existingMessages];
-                nextMessages.splice(existingIndex, 1, mergedMessage);
-                messagesChanged = true;
-              }
-            } else {
-              nextMessages = [...existingMessages, formatted];
-              messagesChanged = true;
             }
+
+            return conversation;
           }
 
-          const previousLastRead = convo.lastRead;
-          let nextLastRead = previousLastRead;
-          let lastReadChanged = false;
+          return {
+            ...conversation,
+            messages: merged,
+          };
+        }
 
-          if (
-            lastReadId !== undefined &&
-            lastReadId !== null &&
-            (previousLastRead === undefined ||
-              previousLastRead === null ||
-              lastReadId > previousLastRead)
-          ) {
-            nextLastRead = lastReadId;
-            lastReadChanged = true;
-          }
+        if (withoutPending !== existingMessages) {
+          return {
+            ...conversation,
+            messages: [...withoutPending, formatted],
+          };
+        }
 
-          const previousUnread = toNumberOrUndefined(
-            pickFirst(
-              convo.__localUnreadCount,
-              convo.unread_count,
-              convo.unreadCount,
-              convo.unread_messages_count,
-              convo.unreadMessagesCount
-            )
+        return {
+          ...conversation,
+          messages: [...existingMessages, formatted],
+        };
+      });
+    },
+    [updateConversationState]
+  );
+
+  const processConversationUpdate = useCallback(
+    (msg) => {
+      const payload = msg?.payload || {};
+      const messagePayload =
+        pickFirst(
+          payload.message,
+          payload.last_message,
+          payload.latest_message,
+          payload.lastMessage,
+          payload.latestMessage
+        ) || payload;
+
+      const formatted = normalizeMessage(msg?.conversation_id, messagePayload, {
+        pending: false,
+      });
+
+      const conversationKey = resolveConversationKey(msg, formatted, payload);
+
+      if (formatted.message_id) {
+        processedMessageIds.current.add(formatted.message_id);
+      }
+
+      if (!conversationKey) {
+        return;
+      }
+
+      const lastReadId = extractLastReadId(payload);
+      const unreadFromPayload = extractConversationUnreadCount(payload);
+      const normalizedUnread = toNumberOrUndefined(unreadFromPayload);
+      const formattedMessageId = toNumberOrUndefined(formatted.message_id);
+
+      updateConversationState(conversationKey, (conversation) => {
+        const existingMessages = ensureMessagesArray(conversation.messages);
+        const withoutPending = discardPendingDuplicates(
+          existingMessages,
+          formatted
+        );
+
+        let nextMessages = withoutPending;
+        let messagesChanged = false;
+
+        if (formatted.message_id) {
+          const { messages: mergedMessages, changed } = upsertMessageById(
+            withoutPending,
+            formatted
           );
-          let unreadChanged = false;
-          let nextUnread = previousUnread;
 
-          if (
-            normalizedUnread !== undefined &&
-            normalizedUnread !== null &&
-            normalizedUnread !== previousUnread
-          ) {
-            nextUnread = normalizedUnread;
+          if (changed) {
+            nextMessages = mergedMessages;
+            messagesChanged = true;
+          }
+        }
+
+        const previousLastRead = conversation.lastRead;
+        let nextLastRead = previousLastRead;
+        let lastReadChanged = false;
+
+        if (
+          lastReadId !== undefined &&
+          lastReadId !== null &&
+          (previousLastRead === undefined ||
+            previousLastRead === null ||
+            lastReadId > previousLastRead)
+        ) {
+          nextLastRead = lastReadId;
+          lastReadChanged = true;
+        }
+
+        const previousUnread = toNumberOrUndefined(
+          pickFirst(
+            conversation.__localUnreadCount,
+            conversation.unread_count,
+            conversation.unreadCount,
+            conversation.unread_messages_count,
+            conversation.unreadMessagesCount
+          )
+        );
+        let nextUnread = previousUnread;
+        let unreadChanged = false;
+
+        if (
+          normalizedUnread !== undefined &&
+          normalizedUnread !== null &&
+          normalizedUnread !== previousUnread
+        ) {
+          nextUnread = normalizedUnread;
+          unreadChanged = true;
+        } else if (
+          normalizedUnread === undefined &&
+          formattedMessageId !== undefined &&
+          formattedMessageId !== null &&
+          lastReadId !== undefined &&
+          lastReadId !== null
+        ) {
+          const computedUnread = Math.max(0, formattedMessageId - lastReadId);
+
+          if (computedUnread !== previousUnread) {
+            nextUnread = computedUnread;
             unreadChanged = true;
-          } else if (
-            normalizedUnread === undefined &&
-            formattedMessageId !== undefined &&
-            formattedMessageId !== null &&
-            lastReadId !== undefined &&
-            lastReadId !== null
-          ) {
-            const computedUnread = Math.max(0, formattedMessageId - lastReadId);
+          }
+        }
 
-            if (computedUnread !== previousUnread) {
-              nextUnread = computedUnread;
-              unreadChanged = true;
-            }
+        if (!messagesChanged && !lastReadChanged && !unreadChanged) {
+          if (withoutPending !== existingMessages) {
+            return {
+              ...conversation,
+              messages: withoutPending,
+            };
           }
 
-          if (
-            !messagesChanged &&
-            !lastReadChanged &&
-            !unreadChanged &&
-            prev[conversationKey]
-          ) {
-            return prev;
-          }
+          return conversation;
+        }
 
-          return {
-            ...prev,
-            [conversationKey]: {
-              ...convo,
-              messages: messagesChanged ? nextMessages : existingMessages,
-              lastRead: lastReadChanged ? nextLastRead : previousLastRead,
-              ...(unreadChanged
-                ? {
-                    __localUnreadCount: nextUnread,
-                    unread_count: nextUnread,
-                    unreadCount: nextUnread,
-                    unread_messages_count: nextUnread,
-                  }
-                : {}),
-            },
-          };
-        });
+        const updatedConversation = {
+          ...conversation,
+          messages: messagesChanged ? nextMessages : withoutPending,
+        };
 
-        break;
+        if (lastReadChanged) {
+          updatedConversation.lastRead = nextLastRead;
+        }
+
+        if (unreadChanged) {
+          updatedConversation.__localUnreadCount = nextUnread;
+          updatedConversation.unread_count = nextUnread;
+          updatedConversation.unreadCount = nextUnread;
+          updatedConversation.unread_messages_count = nextUnread;
+        }
+
+        return updatedConversation;
+      });
+    },
+    [updateConversationState]
+  );
+
+  const processReadReceipt = useCallback(
+    (msg) => {
+      if (
+        !msg ||
+        msg.conversation_id === undefined ||
+        msg.conversation_id === null
+      ) {
+        return;
       }
-      case "read": {
-        setConversations((prev) => {
-          const convo = prev[msg.conversation_id] || {
-            messages: [],
-            lastRead: null,
-          };
-          return {
-            ...prev,
-            [msg.conversation_id]: {
-              ...convo,
-              lastRead: msg.message_id,
-            },
-          };
-        });
-        break;
+
+      updateConversationState(msg.conversation_id, (conversation) => {
+        if (conversation.lastRead === msg.message_id) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          lastRead: msg.message_id,
+        };
+      });
+    },
+    [updateConversationState]
+  );
+
+  const handleServerError = useCallback((msg) => {
+    console.error("WebSocket server error:", msg?.error);
+    setLastError(msg?.error || null);
+  }, []);
+
+  const messageHandlers = useMemo(
+    () => ({
+      message: processIncomingMessage,
+      conversation_updated: processConversationUpdate,
+      read: processReadReceipt,
+      error: handleServerError,
+    }),
+    [
+      handleServerError,
+      processConversationUpdate,
+      processIncomingMessage,
+      processReadReceipt,
+    ]
+  );
+
+  const handleMessage = useCallback(
+    (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        const handler = messageHandlers[msg.type];
+
+        if (handler) {
+          handler(msg);
+        }
+      } catch (error) {
+        console.error("Failed to parse WebSocket message", error);
       }
-      case "error":
-        console.error("WebSocket server error:", msg.error);
-        setLastError(msg.error);
-        break;
-      case "pong":
-        // ignore
-        break;
-      default:
-        break;
-    }
-  };
+    },
+    [messageHandlers]
+  );
 
-  const setupSocket = (token) => {
-    const activeToken = token ?? latestTokenRef.current;
+  const setupSocket = useCallback(
+    (token) => {
+      const activeToken = token ?? latestTokenRef.current;
 
-    if (reconnectTimeout.current) {
-      clearTimeout(reconnectTimeout.current);
-      reconnectTimeout.current = null;
-    }
-
-    // Close existing connection
-    if (ws.current) {
-      ws.current.close();
-    }
-
-    const wsEndpoint = activeToken
-      ? `${wsUrl}/ws?token=${encodeURIComponent(activeToken)}`
-      : `${wsUrl}/ws`;
-
-    const socket = new WebSocket(wsEndpoint);
-    ws.current = socket;
-
-    socket.addEventListener("open", () => {
-      console.log("Connected to WebSocket");
-      joinedConversations.current.forEach((id) =>
-        socket.send(JSON.stringify({ type: "join", conversation_id: id }))
-      );
-    });
-    socket.addEventListener("message", handleMessage);
-    socket.addEventListener("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-    socket.addEventListener("close", () => {
-      console.log("WebSocket connection closed.");
-      if (shouldReconnect.current) {
-        reconnectTimeout.current = setTimeout(() => setupSocket(), 5000);
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+        reconnectTimeout.current = null;
       }
-    });
 
-    // Send pings periodically to keep the connection alive
-    const pingInterval = setInterval(() => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify({ type: "ping" }));
+      if (ws.current) {
+        ws.current.close();
       }
-    }, 30000);
 
-    return () => {
-      clearInterval(pingInterval);
-      socket.removeEventListener("message", handleMessage);
-      socket.close();
-    };
-  };
+      const wsEndpoint = activeToken
+        ? `${wsUrl}/ws?token=${encodeURIComponent(activeToken)}`
+        : `${wsUrl}/ws`;
+
+      const socket = new WebSocket(wsEndpoint);
+      ws.current = socket;
+
+      socket.addEventListener("open", () => {
+        console.log("Connected to WebSocket");
+        joinedConversations.current.forEach((id) =>
+          socket.send(JSON.stringify({ type: "join", conversation_id: id }))
+        );
+      });
+
+      socket.addEventListener("message", handleMessage);
+      socket.addEventListener("error", (error) => {
+        console.error("WebSocket error:", error);
+      });
+      socket.addEventListener("close", () => {
+        console.log("WebSocket connection closed.");
+        if (shouldReconnect.current) {
+          reconnectTimeout.current = setTimeout(() => setupSocket(), 5000);
+        }
+      });
+
+      const pingInterval = setInterval(() => {
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+          ws.current.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 30000);
+
+      return () => {
+        clearInterval(pingInterval);
+        socket.removeEventListener("message", handleMessage);
+        socket.close();
+      };
+    },
+    [handleMessage, wsUrl]
+  );
 
   useEffect(() => {
     const handleTokenChange = () => {
@@ -640,6 +574,7 @@ export const WebSocketProvider = ({ children }) => {
   useEffect(() => {
     shouldReconnect.current = true;
     const cleanup = setupSocket(authToken);
+
     return () => {
       shouldReconnect.current = false;
       clearTimeout(reconnectTimeout.current);
@@ -647,7 +582,7 @@ export const WebSocketProvider = ({ children }) => {
       cleanup();
       ws.current = null;
     };
-  }, [authToken]);
+  }, [authToken, setupSocket]);
 
   const contextValue = useMemo(
     () => ({

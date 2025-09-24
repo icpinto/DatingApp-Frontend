@@ -39,6 +39,117 @@ import {
   getCurrentUserId,
 } from "./conversationDisplayHelpers";
 
+const extractRealtimeUnread = (conversation = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      conversation.__localUnreadCount,
+      conversation.unread_count,
+      conversation.unreadCount,
+      conversation.unread_messages_count,
+      conversation.unreadMessagesCount,
+      conversation.unread_messages_total,
+      conversation.unreadMessagesTotal,
+      conversation.unread_message_total,
+      conversation.unreadMessageTotal,
+      conversation.unread_messages,
+      conversation.unreadMessages,
+      conversation.unread_total,
+      conversation.unreadTotal,
+      conversation.unread
+    )
+  );
+
+const buildRealtimePatch = ({
+  conversation,
+  wsConversation,
+  currentUserId,
+  selectedConversationId,
+  conversationKey,
+}) => {
+  if (!wsConversation || typeof wsConversation !== "object") {
+    return null;
+  }
+
+  const messages = Array.isArray(wsConversation.messages)
+    ? wsConversation.messages
+    : [];
+  const lastRead = wsConversation.lastRead;
+  const latestSnapshot = getLatestMessageSnapshot(messages);
+
+  let unreadCount = computeUnreadFromMessageHistory(
+    messages,
+    lastRead,
+    currentUserId
+  );
+  const wsUnreadCount = extractRealtimeUnread(wsConversation);
+
+  if (wsUnreadCount !== undefined && wsUnreadCount !== null) {
+    unreadCount = wsUnreadCount;
+  }
+
+  const isSelected =
+    selectedConversationId !== undefined &&
+    selectedConversationId !== null &&
+    conversationKey !== undefined &&
+    conversationKey !== null &&
+    String(conversationKey) === String(selectedConversationId);
+
+  if (isSelected) {
+    unreadCount = 0;
+  }
+
+  const updates = {};
+  const previousUnread = toNumberOrUndefined(conversation.__localUnreadCount);
+
+  if (previousUnread !== unreadCount) {
+    updates.__localUnreadCount = unreadCount;
+  }
+
+  const normalizedLastRead = toNumberOrUndefined(lastRead);
+  const existingLastRead = extractLastReadMessageId(conversation);
+
+  if (
+    normalizedLastRead !== undefined &&
+    normalizedLastRead !== existingLastRead
+  ) {
+    updates.__lastReadMessageId = normalizedLastRead;
+    updates.last_read_message_id = normalizedLastRead;
+    updates.lastReadMessageId = normalizedLastRead;
+  }
+
+  const previousLastId = extractLastMessageId(conversation);
+
+  if (
+    latestSnapshot.messageId !== undefined &&
+    latestSnapshot.messageId !== previousLastId
+  ) {
+    updates.__lastMessageId = latestSnapshot.messageId;
+
+    if (latestSnapshot.message) {
+      updates.last_message = latestSnapshot.message;
+    }
+
+    if (latestSnapshot.body !== undefined) {
+      updates.last_message_body = latestSnapshot.body;
+      updates.lastMessageBody = latestSnapshot.body;
+    }
+
+    if (latestSnapshot.mimeType !== undefined) {
+      updates.last_message_mime_type = latestSnapshot.mimeType;
+      updates.lastMessageMimeType = latestSnapshot.mimeType;
+    }
+
+    if (latestSnapshot.timestamp !== undefined) {
+      updates.last_message_timestamp = latestSnapshot.timestamp;
+      updates.lastMessageTimestamp = latestSnapshot.timestamp;
+      updates.last_message_sent_at = latestSnapshot.timestamp;
+      updates.lastMessageSentAt = latestSnapshot.timestamp;
+    }
+  }
+
+  return Object.keys(updates).length > 0 ? updates : null;
+};
+
 function Messages({ onUnreadCountChange = () => {} }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -284,24 +395,21 @@ function Messages({ onUnreadCountChange = () => {} }) {
     }
   }, [conversations, getConversationKey, selectedConversationId]);
 
-  useEffect(() => {
-    if (!wsConversations || typeof wsConversations !== "object") {
-      return;
-    }
-
-    const wsKeys = Object.keys(wsConversations);
-    if (wsKeys.length === 0) {
-      return;
-    }
-
-    setConversations((prev) => {
-      if (!Array.isArray(prev) || prev.length === 0) {
-        return prev;
+  const applyRealtimeUpdates = useCallback(
+    (previous = []) => {
+      if (
+        !Array.isArray(previous) ||
+        previous.length === 0 ||
+        !wsConversations ||
+        typeof wsConversations !== "object" ||
+        Object.keys(wsConversations).length === 0
+      ) {
+        return previous;
       }
 
-      let changed = false;
+      let hasChanges = false;
 
-      const updatedList = prev.map((conversation) => {
+      const nextConversations = previous.map((conversation) => {
         const conversationId = resolveConversationId(conversation);
         if (conversationId === undefined || conversationId === null) {
           return conversation;
@@ -315,114 +423,37 @@ function Messages({ onUnreadCountChange = () => {} }) {
           return conversation;
         }
 
-        const { messages = [], lastRead } = wsConversation;
-        let unreadCount = computeUnreadFromMessageHistory(
-          messages,
-          lastRead,
-          currentUserId
-        );
-        const wsUnreadCandidate = pickFirst(
-          wsConversation.__localUnreadCount,
-          wsConversation.unread_count,
-          wsConversation.unreadCount,
-          wsConversation.unread_messages_count,
-          wsConversation.unreadMessagesCount,
-          wsConversation.unread_messages_total,
-          wsConversation.unreadMessagesTotal,
-          wsConversation.unread_message_total,
-          wsConversation.unreadMessageTotal,
-          wsConversation.unread_messages,
-          wsConversation.unreadMessages,
-          wsConversation.unread_total,
-          wsConversation.unreadTotal,
-          wsConversation.unread
-        );
-        const wsUnreadCount = toNumberOrUndefined(wsUnreadCandidate);
-
-        if (wsUnreadCount !== undefined && wsUnreadCount !== null) {
-          unreadCount = wsUnreadCount;
-        }
         const conversationKey = getConversationKey(conversation);
-        const isCurrentlySelected =
-          conversationKey !== undefined &&
-          conversationKey !== null &&
-          selectedConversationId !== undefined &&
-          selectedConversationId !== null &&
-          String(conversationKey) === String(selectedConversationId);
+        const patch = buildRealtimePatch({
+          conversation,
+          wsConversation,
+          currentUserId,
+          selectedConversationId,
+          conversationKey,
+        });
 
-        if (isCurrentlySelected) {
-          unreadCount = 0;
-        }
-        const latestSnapshot = getLatestMessageSnapshot(messages);
-
-        const updates = {};
-        const prevUnread = toNumberOrUndefined(
-          conversation.__localUnreadCount
-        );
-
-        if (prevUnread !== unreadCount) {
-          updates.__localUnreadCount = unreadCount;
+        if (!patch) {
+          return conversation;
         }
 
-        const previousLastId = extractLastMessageId(conversation);
-
-        const normalizedLastRead = toNumberOrUndefined(lastRead);
-        const existingLastRead = extractLastReadMessageId(conversation);
-
-        if (
-          normalizedLastRead !== undefined &&
-          normalizedLastRead !== existingLastRead
-        ) {
-          updates.__lastReadMessageId = normalizedLastRead;
-          updates.last_read_message_id = normalizedLastRead;
-          updates.lastReadMessageId = normalizedLastRead;
-        }
-
-        if (
-          latestSnapshot.messageId !== undefined &&
-          latestSnapshot.messageId !== previousLastId
-        ) {
-          updates.__lastMessageId = latestSnapshot.messageId;
-
-          if (latestSnapshot.message) {
-            updates.last_message = latestSnapshot.message;
-          }
-
-          if (latestSnapshot.body !== undefined) {
-            updates.last_message_body = latestSnapshot.body;
-            updates.lastMessageBody = latestSnapshot.body;
-          }
-
-          if (latestSnapshot.mimeType !== undefined) {
-            updates.last_message_mime_type = latestSnapshot.mimeType;
-            updates.lastMessageMimeType = latestSnapshot.mimeType;
-          }
-
-          if (latestSnapshot.timestamp !== undefined) {
-            updates.last_message_timestamp = latestSnapshot.timestamp;
-            updates.lastMessageTimestamp = latestSnapshot.timestamp;
-            updates.last_message_sent_at = latestSnapshot.timestamp;
-            updates.lastMessageSentAt = latestSnapshot.timestamp;
-          }
-        }
-
-        if (Object.keys(updates).length > 0) {
-          changed = true;
-          return { ...conversation, ...updates };
-        }
-
-        return conversation;
+        hasChanges = true;
+        return { ...conversation, ...patch };
       });
 
-      return changed ? updatedList : prev;
-    });
-  }, [
-    wsConversations,
-    currentUserId,
-    resolveConversationId,
-    getConversationKey,
-    selectedConversationId,
-  ]);
+      return hasChanges ? nextConversations : previous;
+    },
+    [
+      currentUserId,
+      getConversationKey,
+      resolveConversationId,
+      selectedConversationId,
+      wsConversations,
+    ]
+  );
+
+  useEffect(() => {
+    setConversations((prev) => applyRealtimeUpdates(prev));
+  }, [applyRealtimeUpdates]);
 
   const handleOpenConversation = useCallback(
     (conversation) => {
