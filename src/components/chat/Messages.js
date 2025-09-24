@@ -321,6 +321,27 @@ function Messages({ onUnreadCountChange = () => {} }) {
           lastRead,
           currentUserId
         );
+        const wsUnreadCandidate = pickFirst(
+          wsConversation.__localUnreadCount,
+          wsConversation.unread_count,
+          wsConversation.unreadCount,
+          wsConversation.unread_messages_count,
+          wsConversation.unreadMessagesCount,
+          wsConversation.unread_messages_total,
+          wsConversation.unreadMessagesTotal,
+          wsConversation.unread_message_total,
+          wsConversation.unreadMessageTotal,
+          wsConversation.unread_messages,
+          wsConversation.unreadMessages,
+          wsConversation.unread_total,
+          wsConversation.unreadTotal,
+          wsConversation.unread
+        );
+        const wsUnreadCount = toNumberOrUndefined(wsUnreadCandidate);
+
+        if (wsUnreadCount !== undefined && wsUnreadCount !== null) {
+          unreadCount = wsUnreadCount;
+        }
         const conversationKey = getConversationKey(conversation);
         const isCurrentlySelected =
           conversationKey !== undefined &&

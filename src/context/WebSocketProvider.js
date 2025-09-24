@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { extractUnreadCount as extractConversationUnreadCount } from "../utils/conversationUtils";
 
 const pickFirst = (...values) =>
   values.find((value) => value !== undefined && value !== null);
@@ -377,11 +378,42 @@ export const WebSocketProvider = ({ children }) => {
       }
       case "conversation_updated": {
         const payload = msg.payload || {};
-        const formatted = normalizeMessage(msg.conversation_id, payload, {
+        const messagePayload =
+          pickFirst(
+            payload.message,
+            payload.last_message,
+            payload.latest_message,
+            payload.lastMessage,
+            payload.latestMessage
+          ) || payload;
+        const formatted = normalizeMessage(msg.conversation_id, messagePayload, {
           pending: false,
         });
-        const conversationKey = resolveConversationKey(msg, formatted, payload);
+        let conversationKey = resolveConversationKey(msg, formatted, payload);
+        if (!conversationKey) {
+          const nestedConversation = pickFirst(
+            payload.conversation,
+            payload.data?.conversation,
+            payload.details,
+            payload.conversation_details,
+            payload.conversationDetails
+          );
+          const nestedId = toNumberOrUndefined(
+            pickFirst(
+              nestedConversation?.conversation_id,
+              nestedConversation?.conversationId,
+              nestedConversation?.conversationID,
+              nestedConversation?.id,
+              nestedConversation?.ID
+            )
+          );
+          if (nestedId !== undefined && nestedId !== null) {
+            conversationKey = String(nestedId);
+          }
+        }
         const lastReadId = extractLastReadId(payload);
+        const unreadFromPayload = extractConversationUnreadCount(payload);
+        const normalizedUnread = toNumberOrUndefined(unreadFromPayload);
 
         if (formatted.message_id) {
           processedMessageIds.current.add(formatted.message_id);
@@ -439,7 +471,33 @@ export const WebSocketProvider = ({ children }) => {
             lastReadChanged = true;
           }
 
-          if (!messagesChanged && !lastReadChanged && prev[conversationKey]) {
+          const previousUnread = toNumberOrUndefined(
+            pickFirst(
+              convo.__localUnreadCount,
+              convo.unread_count,
+              convo.unreadCount,
+              convo.unread_messages_count,
+              convo.unreadMessagesCount
+            )
+          );
+          let unreadChanged = false;
+          let nextUnread = previousUnread;
+
+          if (
+            normalizedUnread !== undefined &&
+            normalizedUnread !== null &&
+            normalizedUnread !== previousUnread
+          ) {
+            nextUnread = normalizedUnread;
+            unreadChanged = true;
+          }
+
+          if (
+            !messagesChanged &&
+            !lastReadChanged &&
+            !unreadChanged &&
+            prev[conversationKey]
+          ) {
             return prev;
           }
 
@@ -449,6 +507,14 @@ export const WebSocketProvider = ({ children }) => {
               ...convo,
               messages: messagesChanged ? nextMessages : existingMessages,
               lastRead: lastReadChanged ? nextLastRead : previousLastRead,
+              ...(unreadChanged
+                ? {
+                    __localUnreadCount: nextUnread,
+                    unread_count: nextUnread,
+                    unreadCount: nextUnread,
+                    unread_messages_count: nextUnread,
+                  }
+                : {}),
             },
           };
         });
