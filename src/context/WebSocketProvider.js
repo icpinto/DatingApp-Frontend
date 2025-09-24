@@ -474,8 +474,17 @@ export const WebSocketProvider = ({ children }) => {
           messages: messagesChanged ? nextMessages : withoutPending,
         };
 
+        if (formattedMessageId !== undefined && formattedMessageId !== null) {
+          updatedConversation.__lastMessageId = formattedMessageId;
+          updatedConversation.last_message_id = formattedMessageId;
+          updatedConversation.lastMessageId = formattedMessageId;
+          updatedConversation.message_id = formattedMessageId;
+        }
+
         if (lastReadChanged) {
           updatedConversation.lastRead = nextLastRead;
+          updatedConversation.last_read_message_id = nextLastRead;
+          updatedConversation.lastReadMessageId = nextLastRead;
         }
 
         if (unreadChanged) {
