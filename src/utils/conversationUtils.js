@@ -57,6 +57,90 @@ export const flattenConversationEntry = (entry) => {
   return entry;
 };
 
+const pickNumeric = (...sources) => {
+  for (const source of sources) {
+    if (source === undefined) {
+      continue;
+    }
+
+    if (
+      source &&
+      typeof source === "object" &&
+      Object.prototype.hasOwnProperty.call(source, "value")
+    ) {
+      const { value, treatNullAsZero = false } = source;
+
+      if (value === null) {
+        if (treatNullAsZero) {
+          return 0;
+        }
+
+        continue;
+      }
+
+      const numeric = toNumberOrUndefined(value);
+      if (numeric !== undefined) {
+        return numeric;
+      }
+
+      continue;
+    }
+
+    if (source === null) {
+      continue;
+    }
+
+    const numeric = toNumberOrUndefined(source);
+    if (numeric !== undefined) {
+      return numeric;
+    }
+  }
+
+  return undefined;
+};
+
+export const extractLastMessageId = (conversation = {}) =>
+  pickNumeric(
+    conversation.__lastMessageId,
+    conversation.last_message_id,
+    conversation.lastMessageId,
+    conversation.last_message?.message_id,
+    conversation.last_message?.messageId,
+    conversation.last_message?.MessageID,
+    conversation.last_message?.id,
+    conversation.last_message?.ID,
+    conversation.lastMessage?.message_id,
+    conversation.lastMessage?.messageId,
+    conversation.lastMessage?.MessageID,
+    conversation.lastMessage?.id,
+    conversation.lastMessage?.ID,
+    conversation.last_message?.message?.id,
+    conversation.last_message?.message?.message_id,
+    conversation.last_message?.message?.messageId
+  );
+
+export const extractLastReadMessageId = (conversation = {}) =>
+  pickNumeric(
+    conversation.__lastReadMessageId,
+    { value: conversation.last_read_message_id, treatNullAsZero: true },
+    { value: conversation.lastReadMessageId, treatNullAsZero: true },
+    { value: conversation.last_read_message?.message_id, treatNullAsZero: true },
+    { value: conversation.last_read_message?.messageId, treatNullAsZero: true },
+    { value: conversation.last_read_message?.MessageID, treatNullAsZero: true },
+    { value: conversation.last_read_message?.id, treatNullAsZero: true },
+    { value: conversation.last_read_message?.ID, treatNullAsZero: true },
+    { value: conversation.last_read?.message_id, treatNullAsZero: true },
+    { value: conversation.last_read?.messageId, treatNullAsZero: true },
+    { value: conversation.last_read?.MessageID, treatNullAsZero: true },
+    { value: conversation.last_read?.id, treatNullAsZero: true },
+    { value: conversation.last_read?.ID, treatNullAsZero: true },
+    { value: conversation.lastRead?.message_id, treatNullAsZero: true },
+    { value: conversation.lastRead?.messageId, treatNullAsZero: true },
+    { value: conversation.lastRead?.MessageID, treatNullAsZero: true },
+    { value: conversation.lastRead?.id, treatNullAsZero: true },
+    { value: conversation.lastRead?.ID, treatNullAsZero: true }
+  );
+
 const extractNumericValue = (value) => {
   if (Array.isArray(value)) {
     return value.length;
@@ -169,9 +253,25 @@ export const extractUnreadCount = (conversation = {}) => {
     return Math.max(0, extractNumericValue(candidate));
   }
 
+  const lastMessageId = extractLastMessageId(conversation);
+  const lastReadMessageId = extractLastReadMessageId(conversation);
+
+  if (
+    lastMessageId !== undefined &&
+    lastReadMessageId !== undefined &&
+    lastMessageId !== null &&
+    lastReadMessageId !== null
+  ) {
+    return Math.max(0, lastMessageId - lastReadMessageId);
+  }
+
   const explored = exploreUnreadFields(conversation);
 
-  return Math.max(0, explored ?? 0);
+  if (explored !== undefined) {
+    return Math.max(0, explored);
+  }
+
+  return 0;
 };
 
 const extractMessageId = (message = {}) =>
