@@ -414,6 +414,7 @@ export const WebSocketProvider = ({ children }) => {
         const lastReadId = extractLastReadId(payload);
         const unreadFromPayload = extractConversationUnreadCount(payload);
         const normalizedUnread = toNumberOrUndefined(unreadFromPayload);
+        const formattedMessageId = toNumberOrUndefined(formatted.message_id);
 
         if (formatted.message_id) {
           processedMessageIds.current.add(formatted.message_id);
@@ -490,6 +491,19 @@ export const WebSocketProvider = ({ children }) => {
           ) {
             nextUnread = normalizedUnread;
             unreadChanged = true;
+          } else if (
+            normalizedUnread === undefined &&
+            formattedMessageId !== undefined &&
+            formattedMessageId !== null &&
+            lastReadId !== undefined &&
+            lastReadId !== null
+          ) {
+            const computedUnread = Math.max(0, formattedMessageId - lastReadId);
+
+            if (computedUnread !== previousUnread) {
+              nextUnread = computedUnread;
+              unreadChanged = true;
+            }
           }
 
           if (
