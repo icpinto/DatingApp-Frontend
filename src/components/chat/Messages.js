@@ -27,6 +27,8 @@ import {
   extractUnreadCount,
   computeUnreadFromMessageHistory,
   getLatestMessageSnapshot,
+  extractLastMessageId,
+  extractLastReadMessageId,
 } from "../../utils/conversationUtils";
 import {
   buildMessagePreview,
@@ -263,22 +265,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
     resolveConversationId,
   ]);
 
-  const getExistingLastMessageId = useCallback(
-    (conversation) =>
-      toNumberOrUndefined(
-        pickFirst(
-          conversation?.__lastMessageId,
-          conversation?.last_message_id,
-          conversation?.lastMessageId,
-          conversation?.last_message?.message_id,
-          conversation?.last_message?.id,
-          conversation?.lastMessage?.message_id,
-          conversation?.lastMessage?.id
-        )
-      ),
-    []
-  );
-
   useEffect(() => {
     if (selectedConversationId === null || selectedConversationId === undefined) {
       return;
@@ -357,7 +343,19 @@ function Messages({ onUnreadCountChange = () => {} }) {
           updates.__localUnreadCount = unreadCount;
         }
 
-        const previousLastId = getExistingLastMessageId(conversation);
+        const previousLastId = extractLastMessageId(conversation);
+
+        const normalizedLastRead = toNumberOrUndefined(lastRead);
+        const existingLastRead = extractLastReadMessageId(conversation);
+
+        if (
+          normalizedLastRead !== undefined &&
+          normalizedLastRead !== existingLastRead
+        ) {
+          updates.__lastReadMessageId = normalizedLastRead;
+          updates.last_read_message_id = normalizedLastRead;
+          updates.lastReadMessageId = normalizedLastRead;
+        }
 
         if (
           latestSnapshot.messageId !== undefined &&
@@ -400,7 +398,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
   }, [
     wsConversations,
     currentUserId,
-    getExistingLastMessageId,
     resolveConversationId,
     getConversationKey,
     selectedConversationId,
@@ -427,19 +424,37 @@ function Messages({ onUnreadCountChange = () => {} }) {
         }
 
         return prev.map((conv) => {
-          if (conversationKey === undefined) {
-            return conv === conversation
-              ? { ...conv, __localUnreadCount: 0 }
-              : conv;
+          const matches =
+            conversationKey === undefined
+              ? conv === conversation
+              : getConversationKey(conv) === conversationKey;
+
+          if (!matches) {
+            return conv;
           }
 
-          return getConversationKey(conv) === conversationKey
-            ? { ...conv, __localUnreadCount: 0 }
-            : conv;
+          const lastMessageIdForConversation = extractLastMessageId(conv);
+          const updates = { __localUnreadCount: 0 };
+
+          if (lastMessageIdForConversation !== undefined) {
+            updates.__lastReadMessageId = lastMessageIdForConversation;
+
+            const existingReadId = extractLastReadMessageId(conv);
+
+            if (
+              existingReadId === undefined ||
+              existingReadId < lastMessageIdForConversation
+            ) {
+              updates.last_read_message_id = lastMessageIdForConversation;
+              updates.lastReadMessageId = lastMessageIdForConversation;
+            }
+          }
+
+          return { ...conv, ...updates };
         });
       });
 
-      let lastMessageId = getExistingLastMessageId(conversation);
+      let lastMessageId = extractLastMessageId(conversation);
 
       if (
         lastMessageId === undefined &&
@@ -480,7 +495,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
     },
     [
       getConversationKey,
-      getExistingLastMessageId,
       markRead,
       resolveConversationId,
       wsConversations,
