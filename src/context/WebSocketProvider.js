@@ -142,6 +142,62 @@ export const WebSocketProvider = ({ children }) => {
     });
   }, []);
 
+  const hydrateConversations = useCallback(
+    (snapshotList) => {
+      if (!Array.isArray(snapshotList) || snapshotList.length === 0) {
+        return;
+      }
+
+      snapshotList.forEach((snapshot) => {
+        if (!snapshot || typeof snapshot !== "object") {
+          return;
+        }
+
+        const conversationId = pickFirst(
+          snapshot.id,
+          snapshot.conversation_id,
+          snapshot.conversationId,
+          snapshot.conversationID
+        );
+
+        if (conversationId === undefined || conversationId === null) {
+          return;
+        }
+
+        const lastReadId = extractLastReadId(snapshot);
+        const unreadCount = toNumberOrUndefined(
+          extractConversationUnreadCount(snapshot)
+        );
+
+        updateConversationState(conversationId, (existing = {}) => {
+          const normalizedMessages = ensureMessagesArray(
+            existing.messages || snapshot.messages
+          );
+
+          const mergedConversation = {
+            ...existing,
+            ...snapshot,
+            messages: normalizedMessages,
+          };
+
+          if (lastReadId !== undefined && lastReadId !== null) {
+            mergedConversation.lastRead = lastReadId;
+          }
+
+          if (unreadCount !== undefined && unreadCount !== null) {
+            mergedConversation.__localUnreadCount = unreadCount;
+            mergedConversation.unread_count = unreadCount;
+            mergedConversation.unreadCount = unreadCount;
+            mergedConversation.unread_messages_count = unreadCount;
+          }
+
+          return mergedConversation;
+        });
+      });
+    },
+    [updateConversationState]
+  );
+
   const joinConversation = useCallback(
     (conversationId) => {
       if (conversationId === undefined || conversationId === null) {
@@ -584,6 +640,24 @@ export const WebSocketProvider = ({ children }) => {
     };
   }, [authToken, setupSocket]);
 
+  const totalUnreadCount = useMemo(() => {
+    if (!conversations || typeof conversations !== "object") {
+      return 0;
+    }
+
+    return Object.values(conversations).reduce((sum, conversation) => {
+      if (!conversation || typeof conversation !== "object") {
+        return sum;
+      }
+
+      const unread = toNumberOrUndefined(
+        extractConversationUnreadCount(conversation)
+      );
+
+      return sum + (unread ?? 0);
+    }, 0);
+  }, [conversations]);
+
   const contextValue = useMemo(
     () => ({
       conversations,
@@ -594,6 +668,8 @@ export const WebSocketProvider = ({ children }) => {
       markRead,
       setConversationHistory,
       addLocalMessage,
+      hydrateConversations,
+      totalUnreadCount,
     }),
     [
       conversations,
@@ -604,6 +680,8 @@ export const WebSocketProvider = ({ children }) => {
       markRead,
       setConversationHistory,
       addLocalMessage,
+      hydrateConversations,
+      totalUnreadCount,
     ]
   );
 

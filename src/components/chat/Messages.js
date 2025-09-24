@@ -160,7 +160,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const currentUserId = getCurrentUserId();
   const normalizedCurrentUserId = toNumberOrUndefined(currentUserId);
-  const { conversations: wsConversations, markRead } = useWebSocket();
+  const { conversations: wsConversations, markRead, hydrateConversations } =
+    useWebSocket();
 
   useEffect(() => {
     let isActive = true;
@@ -182,6 +183,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
           setConversations(normalized);
           setError(null);
         }
+
+        hydrateConversations(normalized);
       } catch (err) {
         if (isActive) {
           setError("Failed to fetch conversations");
@@ -198,7 +201,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [hydrateConversations]);
 
   useEffect(() => {
     if (!Array.isArray(conversations) || conversations.length === 0) {
@@ -470,6 +473,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
         setSelectedConversationId(null);
       }
 
+      let resolvedLastMessageId = extractLastMessageId(conversation);
+
       setConversations((prev) => {
         if (!Array.isArray(prev)) {
           return prev;
@@ -485,20 +490,21 @@ function Messages({ onUnreadCountChange = () => {} }) {
             return conv;
           }
 
-          const lastMessageIdForConversation = extractLastMessageId(conv);
+          const conversationLastMessageId = extractLastMessageId(conv);
           const updates = { __localUnreadCount: 0 };
 
-          if (lastMessageIdForConversation !== undefined) {
-            updates.__lastReadMessageId = lastMessageIdForConversation;
+          if (conversationLastMessageId !== undefined) {
+            resolvedLastMessageId = conversationLastMessageId;
+            updates.__lastReadMessageId = conversationLastMessageId;
 
             const existingReadId = extractLastReadMessageId(conv);
 
             if (
               existingReadId === undefined ||
-              existingReadId < lastMessageIdForConversation
+              existingReadId < conversationLastMessageId
             ) {
-              updates.last_read_message_id = lastMessageIdForConversation;
-              updates.lastReadMessageId = lastMessageIdForConversation;
+              updates.last_read_message_id = conversationLastMessageId;
+              updates.lastReadMessageId = conversationLastMessageId;
             }
           }
 
@@ -506,7 +512,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
         });
       });
 
-      let lastMessageId = extractLastMessageId(conversation);
+      let lastMessageId = resolvedLastMessageId;
 
       if (
         lastMessageId === undefined &&
@@ -533,6 +539,15 @@ function Messages({ onUnreadCountChange = () => {} }) {
         }
       }
 
+      const conversationPatch = { ...conversation, __localUnreadCount: 0 };
+
+      if (resolvedLastMessageId !== undefined && resolvedLastMessageId !== null) {
+        conversationPatch.last_read_message_id = resolvedLastMessageId;
+        conversationPatch.lastReadMessageId = resolvedLastMessageId;
+      }
+
+      hydrateConversations([conversationPatch]);
+
       if (typeof markRead === "function" && lastMessageId !== undefined) {
         const numericId = toNumberOrUndefined(resolvedId ?? conversationKey);
         const markId =
@@ -547,6 +562,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
     },
     [
       getConversationKey,
+      hydrateConversations,
       markRead,
       resolveConversationId,
       wsConversations,
