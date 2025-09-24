@@ -33,6 +33,95 @@ const extractTimestamp = (value) => {
   return value;
 };
 
+const extractRecipientLastReadMessageId = (value = {}) => {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const candidates = [
+    value.last_read_message_id_by_recipient,
+    value.lastReadMessageIdByRecipient,
+    value.last_read_message_by_recipient?.message_id,
+    value.last_read_message_by_recipient?.messageId,
+    value.last_read_message_by_recipient?.MessageID,
+    value.last_read_message_by_recipient?.id,
+    value.last_read_message_by_recipient?.ID,
+    value.last_read_by_recipient?.message_id,
+    value.last_read_by_recipient?.messageId,
+    value.last_read_by_recipient?.MessageID,
+    value.last_read_by_recipient?.id,
+    value.last_read_by_recipient?.ID,
+    value.lastReadByRecipient?.message_id,
+    value.lastReadByRecipient?.messageId,
+    value.lastReadByRecipient?.MessageID,
+    value.lastReadByRecipient?.id,
+    value.lastReadByRecipient?.ID,
+    value.recipient_last_read_message_id,
+    value.recipientLastReadMessageId,
+    value.recipient_last_read_message?.message_id,
+    value.recipient_last_read_message?.messageId,
+    value.recipient_last_read_message?.MessageID,
+    value.recipient_last_read_message?.id,
+    value.recipient_last_read_message?.ID,
+    value.recipientLastReadMessage?.message_id,
+    value.recipientLastReadMessage?.messageId,
+    value.recipientLastReadMessage?.MessageID,
+    value.recipientLastReadMessage?.id,
+    value.recipientLastReadMessage?.ID,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === undefined) {
+      continue;
+    }
+
+    if (candidate === null) {
+      return 0;
+    }
+
+    const numeric = toNumberOrUndefined(candidate);
+    if (numeric !== undefined) {
+      return numeric;
+    }
+  }
+
+  return undefined;
+};
+
+const resolveConversationKey = (message = {}, payload = {}, conversation = {}) => {
+  const candidates = [
+    message.conversation_id,
+    message.conversationId,
+    message.conversationID,
+    payload.conversation_id,
+    payload.conversationId,
+    payload.conversationID,
+    payload.id,
+    conversation.conversation_id,
+    conversation.conversationId,
+    conversation.conversationID,
+    conversation.id,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) {
+      continue;
+    }
+
+    const numeric = toNumberOrUndefined(candidate);
+    if (numeric !== undefined) {
+      return String(numeric);
+    }
+
+    const stringValue = toStringOrUndefined(candidate);
+    if (stringValue !== undefined) {
+      return stringValue;
+    }
+  }
+
+  return undefined;
+};
+
 const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
   const conversation_id =
     toNumberOrUndefined(
@@ -326,6 +415,65 @@ export const WebSocketProvider = ({ children }) => {
             [conversationKey]: { ...convo, messages: updatedMessages },
           };
         });
+        break;
+      }
+      case "conversation_updated": {
+        const payload = (msg && typeof msg === "object" ? msg.payload : null) || {};
+        const conversationData =
+          payload &&
+          typeof payload === "object" &&
+          payload.conversation &&
+          typeof payload.conversation === "object"
+            ? payload.conversation
+            : payload && typeof payload === "object"
+            ? payload
+            : {};
+
+        const conversationKey = resolveConversationKey(
+          msg,
+          payload,
+          conversationData
+        );
+
+        if (!conversationKey) {
+          break;
+        }
+
+        const recipientLastRead =
+          extractRecipientLastReadMessageId(payload) ??
+          extractRecipientLastReadMessageId(conversationData);
+
+        if (recipientLastRead === undefined) {
+          break;
+        }
+
+        setConversations((prev) => {
+          const convo = prev[conversationKey] || { messages: [], lastRead: null };
+          const existingRecipientLastRead = toNumberOrUndefined(
+            pickFirst(
+              convo.last_read_message_id_by_recipient,
+              convo.lastReadMessageIdByRecipient,
+              convo.recipient_last_read_message_id,
+              convo.recipientLastReadMessageId
+            )
+          );
+
+          if (existingRecipientLastRead === recipientLastRead) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [conversationKey]: {
+              ...convo,
+              last_read_message_id_by_recipient: recipientLastRead,
+              lastReadMessageIdByRecipient: recipientLastRead,
+              recipient_last_read_message_id: recipientLastRead,
+              recipientLastReadMessageId: recipientLastRead,
+            },
+          };
+        });
+
         break;
       }
       case "read": {
