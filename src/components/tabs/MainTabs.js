@@ -22,17 +22,12 @@ import {
   normalizeConversationList,
   flattenConversationEntry,
   extractUnreadCount,
-  computeUnreadFromMessageHistory,
-  pickFirst,
-  toNumberOrUndefined,
 } from "../../utils/conversationUtils";
-import { useWebSocket } from "../../context/WebSocketProvider";
 
 function MainTabs() {
   const [activeTab, setActiveTab] = useState(0);
   const [requestCount, setRequestCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const { conversations: wsConversations } = useWebSocket() || {};
 
   useEffect(() => {
     const fetchRequestCount = async () => {
@@ -83,76 +78,6 @@ function MainTabs() {
 
     fetchUnreadMessages();
   }, []);
-
-  useEffect(() => {
-    if (!wsConversations || typeof wsConversations !== "object") {
-      return;
-    }
-
-    const currentUserId = toNumberOrUndefined(localStorage.getItem("user_id"));
-
-    const totalUnread = Object.values(wsConversations).reduce(
-      (sum, conversation) => {
-        if (!conversation || typeof conversation !== "object") {
-          return sum;
-        }
-
-        const wsUnreadCandidate = pickFirst(
-          conversation.__localUnreadCount,
-          conversation.unread_count,
-          conversation.unreadCount,
-          conversation.unread_messages_count,
-          conversation.unreadMessagesCount,
-          conversation.unread_messages_total,
-          conversation.unreadMessagesTotal,
-          conversation.unread_message_total,
-          conversation.unreadMessageTotal,
-          conversation.unread_messages,
-          conversation.unreadMessages,
-          conversation.unread_total,
-          conversation.unreadTotal,
-          conversation.unread
-        );
-
-        const wsUnreadCount = toNumberOrUndefined(wsUnreadCandidate);
-
-        if (wsUnreadCount !== undefined && wsUnreadCount !== null) {
-          return sum + wsUnreadCount;
-        }
-
-        const messages = Array.isArray(conversation.messages)
-          ? conversation.messages
-          : [];
-
-        if (messages.length === 0) {
-          return sum;
-        }
-
-        const lastReadCandidate = pickFirst(
-          conversation.__lastReadMessageId,
-          conversation.last_read_message_id,
-          conversation.lastReadMessageId,
-          conversation.lastRead,
-          conversation.last_read,
-          conversation.last_read_message,
-          conversation.lastReadMessage,
-          conversation.last_read_id,
-          conversation.lastReadId
-        );
-
-        const computedUnread = computeUnreadFromMessageHistory(
-          messages,
-          lastReadCandidate,
-          currentUserId
-        );
-
-        return sum + computedUnread;
-      },
-      0
-    );
-
-    setUnreadMessages((prev) => (prev === totalUnread ? prev : totalUnread));
-  }, [wsConversations]);
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
