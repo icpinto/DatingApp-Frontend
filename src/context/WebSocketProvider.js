@@ -33,6 +33,21 @@ const extractTimestamp = (value) => {
   return value;
 };
 
+const hasMessageChanged = (previous = {}, next = {}) => {
+  const allKeys = new Set([
+    ...Object.keys(previous || {}),
+    ...Object.keys(next || {}),
+  ]);
+
+  for (const key of allKeys) {
+    if (previous?.[key] !== next?.[key]) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
   const conversation_id =
     toNumberOrUndefined(
@@ -137,6 +152,38 @@ const normalizeMessage = (conversationId, message = {}, overrides = {}) => {
     timestamp,
     ...overrides,
   };
+};
+
+const extractLastReadId = (payload = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      payload.last_read_message_id,
+      payload.lastReadMessageId,
+      payload.last_read?.message_id,
+      payload.last_read?.messageId,
+      payload.lastRead?.message_id,
+      payload.lastRead?.messageId
+    )
+  );
+
+const resolveConversationKey = (
+  msg = {},
+  formattedMessage = {},
+  payload = {}
+) => {
+  const candidate = pickFirst(
+    msg.conversation_id,
+    payload.conversation_id,
+    payload.conversationId,
+    payload.conversationID,
+    formattedMessage.conversation_id
+  );
+
+  if (candidate === undefined || candidate === null) {
+    return null;
+  }
+
+  return String(candidate);
 };
 
 const WebSocketContext = createContext(null);
@@ -326,6 +373,86 @@ export const WebSocketProvider = ({ children }) => {
             [conversationKey]: { ...convo, messages: updatedMessages },
           };
         });
+        break;
+      }
+      case "conversation_updated": {
+        const payload = msg.payload || {};
+        const formatted = normalizeMessage(msg.conversation_id, payload, {
+          pending: false,
+        });
+        const conversationKey = resolveConversationKey(msg, formatted, payload);
+        const lastReadId = extractLastReadId(payload);
+
+        if (formatted.message_id) {
+          processedMessageIds.current.add(formatted.message_id);
+        }
+
+        if (!conversationKey) {
+          break;
+        }
+
+        setConversations((prev) => {
+          const convo = prev[conversationKey] || { messages: [], lastRead: null };
+          const existingMessages = Array.isArray(convo.messages)
+            ? convo.messages
+            : [];
+
+          let nextMessages = existingMessages;
+          let messagesChanged = false;
+
+          if (formatted.message_id) {
+            const existingIndex = existingMessages.findIndex(
+              (messageItem) => messageItem?.message_id === formatted.message_id
+            );
+
+            if (existingIndex !== -1) {
+              const mergedMessage = {
+                ...existingMessages[existingIndex],
+                ...formatted,
+              };
+
+              if (
+                hasMessageChanged(existingMessages[existingIndex], mergedMessage)
+              ) {
+                nextMessages = [...existingMessages];
+                nextMessages.splice(existingIndex, 1, mergedMessage);
+                messagesChanged = true;
+              }
+            } else {
+              nextMessages = [...existingMessages, formatted];
+              messagesChanged = true;
+            }
+          }
+
+          const previousLastRead = convo.lastRead;
+          let nextLastRead = previousLastRead;
+          let lastReadChanged = false;
+
+          if (
+            lastReadId !== undefined &&
+            lastReadId !== null &&
+            (previousLastRead === undefined ||
+              previousLastRead === null ||
+              lastReadId > previousLastRead)
+          ) {
+            nextLastRead = lastReadId;
+            lastReadChanged = true;
+          }
+
+          if (!messagesChanged && !lastReadChanged && prev[conversationKey]) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [conversationKey]: {
+              ...convo,
+              messages: messagesChanged ? nextMessages : existingMessages,
+              lastRead: lastReadChanged ? nextLastRead : previousLastRead,
+            },
+          };
+        });
+
         break;
       }
       case "read": {
