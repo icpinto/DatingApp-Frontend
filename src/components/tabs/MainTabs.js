@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   BottomNavigation,
@@ -21,13 +21,17 @@ import chatService from "../../services/chatService";
 import {
   normalizeConversationList,
   flattenConversationEntry,
-  extractUnreadCount,
 } from "../../utils/conversationUtils";
+import { useWebSocket } from "../../context/WebSocketProvider";
 
 function MainTabs() {
   const [activeTab, setActiveTab] = useState(0);
   const [requestCount, setRequestCount] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
+  const { hydrateConversations, totalUnreadCount } = useWebSocket();
+  const unreadMessages = useMemo(
+    () => (typeof totalUnreadCount === "number" ? totalUnreadCount : 0),
+    [totalUnreadCount]
+  );
 
   useEffect(() => {
     const fetchRequestCount = async () => {
@@ -49,11 +53,10 @@ function MainTabs() {
   }, []);
 
   useEffect(() => {
-    const fetchUnreadMessages = async () => {
+    const fetchConversations = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          setUnreadMessages(0);
           return;
         }
 
@@ -65,19 +68,14 @@ function MainTabs() {
           .map(flattenConversationEntry)
           .filter(Boolean);
 
-        const totalUnread = conversations.reduce(
-          (sum, conversation) => sum + extractUnreadCount(conversation),
-          0
-        );
-
-        setUnreadMessages(totalUnread);
+        hydrateConversations(conversations);
       } catch (error) {
-        setUnreadMessages(0);
+        // Ignore initial unread fetch errors and default to existing socket state.
       }
     };
 
-    fetchUnreadMessages();
-  }, []);
+    fetchConversations();
+  }, [hydrateConversations]);
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -88,9 +86,7 @@ function MainTabs() {
       {activeTab === 0 && <Home />}
       {activeTab === 1 && <Requests onRequestCountChange={setRequestCount} />}
       {activeTab === 2 && <QuestionsComponent />}
-      {activeTab === 3 && (
-        <Messages onUnreadCountChange={setUnreadMessages} />
-      )}
+      {activeTab === 3 && <Messages />}
       {activeTab === 4 && <OwnerProfile />}
 
       <Paper
