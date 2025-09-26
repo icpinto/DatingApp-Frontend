@@ -425,13 +425,7 @@ export const WebSocketProvider = ({ children }) => {
         }
 
         const previousUnread = toNumberOrUndefined(
-          pickFirst(
-            conversation.__localUnreadCount,
-            conversation.unread_count,
-            conversation.unreadCount,
-            conversation.unread_messages_count,
-            conversation.unreadMessagesCount
-          )
+          extractConversationUnreadCount(conversation)
         );
         let nextUnread = previousUnread;
         let unreadChanged = false;
@@ -443,19 +437,6 @@ export const WebSocketProvider = ({ children }) => {
         ) {
           nextUnread = normalizedUnread;
           unreadChanged = true;
-        } else if (
-          normalizedUnread === undefined &&
-          formattedMessageId !== undefined &&
-          formattedMessageId !== null &&
-          lastReadId !== undefined &&
-          lastReadId !== null
-        ) {
-          const computedUnread = Math.max(0, formattedMessageId - lastReadId);
-
-          if (computedUnread !== previousUnread) {
-            nextUnread = computedUnread;
-            unreadChanged = true;
-          }
         }
 
         if (!messagesChanged && !lastReadChanged && !unreadChanged) {
