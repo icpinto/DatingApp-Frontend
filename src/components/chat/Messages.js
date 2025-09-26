@@ -25,7 +25,6 @@ import {
   normalizeConversationList,
   flattenConversationEntry,
   extractUnreadCount,
-  computeUnreadFromMessageHistory,
   getLatestMessageSnapshot,
   extractLastMessageId,
   extractLastReadMessageId,
@@ -38,26 +37,6 @@ import {
   getConversationUsers,
   getCurrentUserId,
 } from "./conversationDisplayHelpers";
-
-const extractRealtimeUnread = (conversation = {}) =>
-  toNumberOrUndefined(
-    pickFirst(
-      conversation.__localUnreadCount,
-      conversation.unread_count,
-      conversation.unreadCount,
-      conversation.unread_messages_count,
-      conversation.unreadMessagesCount,
-      conversation.unread_messages_total,
-      conversation.unreadMessagesTotal,
-      conversation.unread_message_total,
-      conversation.unreadMessageTotal,
-      conversation.unread_messages,
-      conversation.unreadMessages,
-      conversation.unread_total,
-      conversation.unreadTotal,
-      conversation.unread
-    )
-  );
 
 const buildRealtimePatch = ({
   conversation,
@@ -76,16 +55,10 @@ const buildRealtimePatch = ({
   const lastRead = wsConversation.lastRead;
   const latestSnapshot = getLatestMessageSnapshot(messages);
 
-  let unreadCount = computeUnreadFromMessageHistory(
-    messages,
-    lastRead,
-    currentUserId
+  const wsUnreadCount = toNumberOrUndefined(
+    extractUnreadCount(wsConversation)
   );
-  const wsUnreadCount = extractRealtimeUnread(wsConversation);
-
-  if (wsUnreadCount !== undefined && wsUnreadCount !== null) {
-    unreadCount = wsUnreadCount;
-  }
+  let unreadCount = wsUnreadCount;
 
   const isSelected =
     selectedConversationId !== undefined &&
@@ -99,10 +72,15 @@ const buildRealtimePatch = ({
   }
 
   const updates = {};
-  const previousUnread = toNumberOrUndefined(conversation.__localUnreadCount);
+  const previousUnread = toNumberOrUndefined(
+    extractUnreadCount(conversation)
+  );
 
-  if (previousUnread !== unreadCount) {
+  if (unreadCount !== undefined && unreadCount !== previousUnread) {
     updates.__localUnreadCount = unreadCount;
+    updates.unread_count = unreadCount;
+    updates.unreadCount = unreadCount;
+    updates.unread_messages_count = unreadCount;
   }
 
   const normalizedLastRead = toNumberOrUndefined(lastRead);
@@ -491,7 +469,12 @@ function Messages({ onUnreadCountChange = () => {} }) {
           }
 
           const conversationLastMessageId = extractLastMessageId(conv);
-          const updates = { __localUnreadCount: 0 };
+          const updates = {
+            __localUnreadCount: 0,
+            unread_count: 0,
+            unreadCount: 0,
+            unread_messages_count: 0,
+          };
 
           if (conversationLastMessageId !== undefined) {
             resolvedLastMessageId = conversationLastMessageId;
@@ -539,7 +522,13 @@ function Messages({ onUnreadCountChange = () => {} }) {
         }
       }
 
-      const conversationPatch = { ...conversation, __localUnreadCount: 0 };
+      const conversationPatch = {
+        ...conversation,
+        __localUnreadCount: 0,
+        unread_count: 0,
+        unreadCount: 0,
+        unread_messages_count: 0,
+      };
 
       if (resolvedLastMessageId !== undefined && resolvedLastMessageId !== null) {
         conversationPatch.last_read_message_id = resolvedLastMessageId;
