@@ -15,7 +15,7 @@ import Home from "../home/Home";
 import Requests from "../requests/Requests";
 import Messages from "../chat/Messages";
 import OwnerProfile from "../profile/OwnerProfile";
-import QuestionsComponent from "../questions/Questions";
+import MatchInsights from "../matchInsights/MatchInsights";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 import {
@@ -85,7 +85,7 @@ function MainTabs() {
     <Box sx={{ pb: 7 }}>
       {activeTab === 0 && <Home />}
       {activeTab === 1 && <Requests onRequestCountChange={setRequestCount} />}
-      {activeTab === 2 && <QuestionsComponent />}
+      {activeTab === 2 && <MatchInsights />}
       {activeTab === 3 && <Messages />}
       {activeTab === 4 && <OwnerProfile />}
 
