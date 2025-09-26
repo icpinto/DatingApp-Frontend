@@ -13,6 +13,16 @@ const normalizeResponse = (data = {}) => ({
   gender: data.gender ?? data.partner_gender ?? data.target_gender,
   drinking_habit:
     data.drinking_habit ?? data.drinkingHabit ?? data.partner_drinking_habit,
+  education_level: data.education_level ?? data.educationLevel,
+  smoking_habit: data.smoking_habit ?? data.smokingHabit,
+  country_of_residence:
+    data.country_of_residence ?? data.countryOfResidence ?? data.residence_country,
+  occupation_status: data.occupation_status ?? data.occupationStatus,
+  civil_status: data.civil_status ?? data.civilStatus,
+  religion: data.religion,
+  min_height: data.min_height ?? data.minHeight,
+  max_height: data.max_height ?? data.maxHeight,
+  food_preference: data.food_preference ?? data.foodPreference,
 });
 
 export const getCorePreferences = async (userId) => {
@@ -51,6 +61,15 @@ export const saveCorePreferences = async (userId, preferences) => {
     max_age: preferences.maxAge,
     gender: preferences.gender,
     drinking_habit: preferences.drinkingHabit,
+    education_level: preferences.educationLevel,
+    smoking_habit: preferences.smokingHabit,
+    country_of_residence: preferences.countryOfResidence,
+    occupation_status: preferences.occupationStatus,
+    civil_status: preferences.civilStatus,
+    religion: preferences.religion,
+    min_height: preferences.minHeight,
+    max_height: preferences.maxHeight,
+    food_preference: preferences.foodPreference,
   };
 
   const response = await api.put(

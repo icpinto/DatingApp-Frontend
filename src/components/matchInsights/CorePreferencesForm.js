@@ -26,9 +26,19 @@ const DEFAULT_PREFERENCES = {
   maxAge: 40,
   gender: "any",
   drinkingHabit: "any",
+  educationLevel: "any",
+  smokingHabit: "any",
+  countryOfResidence: "",
+  occupationStatus: "any",
+  civilStatus: "any",
+  religion: "any",
+  minHeight: 155,
+  maxHeight: 190,
+  foodPreference: "any",
 };
 
 const AGE_RANGE = { min: 18, max: 80 };
+const HEIGHT_RANGE = { min: 120, max: 220 };
 
 const GENDER_OPTIONS = [
   { value: "any", label: "No preference" },
@@ -44,8 +54,68 @@ const DRINKING_OPTIONS = [
   { value: "often", label: "Often" },
 ];
 
+const EDUCATION_OPTIONS = [
+  { value: "any", label: "No preference" },
+  { value: "high_school", label: "High School" },
+  { value: "bachelors", label: "Bachelor's" },
+  { value: "masters", label: "Master's" },
+  { value: "doctorate", label: "Doctorate" },
+  { value: "other", label: "Other" },
+];
+
+const SMOKING_OPTIONS = [
+  { value: "any", label: "No preference" },
+  { value: "never", label: "Never" },
+  { value: "occasionally", label: "Occasionally" },
+  { value: "regularly", label: "Regularly" },
+];
+
+const OCCUPATION_STATUS_OPTIONS = [
+  { value: "any", label: "No preference" },
+  { value: "student", label: "Student" },
+  { value: "employed", label: "Employed" },
+  { value: "self_employed", label: "Self-employed" },
+  { value: "business_owner", label: "Business owner" },
+  { value: "not_working", label: "Not working" },
+];
+
+const CIVIL_STATUS_OPTIONS = [
+  { value: "any", label: "No preference" },
+  { value: "single", label: "Single" },
+  { value: "divorced", label: "Divorced" },
+  { value: "widowed", label: "Widowed" },
+  { value: "separated", label: "Separated" },
+];
+
+const RELIGION_OPTIONS = [
+  { value: "any", label: "No preference" },
+  { value: "agnostic", label: "Agnostic" },
+  { value: "atheist", label: "Atheist" },
+  { value: "christian", label: "Christian" },
+  { value: "hindu", label: "Hindu" },
+  { value: "muslim", label: "Muslim" },
+  { value: "spiritual", label: "Spiritual" },
+  { value: "other", label: "Other" },
+];
+
+const FOOD_PREFERENCE_OPTIONS = [
+  { value: "any", label: "No preference" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "vegan", label: "Vegan" },
+  { value: "halal", label: "Halal" },
+  { value: "kosher", label: "Kosher" },
+  { value: "omnivore", label: "Omnivore" },
+  { value: "pescatarian", label: "Pescatarian" },
+];
+
 const clampAge = (value) =>
   Math.min(Math.max(Number.isFinite(value) ? value : AGE_RANGE.min, AGE_RANGE.min), AGE_RANGE.max);
+
+const clampHeight = (value) =>
+  Math.min(
+    Math.max(Number.isFinite(value) ? value : HEIGHT_RANGE.min, HEIGHT_RANGE.min),
+    HEIGHT_RANGE.max
+  );
 
 function CorePreferencesForm({ onStatusChange }) {
   const userId = localStorage.getItem("user_id") || "";
@@ -78,11 +148,30 @@ function CorePreferencesForm({ onStatusChange }) {
       maxAge: clampAge(Number(data.max_age ?? data.maxAge ?? DEFAULT_PREFERENCES.maxAge)),
       gender: data.gender || DEFAULT_PREFERENCES.gender,
       drinkingHabit: data.drinking_habit || DEFAULT_PREFERENCES.drinkingHabit,
+      educationLevel: data.education_level || DEFAULT_PREFERENCES.educationLevel,
+      smokingHabit: data.smoking_habit || DEFAULT_PREFERENCES.smokingHabit,
+      countryOfResidence:
+        data.country_of_residence || data.countryOfResidence || DEFAULT_PREFERENCES.countryOfResidence,
+      occupationStatus: data.occupation_status || DEFAULT_PREFERENCES.occupationStatus,
+      civilStatus: data.civil_status || DEFAULT_PREFERENCES.civilStatus,
+      religion: data.religion || DEFAULT_PREFERENCES.religion,
+      minHeight: clampHeight(
+        Number(data.min_height ?? data.minHeight ?? DEFAULT_PREFERENCES.minHeight)
+      ),
+      maxHeight: clampHeight(
+        Number(data.max_height ?? data.maxHeight ?? DEFAULT_PREFERENCES.maxHeight)
+      ),
+      foodPreference: data.food_preference || DEFAULT_PREFERENCES.foodPreference,
     };
 
     if (normalized.minAge > normalized.maxAge) {
       normalized.minAge = clampAge(DEFAULT_PREFERENCES.minAge);
       normalized.maxAge = clampAge(DEFAULT_PREFERENCES.maxAge);
+    }
+
+    if (normalized.minHeight > normalized.maxHeight) {
+      normalized.minHeight = clampHeight(DEFAULT_PREFERENCES.minHeight);
+      normalized.maxHeight = clampHeight(DEFAULT_PREFERENCES.maxHeight);
     }
 
     setPreferences(normalized);
@@ -142,6 +231,20 @@ function CorePreferencesForm({ onStatusChange }) {
     setHasSavedPreferences(false);
   }, []);
 
+  const setHeightRange = useCallback((newRange) => {
+    setPreferences((prev) => {
+      const [rawMin, rawMax] = newRange;
+      const minHeight = clampHeight(rawMin);
+      const maxHeight = clampHeight(rawMax);
+      return {
+        ...prev,
+        minHeight: Math.min(minHeight, maxHeight),
+        maxHeight: Math.max(minHeight, maxHeight),
+      };
+    });
+    setHasSavedPreferences(false);
+  }, []);
+
   const handleAgeTextChange = (key) => (event) => {
     const value = clampAge(Number(event.target.value));
     setPreferences((prev) => {
@@ -151,6 +254,22 @@ function CorePreferencesForm({ onStatusChange }) {
           updated.maxAge = value;
         } else {
           updated.minAge = value;
+        }
+      }
+      return updated;
+    });
+    setHasSavedPreferences(false);
+  };
+
+  const handleHeightTextChange = (key) => (event) => {
+    const value = clampHeight(Number(event.target.value));
+    setPreferences((prev) => {
+      const updated = { ...prev, [key]: value };
+      if (updated.minHeight > updated.maxHeight) {
+        if (key === "minHeight") {
+          updated.maxHeight = value;
+        } else {
+          updated.minHeight = value;
         }
       }
       return updated;
@@ -277,6 +396,29 @@ function CorePreferencesForm({ onStatusChange }) {
                 <TextField
                   select
                   fullWidth
+                  label="Partner's education level"
+                  value={preferences.educationLevel}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPreferences((prev) => ({
+                      ...prev,
+                      educationLevel: value,
+                    }));
+                    setHasSavedPreferences(false);
+                  }}
+                >
+                  {EDUCATION_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Box>
+                <TextField
+                  select
+                  fullWidth
                   label="Partner's drinking habits"
                   value={preferences.drinkingHabit}
                   onChange={(event) => {
@@ -289,6 +431,170 @@ function CorePreferencesForm({ onStatusChange }) {
                   }}
                 >
                   {DRINKING_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Box>
+                <TextField
+                  select
+                  fullWidth
+                  label="Partner's smoking habits"
+                  value={preferences.smokingHabit}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPreferences((prev) => ({
+                      ...prev,
+                      smokingHabit: value,
+                    }));
+                    setHasSavedPreferences(false);
+                  }}
+                >
+                  {SMOKING_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle1">Preferred Height Range (cm)</Typography>
+                <Slider
+                  value={[preferences.minHeight, preferences.maxHeight]}
+                  onChange={(_, newValue) => setHeightRange(newValue)}
+                  onChangeCommitted={(_, newValue) => setHeightRange(newValue)}
+                  min={HEIGHT_RANGE.min}
+                  max={HEIGHT_RANGE.max}
+                  valueLabelDisplay="auto"
+                  disableSwap
+                />
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <TextField
+                      label="Min height"
+                      type="number"
+                      value={preferences.minHeight}
+                      onChange={handleHeightTextChange("minHeight")}
+                      fullWidth
+                      inputProps={{ min: HEIGHT_RANGE.min, max: HEIGHT_RANGE.max }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      label="Max height"
+                      type="number"
+                      value={preferences.maxHeight}
+                      onChange={handleHeightTextChange("maxHeight")}
+                      fullWidth
+                      inputProps={{ min: HEIGHT_RANGE.min, max: HEIGHT_RANGE.max }}
+                    />
+                  </Grid>
+                </Grid>
+              </Stack>
+
+              <TextField
+                fullWidth
+                label="Country of residence"
+                value={preferences.countryOfResidence}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setPreferences((prev) => ({
+                    ...prev,
+                    countryOfResidence: value,
+                  }));
+                  setHasSavedPreferences(false);
+                }}
+              />
+
+              <Box>
+                <TextField
+                  select
+                  fullWidth
+                  label="Occupation status"
+                  value={preferences.occupationStatus}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPreferences((prev) => ({
+                      ...prev,
+                      occupationStatus: value,
+                    }));
+                    setHasSavedPreferences(false);
+                  }}
+                >
+                  {OCCUPATION_STATUS_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Box>
+                <TextField
+                  select
+                  fullWidth
+                  label="Civil status"
+                  value={preferences.civilStatus}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPreferences((prev) => ({
+                      ...prev,
+                      civilStatus: value,
+                    }));
+                    setHasSavedPreferences(false);
+                  }}
+                >
+                  {CIVIL_STATUS_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Box>
+                <TextField
+                  select
+                  fullWidth
+                  label="Religion"
+                  value={preferences.religion}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPreferences((prev) => ({
+                      ...prev,
+                      religion: value,
+                    }));
+                    setHasSavedPreferences(false);
+                  }}
+                >
+                  {RELIGION_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              <Box>
+                <TextField
+                  select
+                  fullWidth
+                  label="Food preference"
+                  value={preferences.foodPreference}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setPreferences((prev) => ({
+                      ...prev,
+                      foodPreference: value,
+                    }));
+                    setHasSavedPreferences(false);
+                  }}
+                >
+                  {FOOD_PREFERENCE_OPTIONS.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
