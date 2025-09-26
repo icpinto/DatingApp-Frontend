@@ -289,10 +289,10 @@ function CorePreferencesForm({ onStatusChange }) {
 
     setSaving(true);
     try {
-      const response = await matchPreferencesService.saveCorePreferences(
-        userId,
-        preferences
-      );
+      const saveFn = hasSavedPreferences
+        ? matchPreferencesService.updateCorePreferences
+        : matchPreferencesService.saveCorePreferences;
+      const response = await saveFn(userId, preferences);
       applyLoadedPreferences(response);
       setSnackbar({
         open: true,
