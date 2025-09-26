@@ -26,7 +26,7 @@ import { spacing } from "../../styles";
 import questionnaireService from "../../services/questionnaireService";
 import QuestionCategorySelector from "./QuestionCategorySelector";
 
-function QuestionsComponent() {
+function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   const [question, setQuestion] = useState(null);
   const [meAnswer, setMeAnswer] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
@@ -61,12 +61,23 @@ function QuestionsComponent() {
   };
 
   useEffect(() => {
-    fetchQuestion();
+    if (!isLocked) {
+      fetchQuestion();
+    } else {
+      setLoading(false);
+    }
     // Payment logic disabled for now
-  }, [selectedCategory]);
+  }, [selectedCategory, isLocked]);
+
+  useEffect(() => {
+    if (isLocked) {
+      setQuestion(null);
+      setLoading(false);
+    }
+  }, [isLocked]);
 
   const submitAnswer = async () => {
-    if (!question) return;
+    if (!question || isLocked) return;
     const formatAnswer = (answer) => {
       if (questionType === "multiple_choice") {
         const selectedOption = options.find((option) => option.key === answer);
@@ -110,6 +121,8 @@ function QuestionsComponent() {
   };
 
   const handleNext = async () => {
+    if (isLocked) return;
+
     await submitAnswer();
     setMeAnswer("");
     setIdealAnswer("");
@@ -138,9 +151,14 @@ function QuestionsComponent() {
             <QuestionCategorySelector
               value={selectedCategory}
               onChange={setSelectedCategory}
+              disabled={isLocked}
             />
 
-            {loading ? (
+            {isLocked ? (
+              <Typography color="text.secondary">
+                {lockReason || "Core preferences are required to continue."}
+              </Typography>
+            ) : loading ? (
               <Stack spacing={spacing.section}>
                 <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
                 <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
@@ -296,8 +314,12 @@ function QuestionsComponent() {
                     variant="contained"
                     color="primary"
                     onClick={handleNext}
-                    endIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
-                    disabled={loading}
+                    endIcon={
+                      loading && !isLocked ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : null
+                    }
+                    disabled={loading || isLocked}
                   >
                     Next
                   </Button>
