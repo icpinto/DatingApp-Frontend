@@ -48,8 +48,19 @@ export const getCorePreferences = async (userId) => {
   }
 };
 
+
+const normalizeUserId = (userId) => {
+  const numericUserId = Number(userId);
+
+  if (Number.isNaN(numericUserId)) {
+    throw new Error("A valid numeric user id is required to persist preferences.");
+  }
+
+  return numericUserId;
+};
+
 const buildPayload = (userId, preferences) => ({
-  user_id: userId,
+  user_id: normalizeUserId(userId),
   min_age: preferences.minAge,
   max_age: preferences.maxAge,
   gender: preferences.gender,
