@@ -48,7 +48,18 @@ export const getCorePreferences = async (userId) => {
   }
 };
 
-const buildPayload = (preferences) => ({
+const normalizeUserId = (userId) => {
+  const numericUserId = Number(userId);
+
+  if (Number.isNaN(numericUserId)) {
+    throw new Error("A valid numeric user id is required to persist preferences.");
+  }
+
+  return numericUserId;
+};
+
+const buildPayload = (userId, preferences) => ({
+  user_id: normalizeUserId(userId),
   min_age: preferences.minAge,
   max_age: preferences.maxAge,
   gender: preferences.gender,
@@ -69,7 +80,7 @@ export const saveCorePreferences = async (userId, preferences) => {
     throw new Error("A valid user id is required to save preferences.");
   }
 
-  const payload = buildPayload(preferences);
+  const payload = buildPayload(userId, preferences);
 
   const response = await api.post(basePath, payload, {
     headers: buildAuthHeaders(),
@@ -83,7 +94,7 @@ export const updateCorePreferences = async (userId, preferences) => {
     throw new Error("A valid user id is required to update preferences.");
   }
 
-  const payload = buildPayload(preferences);
+  const payload = buildPayload(userId, preferences);
 
   const response = await api.put(basePath, payload, {
     headers: buildAuthHeaders(),
