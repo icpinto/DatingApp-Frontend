@@ -48,6 +48,7 @@ export const getCorePreferences = async (userId) => {
   }
 };
 
+
 const normalizeUserId = (userId) => {
   const numericUserId = Number(userId);
 
