@@ -130,7 +130,9 @@
       "scoreTooltip": "ගැලපීම් ලකුණු",
       "overallCompatibility": "මොత్తම ගැලපීම: {{score}}%",
       "compatibilityBreakdown": "ගැලපීම් විභජනය",
-      "dimensionWithIndex": "මානය {{index}}"
+      "dimensionWithIndex": "මානය {{index}}",
+      "dimensionSumLabel": "මාන එකතුව",
+      "dimensionSumHint": "මෙම මාන ලකුණු ({{sum}}%) එකතු වී සමස්ත ගැලපීම {{overall}}% බවට පත් කරයි."
     }
   },
   "profile": {

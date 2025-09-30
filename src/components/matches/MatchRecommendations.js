@@ -142,62 +142,57 @@ const normalizeUserId = (rawUserId) => {
   return numericId;
 };
 
-const DimensionPieChart = ({ value = 0, size = 90, theme, label }) => {
-  const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
-  const clampedValue = Math.max(0, Math.min(100, numericValue));
-  const radius = size / 2;
-  const strokeWidth = size * 0.15;
-  const normalizedRadius = radius - strokeWidth / 2;
-  const circumference = 2 * Math.PI * normalizedRadius;
-  const dashOffset = circumference * (1 - clampedValue / 100);
+const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) => {
+  if (!Array.isArray(breakdown) || breakdown.length === 0) {
+    return null;
+  }
 
   return (
-    <Stack spacing={1} alignItems="center" sx={{ minWidth: size }}>
-      <Box sx={{ position: "relative", width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <circle
-            cx={radius}
-            cy={radius}
-            r={normalizedRadius}
-            stroke={theme.palette.action.hover}
-            strokeWidth={strokeWidth}
-            fill="none"
-          />
-          <circle
-            cx={radius}
-            cy={radius}
-            r={normalizedRadius}
-            stroke={theme.palette.primary.main}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={dashOffset}
-            transform={`rotate(-90 ${radius} ${radius})`}
-          />
-        </svg>
-        <Typography
-          variant="subtitle2"
-          component="span"
-          sx={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-          }}
-        >
-          {formatScore(clampedValue)}%
+    <Stack spacing={1.5}>
+      <Stack spacing={1}>
+        {breakdown.map(({ label, value }, dimensionIndex) => {
+          const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+          const clampedValue = Math.max(0, Math.min(100, numericValue));
+
+          return (
+            <Stack key={`dimension-row-${dimensionIndex}`} spacing={0.5}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" color="text.secondary">
+                  {label}
+                </Typography>
+                <Typography variant="body2" fontWeight={600} color="text.primary">
+                  {formatScore(clampedValue)}%
+                </Typography>
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={clampedValue}
+                sx={{ height: 6, borderRadius: 999 }}
+              />
+            </Stack>
+          );
+        })}
+      </Stack>
+
+      <Divider flexItem />
+
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {t("matches.labels.dimensionSumLabel")}
         </Typography>
-      </Box>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ textAlign: "center", maxWidth: size * 1.5 }}
-      >
-        {label}
-      </Typography>
+        <Typography variant="body2" fontWeight={700} color="text.primary">
+          {t("matches.labels.scoreOnly", { score: formatScore(sum) })}
+        </Typography>
+      </Stack>
+
+      {typeof overall === "number" && Number.isFinite(overall) && (
+        <Typography variant="caption" color="text.secondary">
+          {t("matches.labels.dimensionSumHint", {
+            sum: formatScore(sum),
+            overall: formatScore(Math.max(0, Math.min(100, overall))),
+          })}
+        </Typography>
+      )}
     </Stack>
   );
 };
@@ -425,6 +420,10 @@ const MatchRecommendations = ({ limit = 10 }) => {
                 reasonsAreObject && Array.isArray(reasons.per_dimension)
                   ? reasons.per_dimension
                   : [];
+              const overallCompatibilityPercentage =
+                reasonsAreObject && typeof reasons.raw_score === "number"
+                  ? clampScore(convertToPercentage(reasons.raw_score))
+                  : null;
               const dimensionBreakdown = perDimensionScores.map(
                 (value, dimensionIndex) => {
                   const percentage = convertToPercentage(value);
@@ -436,6 +435,10 @@ const MatchRecommendations = ({ limit = 10 }) => {
                     value: clampedPercentage,
                   };
                 }
+              );
+              const dimensionSum = dimensionBreakdown.reduce(
+                (accumulator, { value }) => accumulator + value,
+                0
               );
 
               return (
@@ -531,16 +534,14 @@ const MatchRecommendations = ({ limit = 10 }) => {
                         )}
                         {reasonsAreObject && (
                           <Stack spacing={1} mt={reasonsAreArrayOrString ? 1 : 0}>
-                            {typeof reasons.raw_score === "number" && (
+                            {overallCompatibilityPercentage !== null && (
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
                                 sx={{ fontWeight: 600, display: "block" }}
                               >
                                 {t("matches.labels.overallCompatibility", {
-                                  score: formatScore(
-                                    convertToPercentage(reasons.raw_score)
-                                  ),
+                                  score: formatScore(overallCompatibilityPercentage),
                                 })}
                               </Typography>
                             )}
@@ -553,32 +554,12 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                 >
                                   {t("matches.labels.compatibilityBreakdown")}
                                 </Typography>
-                                <Stack
-                                  direction="row"
-                                  spacing={2}
-                                  useFlexGap
-                                  flexWrap="wrap"
-                                  justifyContent="flex-start"
-                                >
-                                  {dimensionBreakdown.map(
-                                    ({ label, value }, dimensionIndex) => (
-                                      <Box
-                                        key={`dimension-${dimensionIndex}`}
-                                        sx={{
-                                          flex: "1 1 160px",
-                                          display: "flex",
-                                          justifyContent: "center",
-                                        }}
-                                      >
-                                        <DimensionPieChart
-                                          value={value}
-                                          label={label}
-                                          theme={theme}
-                                        />
-                                      </Box>
-                                    )
-                                  )}
-                                </Stack>
+                                <DimensionBreakdownList
+                                  breakdown={dimensionBreakdown}
+                                  sum={dimensionSum}
+                                  overall={overallCompatibilityPercentage}
+                                  t={t}
+                                />
                               </Stack>
                             )}
                           </Stack>

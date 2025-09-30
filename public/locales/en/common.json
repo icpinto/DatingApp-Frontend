@@ -130,7 +130,9 @@
       "scoreTooltip": "Match score",
       "overallCompatibility": "Overall compatibility: {{score}}%",
       "compatibilityBreakdown": "Compatibility breakdown",
-      "dimensionWithIndex": "Dimension {{index}}"
+      "dimensionWithIndex": "Dimension {{index}}",
+      "dimensionSumLabel": "Sum of dimensions",
+      "dimensionSumHint": "Adding these dimension scores ({{sum}}%) forms the overall compatibility of {{overall}}%."
     }
   },
   "profile": {
