@@ -22,7 +22,7 @@ import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, lighten, darken } from "@mui/material/styles";
 
 const MAX_SCORE = 100;
 
@@ -142,15 +142,6 @@ const normalizeUserId = (rawUserId) => {
   return numericId;
 };
 
-const DIMENSION_COLOR_KEYS = [
-  "primary.main",
-  "success.main",
-  "warning.main",
-  "secondary.main",
-  "info.main",
-  "error.main",
-];
-
 const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) => {
   const theme = useTheme();
 
@@ -173,8 +164,18 @@ const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) 
   const safeTotal = totalValue > 0 ? totalValue : 1;
 
   const resolveColor = (index) => {
-    const palettePath = DIMENSION_COLOR_KEYS[index % DIMENSION_COLOR_KEYS.length].split(".");
-    return palettePath.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), theme.palette);
+    const baseColor = theme.palette.primary.main;
+
+    if (index === 0) {
+      return baseColor;
+    }
+
+    const step = Math.floor((index + 1) / 2);
+    const amount = Math.min(step * 0.1, 0.4);
+
+    return index % 2 === 0
+      ? darken(baseColor, amount)
+      : lighten(baseColor, amount);
   };
 
   return (
@@ -234,36 +235,6 @@ const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) 
           );
         })}
       </Box>
-
-      <Stack spacing={1}>
-        {normalizedBreakdown.map(({ label, value }, dimensionIndex) => {
-          const backgroundColor = resolveColor(dimensionIndex) || theme.palette.primary.main;
-          return (
-            <Stack
-              key={`dimension-legend-${dimensionIndex}`}
-              direction="row"
-              spacing={1}
-              alignItems="center"
-            >
-              <Box
-                sx={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 0.5,
-                  bgcolor: backgroundColor,
-                  border: `1px solid ${theme.palette.divider}`,
-                }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {label}
-              </Typography>
-              <Typography variant="body2" fontWeight={600} color="text.primary">
-                {formatScore(value)}%
-              </Typography>
-            </Stack>
-          );
-        })}
-      </Stack>
 
       <Divider flexItem />
 
@@ -607,7 +578,15 @@ const MatchRecommendations = ({ limit = 10 }) => {
                     <LinearProgress
                       variant="determinate"
                       value={clampScore(match.score)}
-                      sx={{ height: isTopMatch ? 8 : 6, borderRadius: 4 }}
+                      sx={{
+                        height: isTopMatch ? 8 : 6,
+                        borderRadius: 4,
+                        backgroundColor: (theme) => lighten(theme.palette.primary.main, 0.6),
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 4,
+                          backgroundColor: (theme) => theme.palette.primary.main,
+                        },
+                      }}
                     />
 
                     {reasons && (
