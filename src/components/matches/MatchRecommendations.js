@@ -142,6 +142,152 @@ const normalizeUserId = (rawUserId) => {
   return numericId;
 };
 
+const DIMENSION_COLOR_KEYS = [
+  "primary.main",
+  "success.main",
+  "warning.main",
+  "secondary.main",
+  "info.main",
+  "error.main",
+];
+
+const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) => {
+  const theme = useTheme();
+
+  if (!Array.isArray(breakdown) || breakdown.length === 0) {
+    return null;
+  }
+
+  const normalizedBreakdown = breakdown
+    .map(({ label, value }) => ({
+      label,
+      value: Math.max(0, Math.min(100, Number.isFinite(Number(value)) ? Number(value) : 0)),
+    }))
+    .filter(({ value }) => value > 0);
+
+  if (normalizedBreakdown.length === 0) {
+    return null;
+  }
+
+  const totalValue = normalizedBreakdown.reduce((total, { value }) => total + value, 0);
+  const safeTotal = totalValue > 0 ? totalValue : 1;
+
+  const resolveColor = (index) => {
+    const palettePath = DIMENSION_COLOR_KEYS[index % DIMENSION_COLOR_KEYS.length].split(".");
+    return palettePath.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), theme.palette);
+  };
+
+  return (
+    <Stack spacing={1.5}>
+      <Box
+        sx={{
+          width: "100%",
+          height: 32,
+          borderRadius: 999,
+          overflow: "hidden",
+          display: "flex",
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        {normalizedBreakdown.map(({ label, value }, dimensionIndex) => {
+          const widthPercentage = (value / safeTotal) * 100;
+          const backgroundColor = resolveColor(dimensionIndex) || theme.palette.primary.main;
+          const contrastColor = theme.palette.getContrastText(backgroundColor);
+          const showLabel = widthPercentage >= 12;
+
+          return (
+            <MuiTooltip
+              key={`dimension-bar-${dimensionIndex}`}
+              title={`${label}: ${formatScore(value)}%`}
+              placement="top"
+            >
+              <Box
+                sx={{
+                  flexGrow: value,
+                  flexBasis: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: backgroundColor,
+                  minWidth: widthPercentage < 4 ? theme.spacing(1) : undefined,
+                  px: showLabel ? 1 : 0,
+                }}
+              >
+                {showLabel && (
+                  <Typography
+                    variant="caption"
+                    fontWeight={600}
+                    sx={{
+                      color: contrastColor,
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      width: "100%",
+                      textAlign: "center",
+                    }}
+                  >
+                    {`${label} (${formatScore(value)}%)`}
+                  </Typography>
+                )}
+              </Box>
+            </MuiTooltip>
+          );
+        })}
+      </Box>
+
+      <Stack spacing={1}>
+        {normalizedBreakdown.map(({ label, value }, dimensionIndex) => {
+          const backgroundColor = resolveColor(dimensionIndex) || theme.palette.primary.main;
+          return (
+            <Stack
+              key={`dimension-legend-${dimensionIndex}`}
+              direction="row"
+              spacing={1}
+              alignItems="center"
+            >
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 0.5,
+                  bgcolor: backgroundColor,
+                  border: `1px solid ${theme.palette.divider}`,
+                }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {label}
+              </Typography>
+              <Typography variant="body2" fontWeight={600} color="text.primary">
+                {formatScore(value)}%
+              </Typography>
+            </Stack>
+          );
+        })}
+      </Stack>
+
+      <Divider flexItem />
+
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography variant="body2" fontWeight={600} color="text.primary">
+          {t("matches.labels.dimensionSumLabel")}
+        </Typography>
+        <Typography variant="body2" fontWeight={700} color="text.primary">
+          {t("matches.labels.scoreOnly", { score: formatScore(sum) })}
+        </Typography>
+      </Stack>
+
+      {typeof overall === "number" && Number.isFinite(overall) && (
+        <Typography variant="caption" color="text.secondary">
+          {t("matches.labels.dimensionSumHint", {
+            sum: formatScore(sum),
+            overall: formatScore(Math.max(0, Math.min(100, overall))),
+          })}
+        </Typography>
+      )}
+    </Stack>
+  );
+};
+
 const MatchRecommendations = ({ limit = 10 }) => {
   const [matches, setMatches] = useState([]);
   const [status, setStatus] = useState({ loading: false, errorKey: "" });
@@ -361,10 +507,30 @@ const MatchRecommendations = ({ limit = 10 }) => {
               const reasonsAreObject = isPlainObject(reasons);
               const reasonsAreArrayOrString =
                 Array.isArray(reasons) || typeof reasons === "string";
+              const perDimensionScores =
+                reasonsAreObject && Array.isArray(reasons.per_dimension)
+                  ? reasons.per_dimension
+                  : [];
               const overallCompatibilityPercentage =
                 reasonsAreObject && typeof reasons.raw_score === "number"
                   ? clampScore(convertToPercentage(reasons.raw_score))
                   : null;
+              const dimensionBreakdown = perDimensionScores.map(
+                (value, dimensionIndex) => {
+                  const percentage = convertToPercentage(value);
+                  const clampedPercentage = clampScore(percentage);
+                  return {
+                    label: t("matches.labels.dimensionWithIndex", {
+                      index: dimensionIndex + 1,
+                    }),
+                    value: clampedPercentage,
+                  };
+                }
+              );
+              const dimensionSum = dimensionBreakdown.reduce(
+                (accumulator, { value }) => accumulator + value,
+                0
+              );
 
               return (
                 <Box
@@ -441,21 +607,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
                     <LinearProgress
                       variant="determinate"
                       value={clampScore(match.score)}
-                      sx={(theme) => ({
-                        height: isTopMatch ? 8 : 6,
-                        borderRadius: 4,
-                        backgroundColor:
-                          theme.palette.mode === "light"
-                            ? theme.palette.primary.light
-                            : theme.palette.primary.dark,
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 4,
-                          backgroundColor:
-                            theme.palette.mode === "light"
-                              ? theme.palette.primary.main
-                              : theme.palette.primary.light,
-                        },
-                      })}
+                      sx={{ height: isTopMatch ? 8 : 6, borderRadius: 4 }}
                     />
 
                     {reasons && (
@@ -483,6 +635,23 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                   score: formatScore(overallCompatibilityPercentage),
                                 })}
                               </Typography>
+                            )}
+                            {dimensionBreakdown.length > 0 && (
+                              <Stack spacing={0.75}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontWeight: 600 }}
+                                >
+                                  {t("matches.labels.compatibilityBreakdown")}
+                                </Typography>
+                                <DimensionBreakdownList
+                                  breakdown={dimensionBreakdown}
+                                  sum={dimensionSum}
+                                  overall={overallCompatibilityPercentage}
+                                  t={t}
+                                />
+                              </Stack>
                             )}
                           </Stack>
                         )}
