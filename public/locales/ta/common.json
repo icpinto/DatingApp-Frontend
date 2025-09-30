@@ -130,7 +130,9 @@
       "scoreTooltip": "பொருத்த மதிப்பெண்",
       "overallCompatibility": "மொத்த இணக்கத்தன்மை: {{score}}%",
       "compatibilityBreakdown": "இணக்கத்தன்மை பகுப்பாய்வு",
-      "dimensionWithIndex": "வகை {{index}}"
+      "dimensionWithIndex": "வகை {{index}}",
+      "dimensionSumLabel": "பரிமாணங்களின் கூட்டுத்தொகை",
+      "dimensionSumHint": "இந்த பரிமாண மதிப்பெண்கள் ({{sum}}%) சேர்ந்து மொத்த இணக்கத்தன்மை {{overall}}% ஆகும்."
     }
   },
   "profile": {
