@@ -9,7 +9,6 @@ import {
   Chip,
   Collapse,
   Divider,
-  LinearProgress,
   Skeleton,
   Stack,
   TextField,
@@ -142,33 +141,124 @@ const normalizeUserId = (rawUserId) => {
   return numericId;
 };
 
+const DIMENSION_COLOR_KEYS = [
+  "primary.main",
+  "success.main",
+  "warning.main",
+  "secondary.main",
+  "info.main",
+  "error.main",
+];
+
 const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) => {
+  const theme = useTheme();
+
   if (!Array.isArray(breakdown) || breakdown.length === 0) {
     return null;
   }
 
+  const normalizedBreakdown = breakdown
+    .map(({ label, value }) => ({
+      label,
+      value: Math.max(0, Math.min(100, Number.isFinite(Number(value)) ? Number(value) : 0)),
+    }))
+    .filter(({ value }) => value > 0);
+
+  if (normalizedBreakdown.length === 0) {
+    return null;
+  }
+
+  const totalValue = normalizedBreakdown.reduce((total, { value }) => total + value, 0);
+  const safeTotal = totalValue > 0 ? totalValue : 1;
+
+  const resolveColor = (index) => {
+    const palettePath = DIMENSION_COLOR_KEYS[index % DIMENSION_COLOR_KEYS.length].split(".");
+    return palettePath.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), theme.palette);
+  };
+
   return (
     <Stack spacing={1.5}>
-      <Stack spacing={1}>
-        {breakdown.map(({ label, value }, dimensionIndex) => {
-          const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
-          const clampedValue = Math.max(0, Math.min(100, numericValue));
+      <Box
+        sx={{
+          width: "100%",
+          height: 32,
+          borderRadius: 999,
+          overflow: "hidden",
+          display: "flex",
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        {normalizedBreakdown.map(({ label, value }, dimensionIndex) => {
+          const widthPercentage = (value / safeTotal) * 100;
+          const backgroundColor = resolveColor(dimensionIndex) || theme.palette.primary.main;
+          const contrastColor = theme.palette.getContrastText(backgroundColor);
+          const showLabel = widthPercentage >= 12;
 
           return (
-            <Stack key={`dimension-row-${dimensionIndex}`} spacing={0.5}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" color="text.secondary">
-                  {label}
-                </Typography>
-                <Typography variant="body2" fontWeight={600} color="text.primary">
-                  {formatScore(clampedValue)}%
-                </Typography>
-              </Stack>
-              <LinearProgress
-                variant="determinate"
-                value={clampedValue}
-                sx={{ height: 6, borderRadius: 999 }}
+            <MuiTooltip
+              key={`dimension-bar-${dimensionIndex}`}
+              title={`${label}: ${formatScore(value)}%`}
+              placement="top"
+            >
+              <Box
+                sx={{
+                  flexGrow: value,
+                  flexBasis: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor: backgroundColor,
+                  minWidth: widthPercentage < 4 ? theme.spacing(1) : undefined,
+                  px: showLabel ? 1 : 0,
+                }}
+              >
+                {showLabel && (
+                  <Typography
+                    variant="caption"
+                    fontWeight={600}
+                    sx={{
+                      color: contrastColor,
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      width: "100%",
+                      textAlign: "center",
+                    }}
+                  >
+                    {`${label} (${formatScore(value)}%)`}
+                  </Typography>
+                )}
+              </Box>
+            </MuiTooltip>
+          );
+        })}
+      </Box>
+
+      <Stack spacing={1}>
+        {normalizedBreakdown.map(({ label, value }, dimensionIndex) => {
+          const backgroundColor = resolveColor(dimensionIndex) || theme.palette.primary.main;
+          return (
+            <Stack
+              key={`dimension-legend-${dimensionIndex}`}
+              direction="row"
+              spacing={1}
+              alignItems="center"
+            >
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 0.5,
+                  bgcolor: backgroundColor,
+                  border: `1px solid ${theme.palette.divider}`,
+                }}
               />
+              <Typography variant="body2" color="text.secondary">
+                {label}
+              </Typography>
+              <Typography variant="body2" fontWeight={600} color="text.primary">
+                {formatScore(value)}%
+              </Typography>
             </Stack>
           );
         })}
