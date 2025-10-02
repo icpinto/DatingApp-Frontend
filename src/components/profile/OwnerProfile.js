@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -39,6 +39,86 @@ import { useTranslation } from "../../i18n";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import { useNavigate } from "react-router-dom";
+
+const parseAccountHiddenStatus = (payload) => {
+  if (payload == null) {
+    return false;
+  }
+
+  if (typeof payload === "boolean") {
+    return payload;
+  }
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const parsed = parseAccountHiddenStatus(item);
+      if (typeof parsed === "boolean") {
+        return parsed;
+      }
+    }
+    return false;
+  }
+
+  if (typeof payload === "string") {
+    const normalized = payload.toLowerCase();
+    if (["active", "activated", "visible"].includes(normalized)) {
+      return false;
+    }
+    if (["deactivated", "inactive", "disabled", "hidden", "suspended"].includes(normalized)) {
+      return true;
+    }
+    return false;
+  }
+
+  if (typeof payload === "object") {
+    if ("account" in payload) {
+      const nested = parseAccountHiddenStatus(payload.account);
+      if (typeof nested === "boolean") {
+        return nested;
+      }
+    }
+
+    const booleanKeys = [
+      "hidden",
+      "is_hidden",
+      "deactivated",
+      "is_deactivated",
+      "inactive",
+      "is_inactive",
+      "disabled",
+      "is_disabled",
+    ];
+
+    for (const key of booleanKeys) {
+      if (key in payload) {
+        return Boolean(payload[key]);
+      }
+    }
+
+    if ("active" in payload) {
+      return !Boolean(payload.active);
+    }
+
+    const stringKeys = ["status", "account_status", "state", "lifecycle"];
+    for (const key of stringKeys) {
+      if (key in payload && typeof payload[key] === "string") {
+        return parseAccountHiddenStatus(payload[key]);
+      }
+    }
+
+    if ("deactivated_at" in payload) {
+      return Boolean(payload.deactivated_at);
+    }
+
+    if ("reactivated_at" in payload) {
+      const hasDeactivation = Boolean(payload.deactivated_at);
+      return hasDeactivation && !payload.reactivated_at;
+    }
+  }
+
+  return false;
+};
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -105,10 +185,34 @@ function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
+  const [accountStatusLoading, setAccountStatusLoading] = useState(true);
+  const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
   const userId = localStorage.getItem("user_id");
   const { t } = useTranslation();
   const verificationServiceUrl =
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
+  const navigate = useNavigate();
+
+  const loadAccountStatus = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setAccountStatusLoading(false);
+      return;
+    }
+
+    setAccountStatusLoading(true);
+    try {
+      const response = await api.get(`/user/account/status`, {
+        headers: { Authorization: `${token}` },
+      });
+      const hidden = parseAccountHiddenStatus(response?.data);
+      setIsAccountHidden(Boolean(hidden));
+    } catch (error) {
+      console.error("Error fetching account status:", error);
+    } finally {
+      setAccountStatusLoading(false);
+    }
+  }, []);
 
   const populateFormData = (data) => {
     setFormData({
@@ -249,6 +353,9 @@ function ProfilePage() {
     if (userId) fetchProfile();
   }, [userId]);
 
+  useEffect(() => {
+    loadAccountStatus();
+  }, [loadAccountStatus]);
 
   // Handle form field changes with inline feedback
   const handleChange = (e) => {
@@ -664,37 +771,131 @@ function ProfilePage() {
     });
   };
 
-  const handleHideAccountToggle = (event) => {
+  const handleHideAccountToggle = async (event) => {
+    if (isUpdatingAccountVisibility || accountStatusLoading) {
+      return;
+    }
+
     const hidden = event.target.checked;
+    const previousState = isAccountHidden;
     setIsAccountHidden(hidden);
-    setSnackbar({
-      open: true,
-      messageKey: "",
-      message: hidden
-        ? "Your profile is now hidden from match suggestions."
-        : "Your profile is visible to potential matches again.",
-      severity: "info",
-    });
+    setIsUpdatingAccountVisibility(true);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAccountHidden(previousState);
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: "Please sign in again to update your account visibility.",
+        severity: "error",
+      });
+      setIsUpdatingAccountVisibility(false);
+      return;
+    }
+
+    try {
+      const headers = { Authorization: `${token}` };
+      const response = hidden
+        ? await api.post(
+            `/user/account/deactivate`,
+            {},
+            { headers }
+          )
+        : await api.post(
+            `/user/account/reactivate`,
+            {},
+            { headers }
+          );
+
+      const successMessage =
+        response?.data?.message ||
+        (hidden
+          ? "Your profile is now hidden from match suggestions."
+          : "Your profile is visible to potential matches again.");
+
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: successMessage,
+        severity: hidden ? "info" : "success",
+      });
+      await loadAccountStatus();
+    } catch (error) {
+      console.error("Error updating account visibility:", error);
+      setIsAccountHidden(previousState);
+      const errorMessage =
+        error?.response?.data?.message ||
+        (hidden
+          ? "We couldn't hide your profile right now. Please try again later."
+          : "We couldn't make your profile visible. Please try again later.");
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: errorMessage,
+        severity: "error",
+      });
+    } finally {
+      setIsUpdatingAccountVisibility(false);
+    }
   };
 
-  const handleRemoveAccount = () => {
+  const handleRemoveAccount = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to permanently remove your account? This action cannot be undone."
     );
     if (!confirmed) {
       return;
     }
-    setIsRemovingAccount(true);
-    setTimeout(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
       setSnackbar({
         open: true,
         messageKey: "",
-        message:
-          "Your removal request has been recorded. Our team will reach out with confirmation shortly.",
-        severity: "warning",
+        message: "Please sign in again to remove your account.",
+        severity: "error",
       });
+      return;
+    }
+
+    setIsRemovingAccount(true);
+    try {
+      const response = await api.delete(`/user/account`, {
+        headers: { Authorization: `${token}` },
+      });
+
+      const successMessage =
+        response?.data?.message ||
+        "Your account has been removed. We're sorry to see you go.";
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: successMessage,
+        severity: "success",
+      });
+
+      setTimeout(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user_id");
+        window.dispatchEvent(
+          new CustomEvent("auth-token-changed", { detail: { token: null } })
+        );
+        navigate("/");
+      }, 1200);
+    } catch (error) {
+      console.error("Error removing account:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        "We couldn't remove your account right now. Please try again or contact support.";
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: errorMessage,
+        severity: "error",
+      });
+    } finally {
       setIsRemovingAccount(false);
-    }, 600);
+    }
   };
 
   const statusLabelKey = {
@@ -1594,11 +1795,20 @@ function ProfilePage() {
                         </Typography>
                       </Box>
                     </Stack>
-                    <Switch
-                      checked={isAccountHidden}
-                      onChange={handleHideAccountToggle}
-                      inputProps={{ "aria-label": "Hide my profile" }}
-                    />
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Switch
+                        checked={isAccountHidden}
+                        onChange={handleHideAccountToggle}
+                        disabled={accountStatusLoading || isUpdatingAccountVisibility}
+                        inputProps={{
+                          "aria-label": "Hide my profile",
+                          "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
+                        }}
+                      />
+                      {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                        <CircularProgress size={18} />
+                      )}
+                    </Stack>
                   </Stack>
                 </Stack>
                 <Stack spacing={1.5}>
