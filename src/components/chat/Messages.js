@@ -697,6 +697,9 @@ function Messages({ onUnreadCountChange = () => {} }) {
                     onClose={handleCloseConversation}
                     partnerName={selectedConversationDetails?.displayName}
                     partnerBio={selectedConversationDetails?.bio}
+                    partnerLifecycleStatus={
+                      selectedConversationDetails?.lifecycleStatus
+                    }
                     blocked={selectedConversationBlocked}
                   />
                 ) : (

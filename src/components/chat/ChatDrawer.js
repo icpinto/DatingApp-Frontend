@@ -29,6 +29,7 @@ function ChatDrawer({
   onClose,
   partnerName,
   partnerBio,
+  partnerLifecycleStatus,
   blocked = false,
 }) {
   const {
@@ -80,6 +81,15 @@ function ChatDrawer({
     () => toNumberOrUndefined(localStorage.getItem("user_id")),
     []
   );
+
+  const normalizedPartnerLifecycleStatus = useMemo(() => {
+    if (typeof partnerLifecycleStatus !== "string") {
+      return undefined;
+    }
+
+    const trimmed = partnerLifecycleStatus.trim().toLowerCase();
+    return trimmed.length ? trimmed : undefined;
+  }, [partnerLifecycleStatus]);
 
   const receiverId = useMemo(() => {
     const normalizedUser1 = toNumberOrUndefined(user1_id);
@@ -225,10 +235,30 @@ function ChatDrawer({
     }
   }, [conversationId, conversationMessages, markRead, senderId]);
 
+  const isLifecycleRestricted = useMemo(() => {
+    if (!normalizedPartnerLifecycleStatus) {
+      return false;
+    }
+
+    return ["deleted", "deactivated"].includes(normalizedPartnerLifecycleStatus);
+  }, [normalizedPartnerLifecycleStatus]);
+
+  const lifecycleDisabledReason = useMemo(() => {
+    if (normalizedPartnerLifecycleStatus === "deactivated") {
+      return "This user has deactivated their account. You can’t reply.";
+    }
+
+    if (normalizedPartnerLifecycleStatus === "deleted") {
+      return "This user has deleted their account. You can’t reply.";
+    }
+
+    return null;
+  }, [normalizedPartnerLifecycleStatus]);
+
   const handleSendMessage = useCallback(() => {
     const trimmedMessage = newMessage.trim();
 
-    if (isBlocked || trimmedMessage === "") {
+    if (isBlocked || isLifecycleRestricted || trimmedMessage === "") {
       return;
     }
 
@@ -272,6 +302,7 @@ function ChatDrawer({
     addLocalMessage,
     conversationId,
     isBlocked,
+    isLifecycleRestricted,
     newMessage,
     normalizedConversationId,
     receiverId,
@@ -352,13 +383,17 @@ function ChatDrawer({
         blockError={blockError}
         onDismissBlockError={() => setBlockError(null)}
         blockSuccess={blockSuccess}
+        lifecycleStatus={normalizedPartnerLifecycleStatus}
       />
       <Divider sx={{ mx: spacing.section, borderStyle: "dashed" }} />
       <MessageComposerSection
         value={newMessage}
         onChange={(event) => setNewMessage(event.target.value)}
         onSend={handleSendMessage}
-        isBlocked={isBlocked}
+        isBlocked={isBlocked || isLifecycleRestricted}
+        disabledReason={
+          isBlocked ? undefined : lifecycleDisabledReason || undefined
+        }
       />
     </Box>
   );
