@@ -17,6 +17,7 @@ import { HourglassEmpty, PersonAddAlt1, Send } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 
 function Requests({ onRequestCountChange = () => {} }) {
   const [requests, setRequests] = useState([]);
@@ -27,6 +28,7 @@ function Requests({ onRequestCountChange = () => {} }) {
   const [profiles, setProfiles] = useState({});
   const [sentProfiles, setSentProfiles] = useState({});
   const { t } = useTranslation();
+  const { isDeactivated } = useAccountLifecycle();
 
   const normalizeRequests = (payload) => {
     if (!payload) return [];
@@ -239,22 +241,24 @@ function Requests({ onRequestCountChange = () => {} }) {
           >
             {description}
           </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => handleAccept(request.id)}
-            >
-              {t("common.actions.accept")}
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={() => handleReject(request.id)}
-            >
-              {t("common.actions.reject")}
-            </Button>
-          </Stack>
+          {!isDeactivated && (
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleAccept(request.id)}
+              >
+                {t("common.actions.accept")}
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => handleReject(request.id)}
+              >
+                {t("common.actions.reject")}
+              </Button>
+            </Stack>
+          )}
         </Stack>
       </Box>
     );
@@ -364,7 +368,7 @@ function Requests({ onRequestCountChange = () => {} }) {
       );
     }
 
-    return (
+    const requestList = (
       <Stack
         spacing={spacing.section}
         divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
@@ -372,6 +376,19 @@ function Requests({ onRequestCountChange = () => {} }) {
         {requests.map((request, index) => renderReceivedRequestItem(request, index))}
       </Stack>
     );
+
+    if (isDeactivated) {
+      return (
+        <Stack spacing={spacing.section}>
+          <Typography variant="body2" color="text.secondary">
+            {t("requests.messages.deactivatedReadOnly")}
+          </Typography>
+          {requestList}
+        </Stack>
+      );
+    }
+
+    return requestList;
   };
 
   const renderSentRequests = () => {
