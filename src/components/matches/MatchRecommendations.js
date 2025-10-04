@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -23,6 +24,8 @@ import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
 import { useNavigate } from "react-router-dom";
 import { useTheme, lighten, darken } from "@mui/material/styles";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 
 const MAX_SCORE = 100;
 
@@ -272,8 +275,21 @@ const MatchRecommendations = ({ limit = 10 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
+  const discoveryDisabled = !lifecycleLoading && isDeactivated;
 
   useEffect(() => {
+    if (lifecycleLoading) {
+      return;
+    }
+
+    if (discoveryDisabled) {
+      setStatus({ loading: false, errorKey: "" });
+      setMatches([]);
+      setExpandedMatchId(null);
+      return;
+    }
+
     const userId = localStorage.getItem("user_id");
     if (!userId) {
       setStatus({ loading: false, errorKey: "matches.messages.noActiveUser" });
@@ -301,7 +317,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
     };
 
     loadMatches();
-  }, [limit]);
+  }, [limit, discoveryDisabled, lifecycleLoading]);
 
   const orderedMatches = useMemo(() => {
     if (!Array.isArray(matches)) {
@@ -311,6 +327,10 @@ const MatchRecommendations = ({ limit = 10 }) => {
   }, [matches]);
 
   const handleToggleExpand = async (matchKey, rawUserId) => {
+    if (discoveryDisabled) {
+      return;
+    }
+
     const normalizedUserId = normalizeUserId(rawUserId);
 
     if (normalizedUserId === null) {
@@ -368,6 +388,10 @@ const MatchRecommendations = ({ limit = 10 }) => {
   };
 
   const handleSendRequest = async (matchKey, rawUserId) => {
+    if (discoveryDisabled) {
+      return;
+    }
+
     const normalizedUserId = normalizeUserId(rawUserId);
     if (normalizedUserId === null) {
       return;
@@ -439,7 +463,9 @@ const MatchRecommendations = ({ limit = 10 }) => {
       />
       <Divider />
       <CardContent>
-        {status.loading ? (
+        {discoveryDisabled ? (
+          <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+        ) : status.loading ? (
           <Stack spacing={spacing.section}>
             <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
             <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
@@ -470,7 +496,10 @@ const MatchRecommendations = ({ limit = 10 }) => {
               const feedbackForMatch = feedback[matchKey];
               const isTopMatch = index === 0;
               const canInteract =
-                userId !== undefined && userId !== null && userId !== "";
+                !discoveryDisabled &&
+                userId !== undefined &&
+                userId !== null &&
+                userId !== "";
               const locationText =
                 details.location || match.location || "";
               const bioText = details.bio || match.bio || "";
@@ -697,7 +726,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
                                     : t("home.helpers.requestMessage")
                                 }
                                 error={Boolean(requestErrorKey)}
-                                disabled={requestStatus}
+                                disabled={requestStatus || discoveryDisabled}
                               />
                             </Box>
                             <Button

@@ -40,127 +40,12 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useNavigate } from "react-router-dom";
-
-const parseAccountHiddenStatus = (payload) => {
-  if (payload == null) {
-    return false;
-  }
-
-  if (typeof payload === "boolean") {
-    return payload;
-  }
-
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      const parsed = parseAccountHiddenStatus(item);
-      if (typeof parsed === "boolean") {
-        return parsed;
-      }
-    }
-    return false;
-  }
-
-  if (typeof payload === "string") {
-    const normalized = payload.toLowerCase();
-    if (["active", "activated", "visible"].includes(normalized)) {
-      return false;
-    }
-    if (["deactivated", "inactive", "disabled", "hidden", "suspended"].includes(normalized)) {
-      return true;
-    }
-    return false;
-  }
-
-  if (typeof payload === "object") {
-    if ("account" in payload) {
-      const nested = parseAccountHiddenStatus(payload.account);
-      if (typeof nested === "boolean") {
-        return nested;
-      }
-    }
-
-    const booleanKeys = [
-      "hidden",
-      "is_hidden",
-      "deactivated",
-      "is_deactivated",
-      "inactive",
-      "is_inactive",
-      "disabled",
-      "is_disabled",
-    ];
-
-    for (const key of booleanKeys) {
-      if (key in payload) {
-        return Boolean(payload[key]);
-      }
-    }
-
-    if ("active" in payload) {
-      return !Boolean(payload.active);
-    }
-
-    const stringKeys = ["status", "account_status", "state", "lifecycle"];
-    for (const key of stringKeys) {
-      if (key in payload && typeof payload[key] === "string") {
-        return parseAccountHiddenStatus(payload[key]);
-      }
-    }
-
-    if ("deactivated_at" in payload) {
-      return Boolean(payload.deactivated_at);
-    }
-
-    if ("reactivated_at" in payload) {
-      const hasDeactivation = Boolean(payload.deactivated_at);
-      return hasDeactivation && !payload.reactivated_at;
-    }
-  }
-
-  return false;
-};
-
-const normalizeLifecycleStatus = (value) => {
-  if (value == null) {
-    return null;
-  }
-
-  const normalized = String(value).trim().toLowerCase();
-  if (!normalized) {
-    return null;
-  }
-
-  if (
-    ["activated", "active", "visible", "reactivated", "available"].includes(
-      normalized
-    )
-  ) {
-    return "activated";
-  }
-
-  if (
-    [
-      "deactivated",
-      "inactive",
-      "hidden",
-      "disabled",
-      "suspended",
-      "unavailable",
-    ].includes(normalized)
-  ) {
-    return "deactivated";
-  }
-
-  if (["1", "true", "yes", "enabled", "on"].includes(normalized)) {
-    return "activated";
-  }
-
-  if (["0", "false", "no", "off"].includes(normalized)) {
-    return "deactivated";
-  }
-
-  return null;
-};
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import {
+  ACCOUNT_DEACTIVATED_MESSAGE,
+  ACCOUNT_LIFECYCLE,
+  resolveAccountLifecycleStatus,
+} from "../../utils/accountLifecycle";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -228,7 +113,11 @@ function ProfilePage() {
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
   const [accountStatusLoading, setAccountStatusLoading] = useState(true);
-  const [accountLifecycleStatus, setAccountLifecycleStatus] = useState(null);
+  const { status: sharedLifecycleStatus, setStatus: setSharedLifecycleStatus } =
+    useAccountLifecycle();
+  const [accountLifecycleStatus, setAccountLifecycleStatus] = useState(
+    sharedLifecycleStatus ?? null
+  );
   const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
   const userId = localStorage.getItem("user_id");
   const { t } = useTranslation();
@@ -237,15 +126,29 @@ function ProfilePage() {
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
 
-  const isLifecycleReadOnly = accountLifecycleStatus === "deactivated";
-  const lifecycleReadOnlyMessage =
-    "Your account is currently deactivated. Reactivate your profile to make changes.";
+  const updateAccountLifecycleStatus = useCallback(
+    (nextStatus) => {
+      setAccountLifecycleStatus(nextStatus);
+      if (typeof setSharedLifecycleStatus === "function") {
+        setSharedLifecycleStatus(nextStatus);
+      }
+    },
+    [setSharedLifecycleStatus]
+  );
+
+  useEffect(() => {
+    setAccountLifecycleStatus(sharedLifecycleStatus ?? null);
+  }, [sharedLifecycleStatus]);
+
+  const isLifecycleReadOnly =
+    accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED;
+  const lifecycleReadOnlyMessage = ACCOUNT_DEACTIVATED_MESSAGE;
 
   const loadAccountStatus = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setAccountStatusLoading(false);
-      setAccountLifecycleStatus(null);
+      updateAccountLifecycleStatus(null);
       return;
     }
 
@@ -255,45 +158,17 @@ function ProfilePage() {
         headers: { Authorization: `${token}` },
       });
       const payload = response?.data;
-      const hidden = parseAccountHiddenStatus(payload);
+      const { status: lifecycleStatus, hidden } =
+        resolveAccountLifecycleStatus(payload);
       setIsAccountHidden(Boolean(hidden));
-
-      const statusCandidates = [];
-      if (payload && typeof payload === "object") {
-        statusCandidates.push(
-          payload.status,
-          payload.account_status,
-          payload.accountStatus,
-          payload.state,
-          payload.lifecycle,
-          payload.account?.status,
-          payload.account?.state
-        );
-      } else {
-        statusCandidates.push(payload);
-      }
-
-      let lifecycleStatus = null;
-      for (const candidate of statusCandidates) {
-        const parsed = normalizeLifecycleStatus(candidate);
-        if (parsed) {
-          lifecycleStatus = parsed;
-          break;
-        }
-      }
-
-      if (!lifecycleStatus) {
-        lifecycleStatus = hidden ? "deactivated" : "activated";
-      }
-
-      setAccountLifecycleStatus(lifecycleStatus);
+      updateAccountLifecycleStatus(lifecycleStatus);
     } catch (error) {
       console.error("Error fetching account status:", error);
-      setAccountLifecycleStatus(null);
+      updateAccountLifecycleStatus(null);
     } finally {
       setAccountStatusLoading(false);
     }
-  }, []);
+  }, [updateAccountLifecycleStatus]);
 
   const populateFormData = (data) => {
     setFormData({
@@ -878,15 +753,18 @@ function ProfilePage() {
     const hidden = event.target.checked;
     const previousState = isAccountHidden;
     const previousLifecycleStatus =
-      accountLifecycleStatus ?? (previousState ? "deactivated" : "activated");
+      accountLifecycleStatus ??
+      (previousState ? ACCOUNT_LIFECYCLE.DEACTIVATED : ACCOUNT_LIFECYCLE.ACTIVATED);
     setIsAccountHidden(hidden);
-    setAccountLifecycleStatus(hidden ? "deactivated" : "activated");
+    updateAccountLifecycleStatus(
+      hidden ? ACCOUNT_LIFECYCLE.DEACTIVATED : ACCOUNT_LIFECYCLE.ACTIVATED
+    );
     setIsUpdatingAccountVisibility(true);
 
     const token = localStorage.getItem("token");
     if (!token) {
       setIsAccountHidden(previousState);
-      setAccountLifecycleStatus(previousLifecycleStatus);
+      updateAccountLifecycleStatus(previousLifecycleStatus);
       setSnackbar({
         open: true,
         messageKey: "",
@@ -927,7 +805,7 @@ function ProfilePage() {
     } catch (error) {
       console.error("Error updating account visibility:", error);
       setIsAccountHidden(previousState);
-      setAccountLifecycleStatus(previousLifecycleStatus);
+      updateAccountLifecycleStatus(previousLifecycleStatus);
       const errorMessage =
         error?.response?.data?.message ||
         (hidden
@@ -1037,14 +915,13 @@ function ProfilePage() {
     }
 
     if (
-      accountLifecycleStatus === "deactivated" &&
-      previousLifecycleStatusRef.current !== "deactivated"
+      accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED &&
+      previousLifecycleStatusRef.current !== ACCOUNT_LIFECYCLE.DEACTIVATED
     ) {
       setSnackbar({
         open: true,
         messageKey: "",
-        message:
-          "Your account is currently deactivated. Most profile actions are now read-only.",
+        message: ACCOUNT_DEACTIVATED_MESSAGE,
         severity: "info",
       });
     }
@@ -1056,10 +933,7 @@ function ProfilePage() {
     <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
         {isLifecycleReadOnly && (
-          <Alert severity="info">
-            Your account is currently deactivated. Reactivate to edit your profile or update
-            verification details.
-          </Alert>
+          <Alert severity="info">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
         )}
         {shouldShowForm ? (
             <Card elevation={4} sx={{ borderRadius: 3 }}>
@@ -1947,12 +1821,12 @@ function ProfilePage() {
                         {accountLifecycleStatus && (
                           <Chip
                             label={
-                              accountLifecycleStatus === "deactivated"
+                              accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
                                 ? "Status: Deactivated"
                                 : "Status: Activated"
                             }
                             color={
-                              accountLifecycleStatus === "deactivated"
+                              accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
                                 ? "warning"
                                 : "success"
                             }
