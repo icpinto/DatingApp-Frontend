@@ -798,12 +798,12 @@ function ProfilePage() {
       const headers = { Authorization: `${token}` };
       const response = hidden
         ? await api.post(
-            `/user/account/deactivate`,
+            `/user/deactivate`,
             {},
             { headers }
           )
         : await api.post(
-            `/user/account/reactivate`,
+            `/user/reactivate`,
             {},
             { headers }
           );
@@ -860,7 +860,7 @@ function ProfilePage() {
 
     setIsRemovingAccount(true);
     try {
-      const response = await api.delete(`/user/account`, {
+      const response = await api.delete(`/user`, {
         headers: { Authorization: `${token}` },
       });
 
