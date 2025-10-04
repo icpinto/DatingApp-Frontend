@@ -66,7 +66,6 @@ function Home() {
   const navigate = useNavigate();
   const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
   const discoveryDisabled = !lifecycleLoading && isDeactivated;
-  const shouldRenderActiveUsers = !discoveryDisabled;
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -155,22 +154,11 @@ function Home() {
   }, [fetchActiveUsers]);
 
   useEffect(() => {
-    if (!shouldRenderActiveUsers) {
-      setLoadingUsers(false);
-      setActiveUsers([]);
-      setExpandedUserId(null);
-      return;
-    }
-
     fetchActiveUsers();
-  }, [fetchActiveUsers, shouldRenderActiveUsers]);
+  }, [fetchActiveUsers]);
 
   // Toggle and fetch detailed profile data
   const handleToggleExpand = async (rawUserId) => {
-    if (discoveryDisabled) {
-      return;
-    }
-
     const userId = Number(rawUserId);
     const normalizedUserId = Number.isNaN(userId) ? rawUserId : userId;
 
@@ -270,12 +258,7 @@ function Home() {
       <Box
         key={userId ?? index}
         onClick={() => {
-          if (
-            discoveryDisabled ||
-            userId === undefined ||
-            userId === null ||
-            userId === ""
-          ) {
+          if (userId === undefined || userId === null || userId === "") {
             return;
           }
           handleToggleExpand(userId);
@@ -283,16 +266,14 @@ function Home() {
         sx={{
           p: 2,
           borderRadius: 2,
-          cursor: discoveryDisabled ? "not-allowed" : "pointer",
+          cursor: "pointer",
           border: (theme) => `1px solid ${theme.palette.divider}`,
           bgcolor: (theme) =>
             isTopUser ? theme.palette.action.hover : theme.palette.background.paper,
           transition: "background-color 0.2s ease, border-color 0.2s ease",
-          "&:hover": discoveryDisabled
-            ? undefined
-            : {
-                bgcolor: (theme) => theme.palette.action.hover,
-              },
+          "&:hover": {
+            bgcolor: (theme) => theme.palette.action.hover,
+          },
         }}
       >
         <Stack spacing={spacing.section}>
@@ -417,7 +398,7 @@ function Home() {
                             : t("home.helpers.requestMessage")
                         }
                         error={Boolean(requestMessageError)}
-                        disabled={profileData.requestStatus || discoveryDisabled}
+                        disabled={profileData.requestStatus}
                       />
                     </Box>
                     <Button
@@ -466,8 +447,7 @@ function Home() {
           <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
         ) : null}
         <MatchRecommendations limit={12} />
-        {shouldRenderActiveUsers ? (
-          <Card elevation={3} sx={{ borderRadius: 3 }}>
+        <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardHeader
             title={t("home.headers.activeUsers")}
             subheader={t("home.headers.activeUsersSub")}
@@ -597,7 +577,6 @@ function Home() {
             )}
           </CardContent>
           </Card>
-        ) : null}
       </Stack>
     </Container>
   );
