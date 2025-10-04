@@ -19,6 +19,7 @@ import api from "../../services/api";
 import chatService from "../../services/chatService";
 import { spacing } from "../../styles";
 import { useWebSocket } from "../../context/WebSocketProvider";
+import { useTranslation } from "../../i18n";
 import {
   pickFirst,
   toNumberOrUndefined,
@@ -138,8 +139,34 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const currentUserId = getCurrentUserId();
   const normalizedCurrentUserId = toNumberOrUndefined(currentUserId);
+  const { t } = useTranslation();
   const { conversations: wsConversations, markRead, hydrateConversations } =
     useWebSocket();
+
+  const resolveLifecyclePlaceholder = useCallback(
+    (status) => {
+      if (!status || typeof status !== "string") {
+        return undefined;
+      }
+
+      const normalizedStatus = status.trim().toLowerCase();
+
+      if (normalizedStatus === "deactivated") {
+        return t("common.placeholders.deactivatedAccount", {
+          defaultValue: "Deactivated account",
+        });
+      }
+
+      if (normalizedStatus === "deleted") {
+        return t("common.placeholders.deletedUser", {
+          defaultValue: "Deleted user",
+        });
+      }
+
+      return undefined;
+    },
+    [t]
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -325,24 +352,29 @@ function Messages({ onUnreadCountChange = () => {} }) {
     return conversations.map((conversation) => {
       const conversationId = resolveConversationId(conversation);
       const conversationKey = getConversationKey(conversation);
-      const { displayName } = getConversationPartnerDetails(
+      const partnerDetails = getConversationPartnerDetails(
         conversation,
         currentUserId,
         profiles
       );
+      const lifecyclePlaceholder = resolveLifecyclePlaceholder(
+        partnerDetails.lifecycleStatus
+      );
+      const effectiveDisplayName =
+        lifecyclePlaceholder ?? partnerDetails.displayName;
       const { body, mime_type, timestamp } = extractLastMessageInfo(conversation);
       const messagePreview = buildMessagePreview(body, mime_type);
       const formattedTimestamp = formatLastMessageTimestamp(timestamp);
       const unreadCount = extractUnreadCount(conversation);
-      const avatarInitial = displayName
-        ? displayName.charAt(0).toUpperCase()
+      const avatarInitial = effectiveDisplayName
+        ? effectiveDisplayName.charAt(0).toUpperCase()
         : "?";
 
       return {
         conversation,
         conversationId,
         conversationKey,
-        displayName,
+        displayName: effectiveDisplayName,
         messagePreview,
         formattedTimestamp,
         unreadCount,
@@ -355,6 +387,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
     getConversationKey,
     profiles,
     resolveConversationId,
+    resolveLifecyclePlaceholder,
   ]);
 
   useEffect(() => {
@@ -575,12 +608,24 @@ function Messages({ onUnreadCountChange = () => {} }) {
       return null;
     }
 
-    return getConversationPartnerDetails(
+    const details = getConversationPartnerDetails(
       selectedConversation,
       currentUserId,
       profiles
     );
-  }, [currentUserId, profiles, selectedConversation]);
+    const placeholder = resolveLifecyclePlaceholder(details.lifecycleStatus);
+
+    if (!placeholder) {
+      return details;
+    }
+
+    return { ...details, displayName: placeholder };
+  }, [
+    currentUserId,
+    profiles,
+    resolveLifecyclePlaceholder,
+    selectedConversation,
+  ]);
 
   const selectedConversationBlocked = useMemo(() => {
     if (!selectedConversation) {

@@ -31,6 +31,8 @@
       "user": "பயனர்",
       "userNumber": "பயனர் #{{id}}",
       "unknownUser": "அறியப்படாத பயனர்",
+      "deactivatedAccount": "செயலிழக்கச் செய்யப்பட்ட கணக்கு",
+      "deletedUser": "நீக்கப்பட்ட பயனர்",
       "noBio": "சுயவிவரம் இல்லை",
       "noMessage": "செய்தி வழங்கப்படவில்லை.",
       "notAvailable": "இல்லை"
