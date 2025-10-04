@@ -1,6 +1,6 @@
 import api from "./api";
 
-const basePath = "/core-preferences";
+const basePath = "/user/core-preferences";
 
 const buildAuthHeaders = () => {
   const token = localStorage.getItem("token");
