@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -380,9 +381,9 @@ function Requests({ onRequestCountChange = () => {} }) {
     if (isDeactivated) {
       return (
         <Stack spacing={spacing.section}>
-          <Typography variant="body2" color="text.secondary">
+          <Alert severity="warning">
             {t("requests.messages.deactivatedReadOnly")}
-          </Typography>
+          </Alert>
           {requestList}
         </Stack>
       );
