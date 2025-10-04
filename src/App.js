@@ -26,6 +26,7 @@ import Requests from "./components/requests/Requests";
 import Messages from "./components/chat/Messages";
 import Payment from "./components/payment/Payment";
 import { WebSocketProvider } from "./context/WebSocketProvider";
+import { AccountLifecycleProvider } from "./context/AccountLifecycleContext";
 import { ColorModeContext } from "./context/ThemeContext";
 import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
@@ -183,20 +184,22 @@ function TopBar() {
 function App() {
   return (
     <WebSocketProvider>
-      <Router>
-        <div className="App">
-          <TopBar />
-          <Routes>
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/" element={<Login />} />
-            <Route path="/home" element={<MainTabs />} />
-            <Route path="/profile/:userId" element={<Profile />} />
-            <Route path="/requests" element={<Requests />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/payment" element={<Payment />} />
-          </Routes>
-        </div>
-      </Router>
+      <AccountLifecycleProvider>
+        <Router>
+          <div className="App">
+            <TopBar />
+            <Routes>
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<Login />} />
+              <Route path="/home" element={<MainTabs />} />
+              <Route path="/profile/:userId" element={<Profile />} />
+              <Route path="/requests" element={<Requests />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/payment" element={<Payment />} />
+            </Routes>
+          </div>
+        </Router>
+      </AccountLifecycleProvider>
     </WebSocketProvider>
   );
 }

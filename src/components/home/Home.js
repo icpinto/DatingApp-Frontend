@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -23,6 +24,8 @@ import api from "../../services/api";
 import { spacing } from "../../styles";
 import MatchRecommendations from "../matches/MatchRecommendations";
 import { useTranslation } from "../../i18n";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 
 const FILTER_DEFAULTS = {
   gender: "",
@@ -61,6 +64,9 @@ function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
+  const discoveryDisabled = !lifecycleLoading && isDeactivated;
+  const shouldRenderActiveUsers = !discoveryDisabled;
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -149,11 +155,22 @@ function Home() {
   }, [fetchActiveUsers]);
 
   useEffect(() => {
+    if (!shouldRenderActiveUsers) {
+      setLoadingUsers(false);
+      setActiveUsers([]);
+      setExpandedUserId(null);
+      return;
+    }
+
     fetchActiveUsers();
-  }, [fetchActiveUsers]);
+  }, [fetchActiveUsers, shouldRenderActiveUsers]);
 
   // Toggle and fetch detailed profile data
   const handleToggleExpand = async (rawUserId) => {
+    if (discoveryDisabled) {
+      return;
+    }
+
     const userId = Number(rawUserId);
     const normalizedUserId = Number.isNaN(userId) ? rawUserId : userId;
 
@@ -196,6 +213,10 @@ function Home() {
   };
 
   const handleSendRequest = async (rawUserId) => {
+    if (discoveryDisabled) {
+      return;
+    }
+
     const userId = Number(rawUserId);
     const normalizedUserId = Number.isNaN(userId) ? rawUserId : userId;
 
@@ -249,7 +270,12 @@ function Home() {
       <Box
         key={userId ?? index}
         onClick={() => {
-          if (userId === undefined || userId === null || userId === "") {
+          if (
+            discoveryDisabled ||
+            userId === undefined ||
+            userId === null ||
+            userId === ""
+          ) {
             return;
           }
           handleToggleExpand(userId);
@@ -257,14 +283,16 @@ function Home() {
         sx={{
           p: 2,
           borderRadius: 2,
-          cursor: "pointer",
+          cursor: discoveryDisabled ? "not-allowed" : "pointer",
           border: (theme) => `1px solid ${theme.palette.divider}`,
           bgcolor: (theme) =>
             isTopUser ? theme.palette.action.hover : theme.palette.background.paper,
           transition: "background-color 0.2s ease, border-color 0.2s ease",
-          "&:hover": {
-            bgcolor: (theme) => theme.palette.action.hover,
-          },
+          "&:hover": discoveryDisabled
+            ? undefined
+            : {
+                bgcolor: (theme) => theme.palette.action.hover,
+              },
         }}
       >
         <Stack spacing={spacing.section}>
@@ -389,7 +417,7 @@ function Home() {
                             : t("home.helpers.requestMessage")
                         }
                         error={Boolean(requestMessageError)}
-                        disabled={profileData.requestStatus}
+                        disabled={profileData.requestStatus || discoveryDisabled}
                       />
                     </Box>
                     <Button
@@ -402,6 +430,7 @@ function Home() {
                         }
                       }}
                       disabled={
+                        discoveryDisabled ||
                         profileData.requestStatus ||
                         userId === undefined ||
                         userId === null ||
@@ -433,8 +462,12 @@ function Home() {
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
+        {discoveryDisabled ? (
+          <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+        ) : null}
         <MatchRecommendations limit={12} />
-        <Card elevation={3} sx={{ borderRadius: 3 }}>
+        {shouldRenderActiveUsers ? (
+          <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardHeader
             title={t("home.headers.activeUsers")}
             subheader={t("home.headers.activeUsersSub")}
@@ -563,7 +596,8 @@ function Home() {
               </Stack>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        ) : null}
       </Stack>
     </Container>
   );
