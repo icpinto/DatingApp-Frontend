@@ -11,7 +11,21 @@ function ChatMessageList({
   blockError,
   onDismissBlockError,
   blockSuccess,
+  lifecycleStatus,
 }) {
+  const normalizedLifecycleStatus =
+    typeof lifecycleStatus === "string"
+      ? lifecycleStatus.trim().toLowerCase()
+      : undefined;
+
+  let lifecycleMessage = null;
+
+  if (normalizedLifecycleStatus === "deactivated") {
+    lifecycleMessage = "This user has deactivated their account. You can’t reply.";
+  } else if (normalizedLifecycleStatus === "deleted") {
+    lifecycleMessage = "This user has deleted their account. You can’t reply.";
+  }
+
   return (
     <Box
       ref={containerRef}
@@ -41,6 +55,11 @@ function ChatMessageList({
       {blockSuccess ? (
         <Alert severity="success" sx={{ alignSelf: "flex-start" }}>
           You have blocked this user. You will no longer receive messages from them.
+        </Alert>
+      ) : null}
+      {lifecycleMessage ? (
+        <Alert severity="info" sx={{ alignSelf: "flex-start" }}>
+          {lifecycleMessage}
         </Alert>
       ) : null}
       {error && (

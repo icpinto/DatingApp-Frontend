@@ -2,11 +2,17 @@ import React from "react";
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import { spacing } from "../../styles";
 
-function MessageComposer({ value, onChange, onSend, isBlocked }) {
+function MessageComposer({
+  value,
+  onChange,
+  onSend,
+  isBlocked,
+  disabledReason,
+}) {
   if (isBlocked) {
     return (
       <Typography variant="body2" color="text.secondary">
-        Messaging is disabled for this conversation.
+        {disabledReason || "Messaging is disabled for this conversation."}
       </Typography>
     );
   }
