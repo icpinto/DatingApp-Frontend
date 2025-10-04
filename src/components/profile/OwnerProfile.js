@@ -120,6 +120,48 @@ const parseAccountHiddenStatus = (payload) => {
   return false;
 };
 
+const normalizeLifecycleStatus = (value) => {
+  if (value == null) {
+    return null;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (
+    ["activated", "active", "visible", "reactivated", "available"].includes(
+      normalized
+    )
+  ) {
+    return "activated";
+  }
+
+  if (
+    [
+      "deactivated",
+      "inactive",
+      "hidden",
+      "disabled",
+      "suspended",
+      "unavailable",
+    ].includes(normalized)
+  ) {
+    return "deactivated";
+  }
+
+  if (["1", "true", "yes", "enabled", "on"].includes(normalized)) {
+    return "activated";
+  }
+
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return "deactivated";
+  }
+
+  return null;
+};
+
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [rawProfile, setRawProfile] = useState(null);
@@ -186,6 +228,7 @@ function ProfilePage() {
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
   const [accountStatusLoading, setAccountStatusLoading] = useState(true);
+  const [accountLifecycleStatus, setAccountLifecycleStatus] = useState(null);
   const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
   const userId = localStorage.getItem("user_id");
   const { t } = useTranslation();
@@ -197,18 +240,51 @@ function ProfilePage() {
     const token = localStorage.getItem("token");
     if (!token) {
       setAccountStatusLoading(false);
+      setAccountLifecycleStatus(null);
       return;
     }
 
     setAccountStatusLoading(true);
     try {
-      const response = await api.get(`/user/account/status`, {
+      const response = await api.get(`/user/status`, {
         headers: { Authorization: `${token}` },
       });
-      const hidden = parseAccountHiddenStatus(response?.data);
+      const payload = response?.data;
+      const hidden = parseAccountHiddenStatus(payload);
       setIsAccountHidden(Boolean(hidden));
+
+      const statusCandidates = [];
+      if (payload && typeof payload === "object") {
+        statusCandidates.push(
+          payload.status,
+          payload.account_status,
+          payload.accountStatus,
+          payload.state,
+          payload.lifecycle,
+          payload.account?.status,
+          payload.account?.state
+        );
+      } else {
+        statusCandidates.push(payload);
+      }
+
+      let lifecycleStatus = null;
+      for (const candidate of statusCandidates) {
+        const parsed = normalizeLifecycleStatus(candidate);
+        if (parsed) {
+          lifecycleStatus = parsed;
+          break;
+        }
+      }
+
+      if (!lifecycleStatus) {
+        lifecycleStatus = hidden ? "deactivated" : "activated";
+      }
+
+      setAccountLifecycleStatus(lifecycleStatus);
     } catch (error) {
       console.error("Error fetching account status:", error);
+      setAccountLifecycleStatus(null);
     } finally {
       setAccountStatusLoading(false);
     }
@@ -778,12 +854,16 @@ function ProfilePage() {
 
     const hidden = event.target.checked;
     const previousState = isAccountHidden;
+    const previousLifecycleStatus =
+      accountLifecycleStatus ?? (previousState ? "deactivated" : "activated");
     setIsAccountHidden(hidden);
+    setAccountLifecycleStatus(hidden ? "deactivated" : "activated");
     setIsUpdatingAccountVisibility(true);
 
     const token = localStorage.getItem("token");
     if (!token) {
       setIsAccountHidden(previousState);
+      setAccountLifecycleStatus(previousLifecycleStatus);
       setSnackbar({
         open: true,
         messageKey: "",
@@ -824,6 +904,7 @@ function ProfilePage() {
     } catch (error) {
       console.error("Error updating account visibility:", error);
       setIsAccountHidden(previousState);
+      setAccountLifecycleStatus(previousLifecycleStatus);
       const errorMessage =
         error?.response?.data?.message ||
         (hidden
@@ -1793,6 +1874,22 @@ function ProfilePage() {
                           Temporarily remove your profile from match suggestions without deleting your
                           information.
                         </Typography>
+                        {accountLifecycleStatus && (
+                          <Chip
+                            label={
+                              accountLifecycleStatus === "deactivated"
+                                ? "Status: Deactivated"
+                                : "Status: Activated"
+                            }
+                            color={
+                              accountLifecycleStatus === "deactivated"
+                                ? "warning"
+                                : "success"
+                            }
+                            size="small"
+                            sx={{ mt: 1, fontWeight: 600 }}
+                          />
+                        )}
                       </Box>
                     </Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
