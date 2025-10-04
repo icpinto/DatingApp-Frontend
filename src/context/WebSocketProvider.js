@@ -618,6 +618,19 @@ export const WebSocketProvider = ({ children }) => {
   }, [authToken]);
 
   useEffect(() => {
+    if (!authToken) {
+      shouldReconnect.current = false;
+      clearTimeout(reconnectTimeout.current);
+      reconnectTimeout.current = null;
+
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
+
+      return undefined;
+    }
+
     shouldReconnect.current = true;
     const cleanup = setupSocket(authToken);
 
