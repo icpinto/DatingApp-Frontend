@@ -31,6 +31,8 @@
       "user": "User",
       "userNumber": "User #{{id}}",
       "unknownUser": "Unknown user",
+      "deactivatedAccount": "Deactivated account",
+      "deletedUser": "Deleted user",
       "noBio": "No bio available",
       "noMessage": "No message provided.",
       "notAvailable": "N/A"

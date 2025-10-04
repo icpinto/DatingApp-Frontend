@@ -165,6 +165,21 @@ const getConversationPartnerDetails = (
   let otherUserId;
   let conversationUsername;
 
+  const lifecycleStatusRaw = toTrimmedStringOrUndefined(
+    pickFirst(
+      conversation.other_lifecycle_status,
+      conversation.otherLifecycleStatus,
+      conversation.other_user_lifecycle_status,
+      conversation.otherUserLifecycleStatus,
+      conversation.partner_lifecycle_status,
+      conversation.partnerLifecycleStatus
+    )
+  );
+
+  const lifecycleStatus = lifecycleStatusRaw
+    ? lifecycleStatusRaw.toLowerCase()
+    : undefined;
+
   if (
     user1.id !== undefined &&
     currentUserId !== undefined &&
@@ -235,14 +250,20 @@ const getConversationPartnerDetails = (
       : undefined;
 
   const profileName = getProfileDisplayName(profile);
-  const displayName =
+  let displayName =
     toTrimmedStringOrUndefined(conversationUsername) ||
     toTrimmedStringOrUndefined(profileName) ||
     "Unknown user";
 
+  if (lifecycleStatus === "deactivated") {
+    displayName = "Deactivated account";
+  } else if (lifecycleStatus === "deleted") {
+    displayName = "Deleted user";
+  }
+
   const bio = toTrimmedStringOrUndefined(profile?.bio) || "No bio available";
 
-  return { otherUserId, displayName, bio };
+  return { otherUserId, displayName, bio, lifecycleStatus };
 };
 
 const extractLastMessageInfo = (conversation = {}) => {

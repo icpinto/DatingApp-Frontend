@@ -31,6 +31,8 @@
       "user": "පරිශීලකයා",
       "userNumber": "පරිශීලක #{{id}}",
       "unknownUser": "හඳුනා නොගත් පරිශීලකයා",
+      "deactivatedAccount": "අක්‍රීය කළ ගිණුම",
+      "deletedUser": "මකා දමන ලද පරිශීලකයා",
       "noBio": "ජීවන රේඛාව නොමැත",
       "noMessage": "පණිවිඩයක් සැපයී නැත.",
       "notAvailable": "නැත"
