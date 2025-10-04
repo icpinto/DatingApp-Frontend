@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
@@ -235,6 +235,11 @@ function ProfilePage() {
   const verificationServiceUrl =
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
   const navigate = useNavigate();
+  const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
+
+  const isLifecycleReadOnly = accountLifecycleStatus === "deactivated";
+  const lifecycleReadOnlyMessage =
+    "Your account is currently deactivated. Reactivate your profile to make changes.";
 
   const loadAccountStatus = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -677,6 +682,15 @@ function ProfilePage() {
   // Handle submitting the profile form
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLifecycleReadOnly) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (!validate()) return;
     if (!identityVerified && !contactVerified) {
       setSnackbar({
@@ -828,6 +842,15 @@ function ProfilePage() {
   };
 
   const handleEdit = () => {
+    if (isLifecycleReadOnly) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (rawProfile) populateFormData(rawProfile);
     setIsEditing(true);
   };
@@ -1006,11 +1029,39 @@ function ProfilePage() {
   const identityChipColor = statusColorMap[identityStatus] || "default";
   const contactChipColor = statusColorMap[contactStatus] || "default";
   const verificationSatisfied = identityVerified || contactVerified;
+  const shouldShowForm = (!profile || isEditing) && !isLifecycleReadOnly;
 
-    return (
-      <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
-        <Stack spacing={spacing.section}>
-          {(!profile || isEditing) ? (
+  useEffect(() => {
+    if (isLifecycleReadOnly) {
+      setIsEditing(false);
+    }
+
+    if (
+      accountLifecycleStatus === "deactivated" &&
+      previousLifecycleStatusRef.current !== "deactivated"
+    ) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message:
+          "Your account is currently deactivated. Most profile actions are now read-only.",
+        severity: "info",
+      });
+    }
+
+    previousLifecycleStatusRef.current = accountLifecycleStatus;
+  }, [accountLifecycleStatus, isLifecycleReadOnly]);
+
+  return (
+    <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
+      <Stack spacing={spacing.section}>
+        {isLifecycleReadOnly && (
+          <Alert severity="info">
+            Your account is currently deactivated. Reactivate to edit your profile or update
+            verification details.
+          </Alert>
+        )}
+        {shouldShowForm ? (
             <Card elevation={4} sx={{ borderRadius: 3 }}>
               <CardHeader
                 title={profile ? t("profile.headers.edit") : t("profile.headers.create")}
@@ -1074,7 +1125,7 @@ function ProfilePage() {
                               <Button
                                 variant="contained"
                                 onClick={handleIdentityVerification}
-                                disabled={identityVerified}
+                                disabled={identityVerified || isLifecycleReadOnly}
                               >
                                 {t("profile.buttons.submitIdentity")}
                               </Button>
@@ -1155,7 +1206,7 @@ function ProfilePage() {
                               <Button
                                 variant="outlined"
                                 onClick={handleSendOtp}
-                                disabled={otpSending || contactVerified}
+                                disabled={otpSending || contactVerified || isLifecycleReadOnly}
                                 startIcon={
                                   otpSending ? (
                                     <CircularProgress size={16} color="inherit" />
@@ -1167,7 +1218,9 @@ function ProfilePage() {
                               <Button
                                 variant="contained"
                                 onClick={handleVerifyOtp}
-                                disabled={!otpSent || otpVerifying || contactVerified}
+                                disabled={
+                                  !otpSent || otpVerifying || contactVerified || isLifecycleReadOnly
+                                }
                                 startIcon={
                                   otpVerifying ? (
                                     <CircularProgress size={16} color="inherit" />
@@ -1415,7 +1468,12 @@ function ProfilePage() {
                               ),
                             }}
                           />
-                          <Button variant="contained" onClick={handleAddLanguage} sx={{ mt: 1 }}>
+                          <Button
+                            variant="contained"
+                            onClick={handleAddLanguage}
+                            sx={{ mt: 1 }}
+                            disabled={isLifecycleReadOnly}
+                          >
                             {t("profile.buttons.addLanguage")}
                           </Button>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 1 }}>
@@ -1454,6 +1512,7 @@ function ProfilePage() {
                             color="primary"
                             onClick={handleAddInterest}
                             sx={{ mt: 1 }}
+                            disabled={isLifecycleReadOnly}
                           >
                             {t("profile.buttons.addInterest")}
                           </Button>
@@ -1786,7 +1845,7 @@ function ProfilePage() {
                       type="submit"
                       variant="contained"
                       color="primary"
-                      disabled={saving}
+                      disabled={saving || isLifecycleReadOnly}
                       startIcon={
                         saving ? <CircularProgress size={16} color="inherit" /> : null
                       }
@@ -1806,7 +1865,7 @@ function ProfilePage() {
                 title={t("profile.headers.view")}
                 subheader={t("profile.headers.viewSubheader")}
                 action={
-                  <Button variant="contained" onClick={handleEdit}>
+                  <Button variant="contained" onClick={handleEdit} disabled={isLifecycleReadOnly}>
                     {t("common.actions.editProfile")}
                   </Button>
                 }
@@ -1814,7 +1873,7 @@ function ProfilePage() {
               <Divider />
               <CardContent>
                 <Stack spacing={spacing.section}>
-                  {profile.profile_image && (
+                  {profile?.profile_image && (
                     <Box sx={{ display: "flex", justifyContent: "center" }}>
                       <Avatar
                         variant="rounded"
@@ -1824,12 +1883,23 @@ function ProfilePage() {
                       />
                     </Box>
                   )}
-                  <ProfileSections data={profile} />
-                  <Typography variant="caption" color="text.secondary">
-                    {t("common.messages.profileCreatedOn", {
-                      date: new Date(profile.created_at).toLocaleDateString(),
-                    })}
-                  </Typography>
+                  {profile ? (
+                    <>
+                      <ProfileSections data={profile} />
+                      {profile.created_at && (
+                        <Typography variant="caption" color="text.secondary">
+                          {t("common.messages.profileCreatedOn", {
+                            date: new Date(profile.created_at).toLocaleDateString(),
+                          })}
+                        </Typography>
+                      )}
+                    </>
+                  ) : (
+                    <Alert severity="info">
+                      Your profile details are currently unavailable. Reactivate your account to
+                      update or recreate your profile information.
+                    </Alert>
+                  )}
                 </Stack>
               </CardContent>
             </Card>
