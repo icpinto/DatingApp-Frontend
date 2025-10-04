@@ -106,7 +106,8 @@
       "noPending": "You have no pending requests.",
       "noSent": "You haven't sent any requests yet.",
       "acceptFailed": "Failed to accept the request. Please try again.",
-      "rejectFailed": "Failed to reject the request. Please try again."
+      "rejectFailed": "Failed to reject the request. Please try again.",
+      "deactivatedReadOnly": "Your account is deactivated. Reactivate your profile to respond to new requests."
     },
     "status": {
       "accepted": "Accepted",
