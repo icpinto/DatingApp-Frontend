@@ -32,7 +32,10 @@ import {
   extractLastMessageId,
   extractLastReadMessageId,
 } from "../../utils/conversationUtils";
-import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
+import {
+  ACCOUNT_DEACTIVATED_MESSAGE,
+  ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE,
+} from "../../utils/accountLifecycle";
 import {
   buildMessagePreview,
   extractLastMessageInfo,
@@ -176,18 +179,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
   useEffect(() => {
     let isActive = true;
 
-    if (chatDisabled) {
-      setConversations([]);
-      setError(null);
-      setLoading(false);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    setLoading(true);
-
     const fetchConversations = async () => {
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         const response = await chatService.get("/conversations", {
@@ -225,11 +218,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
   }, [chatDisabled, hydrateConversations]);
 
   useEffect(() => {
-    if (chatDisabled) {
-      setProfiles({});
-      return;
-    }
-
     if (!Array.isArray(conversations) || conversations.length === 0) {
       setProfiles({});
       return;
@@ -294,7 +282,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
     return () => {
       isActive = false;
     };
-  }, [chatDisabled, conversations, normalizedCurrentUserId]);
+  }, [conversations, normalizedCurrentUserId]);
 
   useEffect(() => {
     if (typeof onUnreadCountChange !== "function") {
@@ -432,10 +420,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
   const applyRealtimeUpdates = useCallback(
     (previous = []) => {
-      if (chatDisabled) {
-        return previous;
-      }
-
       if (
         !Array.isArray(previous) ||
         previous.length === 0 ||
@@ -486,7 +470,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
       getConversationKey,
       resolveConversationId,
       selectedConversationId,
-      chatDisabled,
       wsConversations,
     ]
   );
@@ -497,7 +480,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
   const handleOpenConversation = useCallback(
     (conversation) => {
-      if (chatDisabled || !conversation) {
+      if (!conversation) {
         return;
       }
 
@@ -613,7 +596,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
       hydrateConversations,
       markRead,
       resolveConversationId,
-      chatDisabled,
       wsConversations,
     ]
   );
@@ -621,12 +603,6 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const handleCloseConversation = useCallback(() => {
     setSelectedConversationId(null);
   }, []);
-
-  useEffect(() => {
-    if (chatDisabled) {
-      setSelectedConversationId(null);
-    }
-  }, [chatDisabled]);
 
   const activeConversationKey =
     selectedConversationId !== null && selectedConversationId !== undefined
@@ -692,94 +668,96 @@ function Messages({ onUnreadCountChange = () => {} }) {
         {chatDisabled ? (
           <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
         ) : null}
-        {!chatDisabled && (
-          <Grid
-            container
-            spacing={3}
-            sx={{
-              minHeight: { xs: "60vh", md: "70vh" },
-            }}
-            alignItems="stretch"
-          >
-            {showListPane && (
-              <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
-                <ConversationListPane
-                  loading={loading}
-                  error={error}
-                  conversations={conversationPreviews}
-                  selectedConversationKey={activeConversationKey}
-                  onConversationSelect={handleOpenConversation}
-                />
-              </Grid>
-            )}
-            {showChatPane && (
-              <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
-                <Card
-                  elevation={3}
-                  sx={{
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    borderRadius: 3,
-                    minHeight: { xs: "50vh", md: "100%" },
-                    overflow: "hidden",
-                  }}
-                >
-                  {selectedConversation ? (
-                    <ChatDrawer
-                      conversationId={resolveConversationId(selectedConversation)}
-                      user1_id={selectedConversationUsers.user1.id}
-                      user2_id={selectedConversationUsers.user2.id}
-                      open={Boolean(selectedConversation)}
-                      onClose={handleCloseConversation}
-                      partnerName={selectedConversationDetails?.displayName}
-                      partnerBio={selectedConversationDetails?.bio}
-                      partnerLifecycleStatus={
-                        selectedConversationDetails?.lifecycleStatus
+        <Grid
+          container
+          spacing={3}
+          sx={{
+            minHeight: { xs: "60vh", md: "70vh" },
+          }}
+          alignItems="stretch"
+        >
+          {showListPane && (
+            <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
+              <ConversationListPane
+                loading={loading}
+                error={error}
+                conversations={conversationPreviews}
+                selectedConversationKey={activeConversationKey}
+                onConversationSelect={handleOpenConversation}
+              />
+            </Grid>
+          )}
+          {showChatPane && (
+            <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
+              <Card
+                elevation={3}
+                sx={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  minHeight: { xs: "50vh", md: "100%" },
+                  overflow: "hidden",
+                }}
+              >
+                {selectedConversation ? (
+                  <ChatDrawer
+                    conversationId={resolveConversationId(selectedConversation)}
+                    user1_id={selectedConversationUsers.user1.id}
+                    user2_id={selectedConversationUsers.user2.id}
+                    open={Boolean(selectedConversation)}
+                    onClose={handleCloseConversation}
+                    partnerName={selectedConversationDetails?.displayName}
+                    partnerBio={selectedConversationDetails?.bio}
+                    partnerLifecycleStatus={
+                      selectedConversationDetails?.lifecycleStatus
+                    }
+                    blocked={selectedConversationBlocked}
+                    messagingDisabled={chatDisabled}
+                    messagingDisabledReason={
+                      ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE
+                    }
+                  />
+                ) : (
+                  <>
+                    <CardHeader
+                      title="Select a conversation"
+                      subheader="Choose someone from the list to start chatting"
+                      avatar={
+                        <Avatar
+                          variant="rounded"
+                          sx={{ bgcolor: "secondary.light", color: "secondary.dark" }}
+                        >
+                          <ChatBubbleOutlineRoundedIcon />
+                        </Avatar>
                       }
-                      blocked={selectedConversationBlocked}
+                      sx={{ px: spacing.section, py: spacing.section }}
                     />
-                  ) : (
-                    <>
-                      <CardHeader
-                        title="Select a conversation"
-                        subheader="Choose someone from the list to start chatting"
-                        avatar={
-                          <Avatar
-                            variant="rounded"
-                            sx={{ bgcolor: "secondary.light", color: "secondary.dark" }}
-                          >
-                            <ChatBubbleOutlineRoundedIcon />
-                          </Avatar>
-                        }
-                        sx={{ px: spacing.section, py: spacing.section }}
-                      />
-                      <Divider sx={{ borderStyle: "dashed" }} />
-                      <CardContent
-                        sx={{
-                          flexGrow: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          textAlign: "center",
-                        }}
-                      >
-                        <Stack spacing={1.5} alignItems="center" color="text.secondary">
-                          <Typography variant="body1">
-                            Select a conversation from the left to view messages.
-                          </Typography>
-                          <Typography variant="body2">
-                            Once you pick someone, you can continue your conversation here.
-                          </Typography>
-                        </Stack>
-                      </CardContent>
-                    </>
-                  )}
-                </Card>
-              </Grid>
-            )}
-          </Grid>
-        )}
+                    <Divider sx={{ borderStyle: "dashed" }} />
+                    <CardContent
+                      sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textAlign: "center",
+                      }}
+                    >
+                      <Stack spacing={1.5} alignItems="center" color="text.secondary">
+                        <Typography variant="body1">
+                          Select a conversation from the left to view messages.
+                        </Typography>
+                        <Typography variant="body2">
+                          Once you pick someone, you can continue your conversation here.
+                        </Typography>
+                      </Stack>
+                    </CardContent>
+                  </>
+                )}
+              </Card>
+            </Grid>
+          )}
+        </Grid>
       </Stack>
     </Container>
   );

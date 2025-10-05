@@ -7,9 +7,12 @@ function MessageComposer({
   onChange,
   onSend,
   isBlocked,
+  isDisabled = false,
   disabledReason,
 }) {
-  if (isBlocked) {
+  const composerDisabled = Boolean(isBlocked || isDisabled);
+
+  if (composerDisabled) {
     return (
       <Typography variant="body2" color="text.secondary">
         {disabledReason || "Messaging is disabled for this conversation."}

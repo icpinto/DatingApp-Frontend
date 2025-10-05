@@ -8,6 +8,9 @@ export const ACCOUNT_LIFECYCLE = {
 export const ACCOUNT_DEACTIVATED_MESSAGE =
   "Your account is currently deactivated. Reactivate your profile to access discovery features and make changes.";
 
+export const ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE =
+  "Your account is currently deactivated. You can review your past conversations, but you can't send new messages until you reactivate.";
+
 export const normalizeLifecycleStatus = (value) => {
   if (value == null) {
     return null;
