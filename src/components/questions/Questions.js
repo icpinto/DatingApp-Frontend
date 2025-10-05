@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   Typography,
@@ -25,6 +25,8 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import { spacing } from "../../styles";
 import questionnaireService from "../../services/questionnaireService";
 import QuestionCategorySelector from "./QuestionCategorySelector";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 
 function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   const [question, setQuestion] = useState(null);
@@ -39,8 +41,18 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   });
 
   const userId = localStorage.getItem("user_id") || "";
+  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
+  const questionnaireDisabled = useMemo(
+    () => !lifecycleLoading && isDeactivated,
+    [isDeactivated, lifecycleLoading]
+  );
 
-  const fetchQuestion = async () => {
+  const fetchQuestion = useCallback(async () => {
+    if (questionnaireDisabled || isLocked) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const params = { user_id: userId };
@@ -58,26 +70,22 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isLocked, questionnaireDisabled, selectedCategory, userId]);
 
   useEffect(() => {
-    if (!isLocked) {
-      fetchQuestion();
-    } else {
-      setLoading(false);
-    }
+    fetchQuestion();
     // Payment logic disabled for now
-  }, [selectedCategory, isLocked]);
+  }, [fetchQuestion]);
 
   useEffect(() => {
-    if (isLocked) {
+    if (isLocked || questionnaireDisabled) {
       setQuestion(null);
       setLoading(false);
     }
-  }, [isLocked]);
+  }, [isLocked, questionnaireDisabled]);
 
   const submitAnswer = async () => {
-    if (!question || isLocked) return;
+    if (!question || isLocked || questionnaireDisabled) return;
     const formatAnswer = (answer) => {
       if (questionType === "multiple_choice") {
         const selectedOption = options.find((option) => option.key === answer);
@@ -121,7 +129,7 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   };
 
   const handleNext = async () => {
-    if (isLocked) return;
+    if (isLocked || questionnaireDisabled) return;
 
     await submitAnswer();
     setMeAnswer("");
@@ -151,10 +159,12 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
             <QuestionCategorySelector
               value={selectedCategory}
               onChange={setSelectedCategory}
-              disabled={isLocked}
+              disabled={isLocked || questionnaireDisabled}
             />
 
-            {isLocked ? (
+            {questionnaireDisabled ? (
+              <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+            ) : isLocked ? (
               <Typography color="text.secondary">
                 {lockReason || "Core preferences are required to continue."}
               </Typography>
