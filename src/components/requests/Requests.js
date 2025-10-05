@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Avatar,
@@ -18,7 +18,7 @@ import { HourglassEmpty, PersonAddAlt1, Send } from "@mui/icons-material";
 import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
-import { Guard, useCapabilities, useUserContext } from "../../context/UserContext";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 
 function Requests({ onRequestCountChange = () => {} }) {
   const [requests, setRequests] = useState([]);
@@ -29,36 +29,7 @@ function Requests({ onRequestCountChange = () => {} }) {
   const [profiles, setProfiles] = useState({});
   const [sentProfiles, setSentProfiles] = useState({});
   const { t } = useTranslation();
-  const { user } = useUserContext();
-  const capabilities = useCapabilities();
-  const canViewRequests = Boolean(capabilities?.viewMatchRequests);
-  const canRespondToRequests = Boolean(capabilities?.respondToMatchRequests);
-  const accountStatus = user?.facts?.account ?? null;
-
-  const readOnlyNotice = useMemo(() => {
-    if (canRespondToRequests) {
-      return null;
-    }
-    if (accountStatus === "deactivated") {
-      return t("requests.messages.deactivatedReadOnly", {
-        defaultValue:
-          "Your account is currently deactivated. You can review your past requests but can't respond.",
-      });
-    }
-    return t("requests.messages.readOnly", {
-      defaultValue:
-        "You can review pending requests but can't respond right now.",
-    });
-  }, [accountStatus, canRespondToRequests, t]);
-
-  const viewRestrictedNotice = useMemo(() => {
-    if (canViewRequests) {
-      return null;
-    }
-    return t("requests.messages.viewRestricted", {
-      defaultValue: "Requests are unavailable for your account at the moment.",
-    });
-  }, [canViewRequests, t]);
+  const { isDeactivated } = useAccountLifecycle();
 
   const normalizeRequests = (payload) => {
     if (!payload) return [];
@@ -69,15 +40,6 @@ function Requests({ onRequestCountChange = () => {} }) {
   };
 
   useEffect(() => {
-    if (!canViewRequests) {
-      setRequests([]);
-      setSentRequests([]);
-      setLoading(false);
-      setReceivedError(null);
-      setSentError(null);
-      return;
-    }
-
     const fetchRequests = async () => {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -108,18 +70,13 @@ function Requests({ onRequestCountChange = () => {} }) {
     };
 
     fetchRequests();
-  }, [canViewRequests]);
+  }, []);
 
   useEffect(() => {
-    onRequestCountChange(canViewRequests ? requests.length : 0);
-  }, [requests, canViewRequests, onRequestCountChange]);
+    onRequestCountChange(requests.length);
+  }, [requests, onRequestCountChange]);
 
   useEffect(() => {
-    if (!canViewRequests) {
-      setProfiles({});
-      return;
-    }
-
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
       const profilesData = {};
@@ -142,14 +99,9 @@ function Requests({ onRequestCountChange = () => {} }) {
     } else {
       setProfiles({});
     }
-  }, [requests, canViewRequests]);
+  }, [requests]);
 
   useEffect(() => {
-    if (!canViewRequests) {
-      setSentProfiles({});
-      return;
-    }
-
     const fetchSentProfiles = async () => {
       const token = localStorage.getItem("token");
       const profilesData = {};
@@ -173,12 +125,9 @@ function Requests({ onRequestCountChange = () => {} }) {
     } else {
       setSentProfiles({});
     }
-  }, [sentRequests, canViewRequests]);
+  }, [sentRequests]);
 
   const handleAccept = async (id) => {
-    if (!canRespondToRequests) {
-      return;
-    }
     try {
       const token = localStorage.getItem("token");
       await api.post(
@@ -197,9 +146,6 @@ function Requests({ onRequestCountChange = () => {} }) {
   };
 
   const handleReject = async (id) => {
-    if (!canRespondToRequests) {
-      return;
-    }
     try {
       const token = localStorage.getItem("token");
       await api.post(
@@ -296,7 +242,7 @@ function Requests({ onRequestCountChange = () => {} }) {
           >
             {description}
           </Typography>
-          <Guard can="respondToMatchRequests">
+          {!isDeactivated && (
             <Stack direction="row" spacing={1}>
               <Button
                 variant="contained"
@@ -313,7 +259,7 @@ function Requests({ onRequestCountChange = () => {} }) {
                 {t("common.actions.reject")}
               </Button>
             </Stack>
-          </Guard>
+          )}
         </Stack>
       </Box>
     );
@@ -432,10 +378,12 @@ function Requests({ onRequestCountChange = () => {} }) {
       </Stack>
     );
 
-    if (readOnlyNotice) {
+    if (isDeactivated) {
       return (
         <Stack spacing={spacing.section}>
-          <Alert severity="warning">{readOnlyNotice}</Alert>
+          <Alert severity="warning">
+            {t("requests.messages.deactivatedReadOnly")}
+          </Alert>
           {requestList}
         </Stack>
       );
@@ -477,16 +425,6 @@ function Requests({ onRequestCountChange = () => {} }) {
       </Stack>
     );
   };
-
-  if (!canViewRequests) {
-    return (
-      <Container sx={{ p: spacing.pagePadding }}>
-        <Stack spacing={spacing.section}>
-          <Alert severity="info">{viewRestrictedNotice}</Alert>
-        </Stack>
-      </Container>
-    );
-  }
 
   return (
     <Container sx={{ p: spacing.pagePadding }}>
