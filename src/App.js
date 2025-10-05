@@ -25,8 +25,10 @@ import Profile from "./components/profile/Profile";
 import Requests from "./components/requests/Requests";
 import Messages from "./components/chat/Messages";
 import Payment from "./components/payment/Payment";
+import Home from "./components/home/Home";
 import { WebSocketProvider } from "./context/WebSocketProvider";
 import { AccountLifecycleProvider } from "./context/AccountLifecycleContext";
+import { Guard, UserProvider } from "./context/UserContext";
 import { ColorModeContext } from "./context/ThemeContext";
 import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
@@ -184,22 +186,34 @@ function TopBar() {
 function App() {
   return (
     <AccountLifecycleProvider>
-      <WebSocketProvider>
-        <Router>
-          <div className="App">
-            <TopBar />
-            <Routes>
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/" element={<Login />} />
-              <Route path="/home" element={<MainTabs />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/requests" element={<Requests />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/payment" element={<Payment />} />
-            </Routes>
-          </div>
-        </Router>
-      </WebSocketProvider>
+      <UserProvider>
+        <WebSocketProvider>
+          <Router>
+            <div className="App">
+              <TopBar />
+              <Routes>
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/" element={<Login />} />
+                <Route path="/home" element={<MainTabs />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/requests" element={<Requests />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route
+                  path="/payment"
+                  element={
+                    <Guard
+                      can="manageBilling"
+                      fallback={<Home />}
+                    >
+                      <Payment />
+                    </Guard>
+                  }
+                />
+              </Routes>
+            </div>
+          </Router>
+        </WebSocketProvider>
+      </UserProvider>
     </AccountLifecycleProvider>
   );
 }
