@@ -19,6 +19,7 @@ import {
   normalizeMessageHistory,
   resolveConversationKey,
 } from "../utils/messageUtils";
+import { useAccountLifecycle } from "./AccountLifecycleContext";
 
 const WebSocketContext = createContext(null);
 
@@ -101,6 +102,7 @@ export const WebSocketProvider = ({ children }) => {
   const processedMessageIds = useRef(new Set());
   const joinedConversations = useRef(new Set());
   const [lastError, setLastError] = useState(null);
+  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle() ?? {};
 
   const baseUrl =
     process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
@@ -631,6 +633,23 @@ export const WebSocketProvider = ({ children }) => {
       return undefined;
     }
 
+    if (lifecycleLoading) {
+      return undefined;
+    }
+
+    if (isDeactivated) {
+      shouldReconnect.current = false;
+      clearTimeout(reconnectTimeout.current);
+      reconnectTimeout.current = null;
+
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
+
+      return undefined;
+    }
+
     shouldReconnect.current = true;
     const cleanup = setupSocket(authToken);
 
@@ -641,7 +660,7 @@ export const WebSocketProvider = ({ children }) => {
       cleanup();
       ws.current = null;
     };
-  }, [authToken, setupSocket]);
+  }, [authToken, isDeactivated, lifecycleLoading, setupSocket]);
 
   const totalUnreadCount = useMemo(() => {
     if (!conversations || typeof conversations !== "object") {

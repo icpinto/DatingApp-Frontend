@@ -183,8 +183,8 @@ function TopBar() {
 
 function App() {
   return (
-    <WebSocketProvider>
-      <AccountLifecycleProvider>
+    <AccountLifecycleProvider>
+      <WebSocketProvider>
         <Router>
           <div className="App">
             <TopBar />
@@ -199,8 +199,8 @@ function App() {
             </Routes>
           </div>
         </Router>
-      </AccountLifecycleProvider>
-    </WebSocketProvider>
+      </WebSocketProvider>
+    </AccountLifecycleProvider>
   );
 }
 
