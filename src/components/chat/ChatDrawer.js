@@ -31,6 +31,8 @@ function ChatDrawer({
   partnerBio,
   partnerLifecycleStatus,
   blocked = false,
+  messagingDisabled = false,
+  messagingDisabledReason,
 }) {
   const {
     conversations,
@@ -258,7 +260,12 @@ function ChatDrawer({
   const handleSendMessage = useCallback(() => {
     const trimmedMessage = newMessage.trim();
 
-    if (isBlocked || isLifecycleRestricted || trimmedMessage === "") {
+    if (
+      isBlocked ||
+      isLifecycleRestricted ||
+      messagingDisabled ||
+      trimmedMessage === ""
+    ) {
       return;
     }
 
@@ -303,6 +310,7 @@ function ChatDrawer({
     conversationId,
     isBlocked,
     isLifecycleRestricted,
+    messagingDisabled,
     newMessage,
     normalizedConversationId,
     receiverId,
@@ -391,9 +399,22 @@ function ChatDrawer({
         onChange={(event) => setNewMessage(event.target.value)}
         onSend={handleSendMessage}
         isBlocked={isBlocked || isLifecycleRestricted}
-        disabledReason={
-          isBlocked ? undefined : lifecycleDisabledReason || undefined
-        }
+        isDisabled={messagingDisabled}
+        disabledReason={(function resolveDisabledReason() {
+          if (isBlocked) {
+            return undefined;
+          }
+
+          if (isLifecycleRestricted) {
+            return lifecycleDisabledReason || undefined;
+          }
+
+          if (messagingDisabled) {
+            return messagingDisabledReason || undefined;
+          }
+
+          return undefined;
+        })()}
       />
     </Box>
   );
