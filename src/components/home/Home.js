@@ -24,7 +24,7 @@ import api from "../../services/api";
 import { spacing } from "../../styles";
 import MatchRecommendations from "../matches/MatchRecommendations";
 import { useTranslation } from "../../i18n";
-import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { Guard, useUserContext } from "../../context/UserContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 
 const FILTER_DEFAULTS = {
@@ -64,8 +64,48 @@ function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
-  const discoveryDisabled = !lifecycleLoading && isDeactivated;
+  const { user, capabilities, loading: userContextLoading } = useUserContext();
+  const canBrowseDiscovery = Boolean(capabilities?.browseDiscovery);
+  const canRespondToMatchRequests = Boolean(capabilities?.respondToMatchRequests);
+  const accountStatus = user?.facts?.account ?? null;
+  const verificationStatus = user?.facts?.verification ?? null;
+  const billingStatus = user?.facts?.billing ?? null;
+  const discoveryDisabled = !userContextLoading && !canBrowseDiscovery;
+  const discoveryNotice = useMemo(() => {
+    if (!discoveryDisabled) {
+      return null;
+    }
+
+    if (accountStatus === "deactivated") {
+      return t("home.messages.deactivatedDiscovery", {
+        defaultValue: ACCOUNT_DEACTIVATED_MESSAGE,
+      });
+    }
+
+    if (verificationStatus && verificationStatus !== "verified") {
+      return t("home.messages.discoveryVerificationRequired", {
+        defaultValue:
+          "Verify your account to browse new profiles and send connection requests.",
+      });
+    }
+
+    if (billingStatus === "past_due" || billingStatus === "unpaid") {
+      return t("home.messages.discoveryBillingIssue", {
+        defaultValue:
+          "Update your billing details to continue browsing and connecting with new people.",
+      });
+    }
+
+    return t("home.messages.discoveryUnavailable", {
+      defaultValue: "Discovery is currently unavailable for your account.",
+    });
+  }, [
+    discoveryDisabled,
+    accountStatus,
+    verificationStatus,
+    billingStatus,
+    t,
+  ]);
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -81,6 +121,17 @@ function Home() {
 
   const fetchActiveUsers = useCallback(
     async (params = {}) => {
+      if (!canBrowseDiscovery) {
+        setActiveUsers([]);
+        setExpandedUserId(null);
+        setProfileData({});
+        setFeedback(null);
+        setRequestMessage("");
+        setRequestMessageError("");
+        setLoadingUsers(false);
+        return;
+      }
+
       setLoadingUsers(true);
       try {
         const token = localStorage.getItem("token");
@@ -113,7 +164,7 @@ function Home() {
         setLoadingUsers(false);
       }
     },
-    [getUserIdentifier]
+    [canBrowseDiscovery, getUserIdentifier]
   );
 
   const buildFilterParams = useCallback(() => {
@@ -201,7 +252,14 @@ function Home() {
   };
 
   const handleSendRequest = async (rawUserId) => {
-    if (discoveryDisabled) {
+    if (!canRespondToMatchRequests) {
+      setFeedback({
+        type: "warning",
+        message: t("home.messages.requestDisabled", {
+          defaultValue:
+            "You can't send requests right now. Check your account status for more details.",
+        }),
+      });
       return;
     }
 
@@ -401,33 +459,38 @@ function Home() {
                         disabled={profileData.requestStatus}
                       />
                     </Box>
-                    <Button
-                      variant="contained"
-                      color={profileData.requestStatus ? "secondary" : "primary"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (userId !== undefined && userId !== null && userId !== "") {
-                          handleSendRequest(userId);
+                    <Guard can="respondToMatchRequests" mode="disable">
+                      <Button
+                        variant="contained"
+                        color={profileData.requestStatus ? "secondary" : "primary"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            userId !== undefined &&
+                            userId !== null &&
+                            userId !== ""
+                          ) {
+                            handleSendRequest(userId);
+                          }
+                        }}
+                        disabled={
+                          profileData.requestStatus ||
+                          userId === undefined ||
+                          userId === null ||
+                          userId === ""
                         }
-                      }}
-                      disabled={
-                        discoveryDisabled ||
-                        profileData.requestStatus ||
-                        userId === undefined ||
-                        userId === null ||
-                        userId === ""
-                      }
-                      sx={{ alignSelf: "flex-start" }}
-                    >
-                      {profileData.requestStatus
-                        ? t("home.labels.requestSent")
-                        : t("home.labels.sendRequest")}
-                    </Button>
-                    {feedback?.key && (
+                        sx={{ alignSelf: "flex-start" }}
+                      >
+                        {profileData.requestStatus
+                          ? t("home.labels.requestSent")
+                          : t("home.labels.sendRequest")}
+                      </Button>
+                    </Guard>
+                    {feedback && (feedback.message || feedback.key) && (
                       <Typography
                         color={feedback.type === "error" ? "error.main" : "success.main"}
                       >
-                        {t(feedback.key)}
+                        {feedback.message ?? t(feedback.key)}
                       </Typography>
                     )}
                   </Stack>
@@ -443,10 +506,12 @@ function Home() {
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
-        {discoveryDisabled ? (
-          <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+        {discoveryNotice ? (
+          <Alert severity="warning">{discoveryNotice}</Alert>
         ) : null}
-        <MatchRecommendations limit={12} />
+        <Guard can="browseDiscovery">
+          <MatchRecommendations limit={12} />
+        </Guard>
         <Card elevation={3} sx={{ borderRadius: 3 }}>
           <CardHeader
             title={t("home.headers.activeUsers")}
@@ -545,13 +610,13 @@ function Home() {
                 </Collapse>
               </Stack>
             </Box>
-            {feedback?.key && !loadingUsers && (
+            {feedback && (feedback.message || feedback.key) && !loadingUsers && (
               <Typography
                 variant="body2"
                 color={feedback.type === "error" ? "error.main" : "success.main"}
                 sx={{ mb: spacing.section }}
               >
-                {t(feedback.key)}
+                {feedback.message ?? t(feedback.key)}
               </Typography>
             )}
             {loadingUsers ? (
