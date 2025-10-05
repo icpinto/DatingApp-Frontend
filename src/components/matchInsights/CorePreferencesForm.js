@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Avatar,
@@ -20,6 +20,8 @@ import {
 import SettingsIcon from "@mui/icons-material/Settings";
 import matchPreferencesService from "../../services/matchPreferences";
 import { spacing } from "../../styles";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 
 const DEFAULT_PREFERENCES = {
   minAge: 25,
@@ -124,6 +126,11 @@ function CorePreferencesForm({ onStatusChange }) {
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [hasSavedPreferences, setHasSavedPreferences] = useState(false);
+  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
+  const preferencesDisabled = useMemo(
+    () => !lifecycleLoading && isDeactivated,
+    [isDeactivated, lifecycleLoading]
+  );
 
   const notifyStatus = useCallback(
     (status) => {
@@ -133,8 +140,18 @@ function CorePreferencesForm({ onStatusChange }) {
   );
 
   useEffect(() => {
-    notifyStatus({ isLoading: loading || saving, isReady: hasSavedPreferences });
-  }, [loading, saving, hasSavedPreferences, notifyStatus]);
+    notifyStatus({
+      isLoading: loading || saving || lifecycleLoading,
+      isReady: !preferencesDisabled && hasSavedPreferences,
+    });
+  }, [
+    loading,
+    saving,
+    hasSavedPreferences,
+    notifyStatus,
+    lifecycleLoading,
+    preferencesDisabled,
+  ]);
 
   const applyLoadedPreferences = useCallback((data) => {
     if (!data) {
@@ -183,7 +200,6 @@ function CorePreferencesForm({ onStatusChange }) {
     const loadPreferences = async () => {
       if (!userId) {
         setLoading(false);
-        notifyStatus({ isLoading: false, isReady: false });
         return;
       }
 
@@ -211,11 +227,33 @@ function CorePreferencesForm({ onStatusChange }) {
       }
     };
 
+    if (lifecycleLoading) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    if (preferencesDisabled) {
+      if (isMounted) {
+        setLoading(false);
+        setHasSavedPreferences(false);
+        setPreferences(DEFAULT_PREFERENCES);
+      }
+      return () => {
+        isMounted = false;
+      };
+    }
+
     loadPreferences();
     return () => {
       isMounted = false;
     };
-  }, [applyLoadedPreferences, notifyStatus, userId]);
+  }, [
+    applyLoadedPreferences,
+    lifecycleLoading,
+    preferencesDisabled,
+    userId,
+  ]);
 
   const setAgeRange = useCallback((newRange) => {
     setPreferences((prev) => {
@@ -278,6 +316,15 @@ function CorePreferencesForm({ onStatusChange }) {
   };
 
   const handleSave = async () => {
+    if (preferencesDisabled) {
+      setSnackbar({
+        open: true,
+        severity: "warning",
+        message: ACCOUNT_DEACTIVATED_MESSAGE,
+      });
+      return;
+    }
+
     if (!userId) {
       setSnackbar({
         open: true,
@@ -311,6 +358,8 @@ function CorePreferencesForm({ onStatusChange }) {
     }
   };
 
+  const showLoadingState = loading || lifecycleLoading;
+
   return (
     <>
       <Card elevation={3} sx={{ borderRadius: 3 }}>
@@ -325,7 +374,9 @@ function CorePreferencesForm({ onStatusChange }) {
         />
         <Divider />
         <CardContent>
-          {loading ? (
+          {preferencesDisabled ? (
+            <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+          ) : showLoadingState ? (
             <Stack spacing={spacing.section}>
               <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
               <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 2 }} />
@@ -607,7 +658,7 @@ function CorePreferencesForm({ onStatusChange }) {
                   variant="contained"
                   color="primary"
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || preferencesDisabled}
                 >
                   {saving ? "Saving..." : hasSavedPreferences ? "Update" : "Save"}
                 </Button>
