@@ -123,6 +123,8 @@ function OwnerProfileContent({ accountLifecycle }) {
     sharedLifecycleStatus ?? null
   );
   const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
+  const hasLoadedEnumsRef = useRef(false);
+  const hasLoadedProfileRef = useRef(false);
   const userId = localStorage.getItem("user_id");
   const { t } = useTranslation();
   const verificationServiceUrl =
@@ -130,6 +132,10 @@ function OwnerProfileContent({ accountLifecycle }) {
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
   const { hasCapability, getReason } = useUserContext();
+
+  useEffect(() => {
+    hasLoadedProfileRef.current = false;
+  }, [userId]);
 
   const capabilityReasons = useMemo(
     () => ({
@@ -272,6 +278,27 @@ function OwnerProfileContent({ accountLifecycle }) {
   };
 
   useEffect(() => {
+    const shouldSkipFetch =
+      accountStatusLoading ||
+      accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED;
+
+    if (shouldSkipFetch) {
+      if (accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED) {
+        hasLoadedEnumsRef.current = false;
+        setEnums((prev) => {
+          if (!prev || Object.keys(prev).length === 0) {
+            return prev;
+          }
+          return {};
+        });
+      }
+      return;
+    }
+
+    if (hasLoadedEnumsRef.current) {
+      return;
+    }
+
     const fetchEnums = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -279,20 +306,44 @@ function OwnerProfileContent({ accountLifecycle }) {
           headers: { Authorization: `${token}` },
         });
         setEnums(res.data || {});
+        hasLoadedEnumsRef.current = true;
       } catch (error) {
         console.error("Error fetching enums:", error);
+        hasLoadedEnumsRef.current = false;
       }
     };
+
     fetchEnums();
-  }, []);
+  }, [accountLifecycleStatus, accountStatusLoading]);
 
   useEffect(() => {
+    const shouldSkipFetch =
+      !userId ||
+      accountStatusLoading ||
+      accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED;
+
+    if (shouldSkipFetch) {
+      if (accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED) {
+        hasLoadedProfileRef.current = false;
+        setProfile((prev) => (prev ? null : prev));
+        setRawProfile((prev) => (prev ? null : prev));
+      }
+      return;
+    }
+
+    if (hasLoadedProfileRef.current) {
+      return;
+    }
+
+    let isCancelled = false;
+
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(`/user/profile/${userId}`, {
           headers: { Authorization: `${token}` },
         });
+        if (isCancelled) return;
         const data = response.data;
         setRawProfile(data);
         populateFormData(data);
@@ -353,12 +404,18 @@ function OwnerProfileContent({ accountLifecycle }) {
           created_at: data.created_at,
           ...formatted,
         });
+        hasLoadedProfileRef.current = true;
       } catch (error) {
         console.error("Error fetching profile data:", error);
+        hasLoadedProfileRef.current = false;
       }
     };
-    if (userId) fetchProfile();
-  }, [userId]);
+    fetchProfile();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [userId, accountLifecycleStatus, accountStatusLoading]);
 
   useEffect(() => {
     loadAccountStatus();
