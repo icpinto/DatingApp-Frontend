@@ -39,6 +39,7 @@ import {
   ACCOUNT_DEACTIVATED_MESSAGE,
   ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE,
 } from "../../utils/accountLifecycle";
+import { isAbortError } from "../../utils/http";
 import {
   buildMessagePreview,
   extractLastMessageInfo,
@@ -198,16 +199,17 @@ function MessagesContent({
   );
 
   useEffect(() => {
+    if (!canViewInbox || !canViewConversationList || chatDisabled) {
+      setLoading(false);
+      setConversations([]);
+      setError(null);
+      return () => {};
+    }
+
     let isActive = true;
+    const controller = new AbortController();
 
     const fetchConversations = async () => {
-      if (!canViewInbox || !canViewConversationList) {
-        setLoading(false);
-        setConversations([]);
-        setError(null);
-        return;
-      }
-
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
@@ -215,6 +217,7 @@ function MessagesContent({
           headers: {
             Authorization: `${token}`,
           },
+          signal: controller.signal,
         });
 
         const normalized = normalizeConversationList(response.data)
@@ -228,6 +231,9 @@ function MessagesContent({
 
         hydrateConversations(normalized);
       } catch (err) {
+        if (isAbortError(err)) {
+          return;
+        }
         if (isActive) {
           setError("Failed to fetch conversations");
         }
@@ -242,6 +248,7 @@ function MessagesContent({
 
     return () => {
       isActive = false;
+      controller.abort();
     };
   }, [
     canViewConversationList,
@@ -252,15 +259,17 @@ function MessagesContent({
 
   useEffect(() => {
     if (
+      chatDisabled ||
       !canViewPartnerStatus ||
       !Array.isArray(conversations) ||
       conversations.length === 0
     ) {
       setProfiles({});
-      return;
+      return () => {};
     }
 
     let isActive = true;
+    const controller = new AbortController();
 
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
@@ -301,10 +310,13 @@ function MessagesContent({
             try {
               const res = await api.get(`/user/profile/${id}`, {
                 headers: { Authorization: `${token}` },
+                signal: controller.signal,
               });
               profilesData[id] = res.data;
             } catch (e) {
-              // ignore individual profile fetch errors
+              if (!isAbortError(e)) {
+                // ignore individual profile fetch errors
+              }
             }
           })
       );
@@ -318,8 +330,14 @@ function MessagesContent({
 
     return () => {
       isActive = false;
+      controller.abort();
     };
-  }, [canViewPartnerStatus, conversations, normalizedCurrentUserId]);
+  }, [
+    canViewPartnerStatus,
+    chatDisabled,
+    conversations,
+    normalizedCurrentUserId,
+  ]);
 
   useEffect(() => {
     if (typeof onUnreadCountChange !== "function" || !canViewConversationList) {
@@ -335,6 +353,19 @@ function MessagesContent({
 
     onUnreadCountChange(totalUnread);
   }, [canViewConversationList, conversations, onUnreadCountChange]);
+
+  useEffect(() => {
+    if (canViewInbox && !chatDisabled) {
+      return;
+    }
+
+    setSelectedConversationId(null);
+    setConversations([]);
+    setProfiles({});
+    setLoading(false);
+    setError(null);
+    clearConversationFacts();
+  }, [canViewInbox, chatDisabled, clearConversationFacts]);
 
   const resolveConversationId = useCallback(
     (conversation) =>
@@ -730,7 +761,7 @@ function MessagesContent({
   }, [selectedConversation]);
 
   useEffect(() => {
-    if (!selectedConversation) {
+    if (!canViewInbox || chatDisabled || !selectedConversation) {
       clearConversationFacts();
       return;
     }
@@ -752,6 +783,8 @@ function MessagesContent({
       clearConversationFacts();
     };
   }, [
+    canViewInbox,
+    chatDisabled,
     selectedConversation,
     selectedConversationBlocked,
     selectedConversationDetails,

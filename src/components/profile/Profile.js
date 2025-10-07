@@ -32,6 +32,7 @@ import { formatProfileData } from "./profileUtils";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
 import { useUserContext } from "../../context/UserContext";
+import { isAbortError } from "../../utils/http";
 
 const calculateAge = (dateString) => {
   if (!dateString) {
@@ -104,6 +105,7 @@ function ProfileContent() {
   const [requestMessageError, setRequestMessageError] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
   const { hasCapability, getReason } = useUserContext();
+  const canViewProfile = hasCapability(CAPABILITIES.PROFILE_VIEW_MEMBER);
 
   const sendRequestReason = useMemo(
     () => getReason(CAPABILITIES.PROFILE_SEND_REQUEST),
@@ -112,6 +114,11 @@ function ProfileContent() {
 
   const viewSectionsReason = useMemo(
     () => getReason(CAPABILITIES.PROFILE_VIEW_SECTIONS),
+    [getReason]
+  );
+
+  const viewProfileReason = useMemo(
+    () => getReason(CAPABILITIES.PROFILE_VIEW_MEMBER),
     [getReason]
   );
 
@@ -124,7 +131,17 @@ function ProfileContent() {
   };
 
   useEffect(() => {
+    if (!canViewProfile) {
+      setLoading(false);
+      setProfile(null);
+      setRequestStatus(false);
+      setFeedback(null);
+      setLoadError(viewProfileReason || "home.messages.profileError");
+      return () => {};
+    }
+
     let active = true;
+    const controller = new AbortController();
 
     const fetchUserProfile = async () => {
       setLoading(true);
@@ -132,12 +149,15 @@ function ProfileContent() {
       setFeedback(null);
       try {
         const token = localStorage.getItem("token");
+        const headers = { Authorization: `${token}` };
         const [profileResult, requestResult] = await Promise.allSettled([
           api.get(`/user/profile/${userId}`, {
-            headers: { Authorization: `${token}` },
+            headers,
+            signal: controller.signal,
           }),
           api.get(`/user/checkReqStatus/${userId}`, {
-            headers: { Authorization: `${token}` },
+            headers,
+            signal: controller.signal,
           }),
         ]);
 
@@ -146,18 +166,22 @@ function ProfileContent() {
         }
 
         if (profileResult.status !== "fulfilled") {
+          if (isAbortError(profileResult.reason)) {
+            return;
+          }
           throw profileResult.reason;
         }
 
         const formatted = formatProfileData(profileResult.value.data);
         setProfile(formatted);
+
         if (requestResult.status === "fulfilled") {
           setRequestStatus(Boolean(requestResult.value.data.requestStatus));
-        } else {
+        } else if (!isAbortError(requestResult.reason)) {
           setRequestStatus(false);
         }
       } catch (error) {
-        if (!active) {
+        if (!active || isAbortError(error)) {
           return;
         }
         setProfile(null);
@@ -173,8 +197,9 @@ function ProfileContent() {
 
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [userId]);
+  }, [userId, canViewProfile, viewProfileReason]);
 
   const handleSendRequest = async () => {
     if (!hasCapability(CAPABILITIES.PROFILE_SEND_REQUEST)) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Avatar,
@@ -29,6 +29,7 @@ import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../context/UserContext";
+import { isAbortError } from "../../utils/http";
 
 const MAX_SCORE = 100;
 
@@ -279,6 +280,7 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const { hasCapability } = useUserCapabilities();
+  const detailAbortRef = useRef(null);
   const lifecycleLoading = accountLifecycle?.loading ?? false;
   const accountDeactivated = accountLifecycle?.isDeactivated ?? false;
 
@@ -297,27 +299,58 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
     canSendRequestCapability && !requestsBlockedByLifecycle;
 
   useEffect(() => {
-    if (lifecycleLoading) {
+    return () => {
+      if (detailAbortRef.current) {
+        detailAbortRef.current.abort();
+        detailAbortRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (canViewDetails && !requestsBlockedByLifecycle) {
       return;
+    }
+
+    if (detailAbortRef.current) {
+      detailAbortRef.current.abort();
+      detailAbortRef.current = null;
+    }
+    setLoadingDetailsFor(null);
+    setExpandedMatchId(null);
+    setProfileDetails({});
+  }, [canViewDetails, requestsBlockedByLifecycle]);
+
+  useEffect(() => {
+    if (lifecycleLoading) {
+      return () => {};
     }
 
     if (!canViewRecommendations) {
       setStatus({ loading: false, errorKey: "" });
       setMatches([]);
       setExpandedMatchId(null);
-      return;
+      if (detailAbortRef.current) {
+        detailAbortRef.current.abort();
+        detailAbortRef.current = null;
+      }
+      return () => {};
     }
 
     const userId = localStorage.getItem("user_id");
     if (!userId) {
       setStatus({ loading: false, errorKey: "matches.messages.noActiveUser" });
-      return;
+      return () => {};
     }
+
+    const controller = new AbortController();
 
     const loadMatches = async () => {
       setStatus({ loading: true, errorKey: "" });
       try {
-        const results = await fetchMatches(userId, { limit });
+        const results = await fetchMatches(userId, { limit }, {
+          signal: controller.signal,
+        });
         const normalizedMatches = Array.isArray(results)
           ? results.map(normalizeMatch)
           : [];
@@ -327,6 +360,9 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
         setMatches(orderedMatches);
         setStatus({ loading: false, errorKey: "" });
       } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
         setStatus({
           loading: false,
           errorKey: "matches.messages.loadError",
@@ -335,7 +371,16 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
     };
 
     loadMatches();
-  }, [limit, canViewRecommendations, lifecycleLoading]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [
+    limit,
+    canViewRecommendations,
+    lifecycleLoading,
+    detailAbortRef,
+  ]);
 
   const orderedMatches = useMemo(() => {
     if (!Array.isArray(matches)) {
@@ -356,6 +401,10 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
     }
 
     if (expandedMatchId === matchKey) {
+      if (detailAbortRef.current) {
+        detailAbortRef.current.abort();
+        detailAbortRef.current = null;
+      }
       setExpandedMatchId(null);
       return;
     }
@@ -372,14 +421,26 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
       return;
     }
 
+    if (detailAbortRef.current) {
+      detailAbortRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    detailAbortRef.current = controller;
     setLoadingDetailsFor(matchKey);
     try {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `${token}` } : {};
 
       const [profileResponse, statusResponse] = await Promise.all([
-        api.get(`/user/profile/${normalizedUserId}`, { headers }),
-        api.get(`/user/checkReqStatus/${normalizedUserId}`, { headers }),
+        api.get(`/user/profile/${normalizedUserId}`, {
+          headers,
+          signal: controller.signal,
+        }),
+        api.get(`/user/checkReqStatus/${normalizedUserId}`, {
+          headers,
+          signal: controller.signal,
+        }),
       ]);
 
       setProfileDetails((previous) => ({
@@ -390,12 +451,18 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
         },
       }));
     } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
       setFeedback((previous) => ({
         ...previous,
         [matchKey]: { type: "error", key: "home.messages.profileError" },
       }));
     } finally {
       setLoadingDetailsFor(null);
+      if (detailAbortRef.current === controller) {
+        detailAbortRef.current = null;
+      }
     }
   };
 

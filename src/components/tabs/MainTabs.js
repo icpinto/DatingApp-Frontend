@@ -26,6 +26,7 @@ import {
 import { useWebSocket } from "../../context/WebSocketProvider";
 import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../utils/capabilities";
+import { isAbortError } from "../../utils/http";
 
 const TAB_CONFIG = [
   {
@@ -110,31 +111,42 @@ function MainTabs() {
   useEffect(() => {
     if (!canViewMatchesTab) {
       setRequestCount(0);
-      return;
+      return () => {};
     }
+
+    const controller = new AbortController();
 
     const fetchRequestCount = async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await api.get("/user/requests", {
           headers: { Authorization: `${token}` },
+          signal: controller.signal,
         });
         const count = Array.isArray(res.data.requests)
           ? res.data.requests.length
           : 0;
         setRequestCount(count);
       } catch (e) {
-        setRequestCount(0);
+        if (!isAbortError(e)) {
+          setRequestCount(0);
+        }
       }
     };
 
     fetchRequestCount();
+
+    return () => {
+      controller.abort();
+    };
   }, [canViewMatchesTab]);
 
   useEffect(() => {
     if (!canViewMessagesTab) {
-      return;
+      return () => {};
     }
+
+    const controller = new AbortController();
 
     const fetchConversations = async () => {
       try {
@@ -145,6 +157,7 @@ function MainTabs() {
 
         const response = await chatService.get("/conversations", {
           headers: { Authorization: `${token}` },
+          signal: controller.signal,
         });
 
         const conversations = normalizeConversationList(response.data)
@@ -153,11 +166,17 @@ function MainTabs() {
 
         hydrateConversations(conversations);
       } catch (error) {
-        // Ignore initial unread fetch errors and default to existing socket state.
+        if (!isAbortError(error)) {
+          // Ignore initial unread fetch errors and default to existing socket state.
+        }
       }
     };
 
     fetchConversations();
+
+    return () => {
+      controller.abort();
+    };
   }, [canViewMessagesTab, hydrateConversations]);
 
   const handleChange = (event, newValue) => {
