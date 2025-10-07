@@ -533,6 +533,9 @@ function HomeContent({ accountLifecycle }) {
     );
   };
 
+  const matchRecommendationsGuardRequirement = discoveryBlockedByLifecycle
+    ? null
+    : CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS;
   const activeUsersGuardRequirement = discoveryBlockedByLifecycle
     ? null
     : CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS;
@@ -540,7 +543,7 @@ function HomeContent({ accountLifecycle }) {
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
-        <Guard can={CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS}>
+        <Guard can={matchRecommendationsGuardRequirement}>
           <MatchRecommendations limit={12} />
         </Guard>
         <Guard
