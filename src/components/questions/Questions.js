@@ -384,10 +384,10 @@ function QuestionsComponent({
           severity={snackbar.severity}
           sx={{ width: "100%" }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </>
+        {snackbar.message}
+      </Alert>
+    </Snackbar>
+    </Guard>
   );
 }
 
