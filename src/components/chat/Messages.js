@@ -22,6 +22,9 @@ import { spacing } from "../../styles";
 import { useWebSocket } from "../../context/WebSocketProvider";
 import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { CAPABILITIES } from "../../utils/capabilities";
+import Guard from "./Guard";
+import { UserProvider, useUserCapabilities } from "./UserContext";
 import {
   pickFirst,
   toNumberOrUndefined,
@@ -135,7 +138,10 @@ const buildRealtimePatch = ({
   return Object.keys(updates).length > 0 ? updates : null;
 };
 
-function Messages({ onUnreadCountChange = () => {} }) {
+function MessagesContent({
+  onUnreadCountChange = () => {},
+  accountLifecycle,
+}) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -148,12 +154,26 @@ function Messages({ onUnreadCountChange = () => {} }) {
   const { t } = useTranslation();
   const { conversations: wsConversations, markRead, hydrateConversations } =
     useWebSocket();
-  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
+  const { hasCapability } = useUserCapabilities();
+  const { isDeactivated = false, loading: lifecycleLoading = false } =
+    accountLifecycle || {};
   const chatDisabled = !lifecycleLoading && isDeactivated;
+  const canViewInbox = hasCapability(CAPABILITIES.MESSAGING_VIEW_INBOX);
+  const canViewConversationList = hasCapability(
+    CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS
+  );
+  const canOpenConversation = hasCapability(
+    CAPABILITIES.MESSAGING_OPEN_CONVERSATION
+  );
+  const canViewHistory = hasCapability(CAPABILITIES.MESSAGING_VIEW_HISTORY);
+  const canMarkRead = hasCapability(CAPABILITIES.MESSAGING_MARK_READ);
+  const canViewPartnerStatus = hasCapability(
+    CAPABILITIES.MESSAGING_VIEW_PARTNER_STATUS
+  );
 
   const resolveLifecyclePlaceholder = useCallback(
     (status) => {
-      if (!status || typeof status !== "string") {
+      if (!canViewPartnerStatus || !status || typeof status !== "string") {
         return undefined;
       }
 
@@ -173,13 +193,20 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
       return undefined;
     },
-    [t]
+    [canViewPartnerStatus, t]
   );
 
   useEffect(() => {
     let isActive = true;
 
     const fetchConversations = async () => {
+      if (!canViewInbox || !canViewConversationList) {
+        setLoading(false);
+        setConversations([]);
+        setError(null);
+        return;
+      }
+
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
@@ -215,10 +242,19 @@ function Messages({ onUnreadCountChange = () => {} }) {
     return () => {
       isActive = false;
     };
-  }, [chatDisabled, hydrateConversations]);
+  }, [
+    canViewConversationList,
+    canViewInbox,
+    chatDisabled,
+    hydrateConversations,
+  ]);
 
   useEffect(() => {
-    if (!Array.isArray(conversations) || conversations.length === 0) {
+    if (
+      !canViewPartnerStatus ||
+      !Array.isArray(conversations) ||
+      conversations.length === 0
+    ) {
       setProfiles({});
       return;
     }
@@ -282,10 +318,10 @@ function Messages({ onUnreadCountChange = () => {} }) {
     return () => {
       isActive = false;
     };
-  }, [conversations, normalizedCurrentUserId]);
+  }, [canViewPartnerStatus, conversations, normalizedCurrentUserId]);
 
   useEffect(() => {
-    if (typeof onUnreadCountChange !== "function") {
+    if (typeof onUnreadCountChange !== "function" || !canViewConversationList) {
       return;
     }
 
@@ -297,7 +333,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
       : 0;
 
     onUnreadCountChange(totalUnread);
-  }, [conversations, onUnreadCountChange]);
+  }, [canViewConversationList, conversations, onUnreadCountChange]);
 
   const resolveConversationId = useCallback(
     (conversation) =>
@@ -354,7 +390,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
   }, [conversations, getConversationKey, selectedConversationId]);
 
   const conversationPreviews = useMemo(() => {
-    if (!Array.isArray(conversations)) {
+    if (!canViewConversationList || !Array.isArray(conversations)) {
       return [];
     }
 
@@ -391,6 +427,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
       };
     });
   }, [
+    canViewConversationList,
     conversations,
     currentUserId,
     getConversationKey,
@@ -400,6 +437,11 @@ function Messages({ onUnreadCountChange = () => {} }) {
   ]);
 
   useEffect(() => {
+    if (!canViewConversationList) {
+      setSelectedConversationId(null);
+      return;
+    }
+
     if (selectedConversationId === null || selectedConversationId === undefined) {
       return;
     }
@@ -416,10 +458,19 @@ function Messages({ onUnreadCountChange = () => {} }) {
     if (!exists) {
       setSelectedConversationId(null);
     }
-  }, [conversations, getConversationKey, selectedConversationId]);
+  }, [
+    canViewConversationList,
+    conversations,
+    getConversationKey,
+    selectedConversationId,
+  ]);
 
   const applyRealtimeUpdates = useCallback(
     (previous = []) => {
+      if (!canViewConversationList) {
+        return previous;
+      }
+
       if (
         !Array.isArray(previous) ||
         previous.length === 0 ||
@@ -466,6 +517,7 @@ function Messages({ onUnreadCountChange = () => {} }) {
       return hasChanges ? nextConversations : previous;
     },
     [
+      canViewConversationList,
       currentUserId,
       getConversationKey,
       resolveConversationId,
@@ -478,8 +530,18 @@ function Messages({ onUnreadCountChange = () => {} }) {
     setConversations((prev) => applyRealtimeUpdates(prev));
   }, [applyRealtimeUpdates]);
 
+  useEffect(() => {
+    if (!canOpenConversation) {
+      setSelectedConversationId(null);
+    }
+  }, [canOpenConversation]);
+
   const handleOpenConversation = useCallback(
     (conversation) => {
+      if (!canOpenConversation) {
+        return;
+      }
+
       if (!conversation) {
         return;
       }
@@ -579,7 +641,11 @@ function Messages({ onUnreadCountChange = () => {} }) {
 
       hydrateConversations([conversationPatch]);
 
-      if (typeof markRead === "function" && lastMessageId !== undefined) {
+      if (
+        typeof markRead === "function" &&
+        canMarkRead &&
+        lastMessageId !== undefined
+      ) {
         const numericId = toNumberOrUndefined(resolvedId ?? conversationKey);
         const markId =
           numericId !== undefined
@@ -592,6 +658,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
       }
     },
     [
+      canMarkRead,
+      canOpenConversation,
       getConversationKey,
       hydrateConversations,
       markRead,
@@ -609,7 +677,8 @@ function Messages({ onUnreadCountChange = () => {} }) {
       ? String(selectedConversationId)
       : null;
 
-  const showListPane = !isMobile || !selectedConversation;
+  const showListPane =
+    canViewConversationList && (!isMobile || !selectedConversation);
   const showChatPane = !isMobile || Boolean(selectedConversation);
 
   const selectedConversationDetails = useMemo(() => {
@@ -668,98 +737,153 @@ function Messages({ onUnreadCountChange = () => {} }) {
         {chatDisabled ? (
           <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
         ) : null}
-        <Grid
-          container
-          spacing={3}
-          sx={{
-            minHeight: { xs: "60vh", md: "70vh" },
-          }}
-          alignItems="stretch"
+        <Guard
+          can={CAPABILITIES.MESSAGING_VIEW_INBOX}
+          fallback={
+            <Alert severity="info">
+              You do not have access to messaging yet.
+            </Alert>
+          }
         >
-          {showListPane && (
-            <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
-              <ConversationListPane
-                loading={loading}
-                error={error}
-                conversations={conversationPreviews}
-                selectedConversationKey={activeConversationKey}
-                onConversationSelect={handleOpenConversation}
-              />
-            </Grid>
-          )}
-          {showChatPane && (
-            <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
-              <Card
-                elevation={3}
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  borderRadius: 3,
-                  minHeight: { xs: "50vh", md: "100%" },
-                  overflow: "hidden",
-                }}
-              >
-                {selectedConversation ? (
-                  <ChatDrawer
-                    conversationId={resolveConversationId(selectedConversation)}
-                    user1_id={selectedConversationUsers.user1.id}
-                    user2_id={selectedConversationUsers.user2.id}
-                    open={Boolean(selectedConversation)}
-                    onClose={handleCloseConversation}
-                    partnerName={selectedConversationDetails?.displayName}
-                    partnerBio={selectedConversationDetails?.bio}
-                    partnerLifecycleStatus={
-                      selectedConversationDetails?.lifecycleStatus
-                    }
-                    blocked={selectedConversationBlocked}
-                    messagingDisabled={chatDisabled}
-                    messagingDisabledReason={
-                      ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE
-                    }
+          <Grid
+            container
+            spacing={3}
+            sx={{
+              minHeight: { xs: "60vh", md: "70vh" },
+            }}
+            alignItems="stretch"
+          >
+            {showListPane ? (
+              <Guard can={CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS}>
+                <Grid item xs={12} md={4} sx={{ display: "flex", minHeight: 0 }}>
+                  <ConversationListPane
+                    loading={loading}
+                    error={error}
+                    conversations={conversationPreviews}
+                    selectedConversationKey={activeConversationKey}
+                    onConversationSelect={handleOpenConversation}
                   />
-                ) : (
-                  <>
-                    <CardHeader
-                      title="Select a conversation"
-                      subheader="Choose someone from the list to start chatting"
-                      avatar={
-                        <Avatar
-                          variant="rounded"
-                          sx={{ bgcolor: "secondary.light", color: "secondary.dark" }}
-                        >
-                          <ChatBubbleOutlineRoundedIcon />
-                        </Avatar>
-                      }
-                      sx={{ px: spacing.section, py: spacing.section }}
-                    />
-                    <Divider sx={{ borderStyle: "dashed" }} />
-                    <CardContent
+                </Grid>
+              </Guard>
+            ) : null}
+            {showChatPane ? (
+              <Guard
+                can={CAPABILITIES.MESSAGING_VIEW_HISTORY}
+                fallback={
+                  <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
+                    <Card
+                      elevation={3}
                       sx={{
-                        flexGrow: 1,
+                        width: "100%",
                         display: "flex",
+                        flexDirection: "column",
+                        borderRadius: 3,
+                        minHeight: { xs: "50vh", md: "100%" },
+                        overflow: "hidden",
                         alignItems: "center",
                         justifyContent: "center",
+                        p: spacing.section,
                         textAlign: "center",
                       }}
                     >
-                      <Stack spacing={1.5} alignItems="center" color="text.secondary">
-                        <Typography variant="body1">
-                          Select a conversation from the left to view messages.
-                        </Typography>
-                        <Typography variant="body2">
-                          Once you pick someone, you can continue your conversation here.
-                        </Typography>
-                      </Stack>
-                    </CardContent>
-                  </>
-                )}
-              </Card>
-            </Grid>
-          )}
-        </Grid>
+                      <Typography variant="body1" color="text.secondary">
+                        You do not have permission to view message history.
+                      </Typography>
+                    </Card>
+                  </Grid>
+                }
+              >
+                <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
+                  <Card
+                    elevation={3}
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      borderRadius: 3,
+                      minHeight: { xs: "50vh", md: "100%" },
+                      overflow: "hidden",
+                    }}
+                  >
+                    {selectedConversation ? (
+                      <ChatDrawer
+                        conversationId={resolveConversationId(selectedConversation)}
+                        user1_id={selectedConversationUsers.user1.id}
+                        user2_id={selectedConversationUsers.user2.id}
+                        open={Boolean(selectedConversation)}
+                        onClose={handleCloseConversation}
+                        partnerName={selectedConversationDetails?.displayName}
+                        partnerBio={selectedConversationDetails?.bio}
+                        partnerLifecycleStatus={
+                          selectedConversationDetails?.lifecycleStatus
+                        }
+                        blocked={selectedConversationBlocked}
+                        messagingDisabled={chatDisabled}
+                        messagingDisabledReason={
+                          ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE
+                        }
+                      />
+                    ) : (
+                      <>
+                        <CardHeader
+                          title="Select a conversation"
+                          subheader="Choose someone from the list to start chatting"
+                          avatar={
+                            <Avatar
+                              variant="rounded"
+                              sx={{
+                                bgcolor: "secondary.light",
+                                color: "secondary.dark",
+                              }}
+                            >
+                              <ChatBubbleOutlineRoundedIcon />
+                            </Avatar>
+                          }
+                          sx={{ px: spacing.section, py: spacing.section }}
+                        />
+                        <Divider sx={{ borderStyle: "dashed" }} />
+                        <CardContent
+                          sx={{
+                            flexGrow: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            textAlign: "center",
+                          }}
+                        >
+                          <Stack
+                            spacing={1.5}
+                            alignItems="center"
+                            color="text.secondary"
+                          >
+                            <Typography variant="body1">
+                              Select a conversation from the left to view messages.
+                            </Typography>
+                            <Typography variant="body2">
+                              Once you pick someone, you can continue your conversation here.
+                            </Typography>
+                          </Stack>
+                        </CardContent>
+                      </>
+                    )}
+                  </Card>
+                </Grid>
+              </Guard>
+            ) : null}
+          </Grid>
+        </Guard>
       </Stack>
     </Container>
+  );
+}
+
+function Messages(props) {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <MessagesContent {...props} accountLifecycle={accountLifecycle} />
+    </UserProvider>
   );
 }
 
