@@ -2,6 +2,8 @@ import React from "react";
 import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { spacing } from "../../styles";
+import { CAPABILITIES } from "../../utils/capabilities";
+import { useUserCapabilities } from "./UserContext";
 
 function ChatMessageList({
   containerRef,
@@ -13,8 +15,40 @@ function ChatMessageList({
   blockSuccess,
   lifecycleStatus,
 }) {
+  const { hasCapability } = useUserCapabilities();
+  const canViewHistory = hasCapability(CAPABILITIES.MESSAGING_VIEW_HISTORY);
+  const canViewPartnerStatus = hasCapability(
+    CAPABILITIES.MESSAGING_VIEW_PARTNER_STATUS
+  );
+
+  if (!canViewHistory) {
+    return (
+      <Box
+        sx={{
+          flex: "1 1 0",
+          overflowY: "auto",
+          minHeight: 0,
+          mx: spacing.section,
+          my: spacing.section / 2,
+          px: spacing.section,
+          py: spacing.section,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          color: "text.secondary",
+        }}
+      >
+        <Typography variant="body2">
+          You do not have permission to view this conversation.
+        </Typography>
+      </Box>
+    );
+  }
+
   const normalizedLifecycleStatus =
-    typeof lifecycleStatus === "string"
+    canViewPartnerStatus && typeof lifecycleStatus === "string"
       ? lifecycleStatus.trim().toLowerCase()
       : undefined;
 

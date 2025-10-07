@@ -11,9 +11,11 @@ import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 import { spacing } from "../../styles";
 import { toNumberOrUndefined } from "../../utils/conversationUtils";
+import { CAPABILITIES } from "../../utils/capabilities";
 import ChatHeaderSection from "./ChatHeaderSection";
 import ChatMessageList from "./ChatMessageList";
 import MessageComposerSection from "./MessageComposer";
+import { useUserCapabilities } from "./UserContext";
 import {
   formatMessageTimestamp,
   resolveMessageBody,
@@ -50,6 +52,14 @@ function ChatDrawer({
   const [isBlocking, setIsBlocking] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const messagesContainerRef = useRef(null);
+  const { hasCapability } = useUserCapabilities();
+  const canViewHistory = hasCapability(CAPABILITIES.MESSAGING_VIEW_HISTORY);
+  const canMarkRead = hasCapability(CAPABILITIES.MESSAGING_MARK_READ);
+  const canSendMessage = hasCapability(CAPABILITIES.MESSAGING_SEND_MESSAGE);
+  const canBlockUsers = hasCapability(CAPABILITIES.MESSAGING_BLOCK_USER);
+  const canViewPartnerStatus = hasCapability(
+    CAPABILITIES.MESSAGING_VIEW_PARTNER_STATUS
+  );
 
   const normalizedConversationId = useMemo(
     () => toNumberOrUndefined(conversationId),
@@ -57,6 +67,10 @@ function ChatDrawer({
   );
 
   const conversationMessages = useMemo(() => {
+    if (!canViewHistory) {
+      return [];
+    }
+
     const lookupId =
       normalizedConversationId !== undefined && normalizedConversationId !== null
         ? normalizedConversationId
@@ -74,7 +88,12 @@ function ChatDrawer({
     const entry = conversations[key] ?? conversations[lookupId];
 
     return Array.isArray(entry?.messages) ? entry.messages : [];
-  }, [conversations, conversationId, normalizedConversationId]);
+  }, [
+    canViewHistory,
+    conversations,
+    conversationId,
+    normalizedConversationId,
+  ]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -85,13 +104,13 @@ function ChatDrawer({
   );
 
   const normalizedPartnerLifecycleStatus = useMemo(() => {
-    if (typeof partnerLifecycleStatus !== "string") {
+    if (!canViewPartnerStatus || typeof partnerLifecycleStatus !== "string") {
       return undefined;
     }
 
     const trimmed = partnerLifecycleStatus.trim().toLowerCase();
     return trimmed.length ? trimmed : undefined;
-  }, [partnerLifecycleStatus]);
+  }, [canViewPartnerStatus, partnerLifecycleStatus]);
 
   const receiverId = useMemo(() => {
     const normalizedUser1 = toNumberOrUndefined(user1_id);
@@ -153,7 +172,12 @@ function ChatDrawer({
   }, [conversationMessages, senderId]);
 
   useEffect(() => {
-    if (conversationId === undefined || conversationId === null || !open) {
+    if (
+      conversationId === undefined ||
+      conversationId === null ||
+      !open ||
+      !canViewHistory
+    ) {
       return;
     }
 
@@ -187,7 +211,12 @@ function ChatDrawer({
     return () => {
       isActive = false;
     };
-  }, [conversationId, open, setConversationHistory]);
+  }, [
+    canViewHistory,
+    conversationId,
+    open,
+    setConversationHistory,
+  ]);
 
   useEffect(() => {
     if (conversationId === undefined || conversationId === null) {
@@ -216,7 +245,8 @@ function ChatDrawer({
       conversationId === null ||
       !Array.isArray(conversationMessages) ||
       conversationMessages.length === 0 ||
-      typeof markRead !== "function"
+      typeof markRead !== "function" ||
+      !canMarkRead
     ) {
       return;
     }
@@ -235,7 +265,13 @@ function ChatDrawer({
     ) {
       markRead(conversationId, lastId);
     }
-  }, [conversationId, conversationMessages, markRead, senderId]);
+  }, [
+    canMarkRead,
+    conversationId,
+    conversationMessages,
+    markRead,
+    senderId,
+  ]);
 
   const isLifecycleRestricted = useMemo(() => {
     if (!normalizedPartnerLifecycleStatus) {
@@ -264,7 +300,8 @@ function ChatDrawer({
       isBlocked ||
       isLifecycleRestricted ||
       messagingDisabled ||
-      trimmedMessage === ""
+      trimmedMessage === "" ||
+      !canSendMessage
     ) {
       return;
     }
@@ -307,6 +344,7 @@ function ChatDrawer({
     setNewMessage("");
   }, [
     addLocalMessage,
+    canSendMessage,
     conversationId,
     isBlocked,
     isLifecycleRestricted,
@@ -331,6 +369,11 @@ function ChatDrawer({
       return;
     }
 
+    if (!canBlockUsers) {
+      setBlockError("You do not have permission to block users.");
+      return;
+    }
+
     try {
       setIsBlocking(true);
       setBlockError(null);
@@ -351,7 +394,7 @@ function ChatDrawer({
     } finally {
       setIsBlocking(false);
     }
-  }, [conversationId, receiverId]);
+  }, [canBlockUsers, conversationId, receiverId]);
 
   if (!open) {
     return null;

@@ -14,6 +14,8 @@ import {
 import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
 import { alpha } from "@mui/material/styles";
 import { spacing } from "../../styles";
+import { CAPABILITIES } from "../../utils/capabilities";
+import { useUserCapabilities } from "./UserContext";
 
 function ConversationListPane({
   loading,
@@ -22,12 +24,73 @@ function ConversationListPane({
   selectedConversationKey,
   onConversationSelect,
 }) {
+  const { hasCapability } = useUserCapabilities();
+  const canViewConversationList = hasCapability(
+    CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS
+  );
+  const canOpenConversation = hasCapability(
+    CAPABILITIES.MESSAGING_OPEN_CONVERSATION
+  );
+
+  const handleSelectConversation = (conversation) => {
+    if (!canOpenConversation) {
+      return;
+    }
+
+    onConversationSelect(conversation);
+  };
+
   const handleConversationKeyDown = (event, conversation) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      onConversationSelect(conversation);
+      handleSelectConversation(conversation);
     }
   };
+
+  if (!canViewConversationList) {
+    return (
+      <Card
+        elevation={3}
+        sx={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        <CardHeader
+          title="Conversations"
+          subheader="Stay in touch with people you've connected with"
+          avatar={
+            <Avatar
+              variant="rounded"
+              sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}
+            >
+              <ForumRoundedIcon />
+            </Avatar>
+          }
+          sx={{ px: spacing.section, py: spacing.section }}
+        />
+        <Divider sx={{ borderStyle: "dashed" }} />
+        <CardContent
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            px: spacing.section,
+            py: spacing.section,
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            You do not have permission to view your conversations.
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -113,9 +176,9 @@ function ConversationListPane({
                 return (
                   <Box
                     key={`${conversationKey ?? entry.conversationId ?? index}-panel`}
-                    onClick={() => onConversationSelect(entry.conversation)}
+                    onClick={() => handleSelectConversation(entry.conversation)}
                     role="button"
-                    tabIndex={0}
+                    tabIndex={canOpenConversation ? 0 : -1}
                     onKeyDown={(event) =>
                       handleConversationKeyDown(event, entry.conversation)
                     }
@@ -126,7 +189,7 @@ function ConversationListPane({
                       px: 2,
                       py: 1.75,
                       borderRadius: 2,
-                      cursor: "pointer",
+                      cursor: canOpenConversation ? "pointer" : "not-allowed",
                       border: (theme) =>
                         `1px solid ${
                           isSelected
