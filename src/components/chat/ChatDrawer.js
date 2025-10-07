@@ -15,7 +15,7 @@ import { CAPABILITIES } from "../../utils/capabilities";
 import ChatHeaderSection from "./ChatHeaderSection";
 import ChatMessageList from "./ChatMessageList";
 import MessageComposerSection from "./MessageComposer";
-import { useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 import {
   formatMessageTimestamp,
   resolveMessageBody,

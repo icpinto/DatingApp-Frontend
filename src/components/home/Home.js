@@ -28,7 +28,7 @@ import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 const FILTER_DEFAULTS = {
   gender: "",
@@ -711,11 +711,7 @@ function HomeContent({ accountLifecycle }) {
 
 function Home() {
   const accountLifecycle = useAccountLifecycle();
-  return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <HomeContent accountLifecycle={accountLifecycle} />
-    </UserProvider>
-  );
+  return <HomeContent accountLifecycle={accountLifecycle} />;
 }
 
 export default Home;

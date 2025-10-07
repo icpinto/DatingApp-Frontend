@@ -320,13 +320,41 @@ export function deriveCapabilities(facts = {}) {
   setCapability(CAPABILITIES.NAV_ACCESS_PROFILE, !isDeleted, deletionReason);
 
   // Discovery / home feed
-  setCapability(CAPABILITIES.DISCOVERY_VIEW_HOME, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.DISCOVERY_USE_FILTERS, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.DISCOVERY_TOGGLE_FILTER_PANEL, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.DISCOVERY_EXPAND_USER_PREVIEW, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.DISCOVERY_NAVIGATE_TO_PROFILE, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.DISCOVERY_COMPOSE_REQUEST, !isDeleted, deletionReason);
+  setCapability(
+    CAPABILITIES.DISCOVERY_VIEW_HOME,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.DISCOVERY_USE_FILTERS,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.DISCOVERY_TOGGLE_FILTER_PANEL,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.DISCOVERY_EXPAND_USER_PREVIEW,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.DISCOVERY_NAVIGATE_TO_PROFILE,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.DISCOVERY_COMPOSE_REQUEST,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
   setCapability(
     CAPABILITIES.DISCOVERY_SEND_REQUEST,
     !isDiscoveryDisabled,
@@ -334,15 +362,31 @@ export function deriveCapabilities(facts = {}) {
   );
 
   // Match recommendations
-  setCapability(CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.MATCHES_VIEW_DETAILS, !isDeleted, deletionReason);
-  setCapability(CAPABILITIES.MATCHES_VIEW_COMPATIBILITY, !isDeleted, deletionReason);
+  setCapability(
+    CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.MATCHES_VIEW_DETAILS,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
+  setCapability(
+    CAPABILITIES.MATCHES_VIEW_COMPATIBILITY,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
   setCapability(
     CAPABILITIES.MATCHES_SEND_REQUEST,
     !isDiscoveryDisabled,
     accountRestrictionMessage || "Activate your profile to reach out to matches."
   );
-  setCapability(CAPABILITIES.MATCHES_NAVIGATE_TO_PROFILE, !isDeleted, deletionReason);
+  setCapability(
+    CAPABILITIES.MATCHES_NAVIGATE_TO_PROFILE,
+    !isDiscoveryDisabled,
+    accountRestrictionMessage || deletionReason
+  );
 
   // Connection requests
   setCapability(CAPABILITIES.REQUESTS_VIEW_RECEIVED, !isDeleted, deletionReason);
@@ -510,8 +554,37 @@ export function deriveCapabilities(facts = {}) {
   return { allowed, reasons };
 }
 
+export const selectCapabilities = (facts = {}) => {
+  const matrix = deriveCapabilities(facts);
+  const allowed = matrix.allowed || {};
+  const capabilitySet = new Set();
+
+  Object.entries(allowed).forEach(([key, value]) => {
+    if (value) {
+      capabilitySet.add(key);
+    }
+  });
+
+  return {
+    allowed,
+    reasons: matrix.reasons || {},
+    capabilitySet,
+  };
+};
+
+export const buildCapabilitySet = (facts = {}) =>
+  selectCapabilities(facts).capabilitySet;
+
+export const getCapabilityReason = (facts = {}, capability) => {
+  const { reasons } = selectCapabilities(facts);
+  return reasons[capability];
+};
+
 export default {
   CAPABILITIES,
   COMPONENT_CAPABILITIES,
   deriveCapabilities,
+  selectCapabilities,
+  buildCapabilitySet,
+  getCapabilityReason,
 };

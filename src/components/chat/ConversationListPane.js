@@ -15,7 +15,7 @@ import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
 import { alpha } from "@mui/material/styles";
 import { spacing } from "../../styles";
 import { CAPABILITIES } from "../../utils/capabilities";
-import { useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 function ConversationListPane({
   loading,

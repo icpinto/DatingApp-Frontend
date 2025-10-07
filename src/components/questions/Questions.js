@@ -29,7 +29,7 @@ import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import Guard from "./Guard";
 import { CAPABILITIES } from "../../utils/capabilities";
-import { UserProvider, useUserContext } from "./UserContext";
+import { useUserContext } from "../../context/UserContext";
 
 function QuestionsComponent({
   isLocked = false,
@@ -395,15 +395,10 @@ function Questions(props) {
   const accountLifecycle = useAccountLifecycle();
 
   return (
-    <UserProvider
-      accountStatus={accountLifecycle?.status}
-      questionnaireLocked={props.isLocked}
-    >
-      <QuestionsComponent
-        {...props}
-        accountLifecycle={accountLifecycle}
-      />
-    </UserProvider>
+    <QuestionsComponent
+      {...props}
+      accountLifecycle={accountLifecycle}
+    />
   );
 }
 

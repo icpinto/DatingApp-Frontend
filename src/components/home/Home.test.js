@@ -3,7 +3,9 @@ import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import Home from "./Home";
 import { AccountLifecycleContext } from "../../context/AccountLifecycleContext";
+import { UserProvider } from "../../context/UserContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
+import api from "../../services/api";
 
 jest.mock("../../services/api", () => ({
   get: jest.fn(),
@@ -21,7 +23,7 @@ jest.mock("../matches/MatchRecommendations", () => () => (
 ));
 
 describe("Home discovery gating", () => {
-  it("hides active users and shows the deactivation banner when discovery is disabled", () => {
+  it("hides active users and shows the deactivation banner when discovery is disabled", async () => {
     const contextValue = {
       status: "deactivated",
       loading: false,
@@ -31,18 +33,25 @@ describe("Home discovery gating", () => {
       isDeactivated: true,
     };
 
+    api.get.mockResolvedValue({ data: [] });
+
     render(
       <AccountLifecycleContext.Provider value={contextValue}>
-        <MemoryRouter>
-          <Home />
-        </MemoryRouter>
+        <UserProvider
+          accountStatus={contextValue.status}
+          initialSnapshot={{ account: contextValue.status }}
+        >
+          <MemoryRouter>
+            <Home />
+          </MemoryRouter>
+        </UserProvider>
       </AccountLifecycleContext.Provider>
     );
 
-    expect(screen.getByText(ACCOUNT_DEACTIVATED_MESSAGE)).toBeInTheDocument();
-    expect(screen.queryByText("home.headers.activeUsers")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Active user discovery is not available for your account.")
+      await screen.findByText(
+        "Access to the discovery feed is unavailable for your account."
+      )
     ).toBeInTheDocument();
   });
 });

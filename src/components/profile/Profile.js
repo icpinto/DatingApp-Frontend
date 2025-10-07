@@ -29,10 +29,9 @@ import { spacing } from "../../styles";
 import ProfileSections from "./ProfileSections";
 import { useTranslation } from "../../i18n";
 import { formatProfileData } from "./profileUtils";
-import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserContext } from "./UserContext";
+import { useUserContext } from "../../context/UserContext";
 
 const calculateAge = (dateString) => {
   if (!dateString) {
@@ -528,13 +527,7 @@ function ProfileContent() {
 }
 
 function Profile() {
-  const accountLifecycle = useAccountLifecycle();
-
-  return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <ProfileContent />
-    </UserProvider>
-  );
+  return <ProfileContent />;
 }
 
 export default Profile;

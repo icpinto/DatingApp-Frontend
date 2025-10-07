@@ -22,7 +22,7 @@ import matchPreferencesService from "../../services/matchPreferences";
 import { spacing } from "../../styles";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { CAPABILITIES } from "../../utils/capabilities";
-import { useUserCapabilities, useUserContext } from "./UserContext";
+import { useUserCapabilities, useUserContext } from "../../context/UserContext";
 
 const DEFAULT_PREFERENCES = {
   minAge: 25,

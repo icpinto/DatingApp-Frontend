@@ -1,10 +1,9 @@
 import React, { useCallback } from "react";
 import { Alert, Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserContext } from "./UserContext";
+import { useUserContext } from "../../context/UserContext";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -126,13 +125,7 @@ function PaymentContent() {
 }
 
 function Payment() {
-  const accountLifecycle = useAccountLifecycle();
-
-  return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <PaymentContent />
-    </UserProvider>
-  );
+  return <PaymentContent />;
 }
 
 export default Payment;
