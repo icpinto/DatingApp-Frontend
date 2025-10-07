@@ -26,6 +26,9 @@ import MatchRecommendations from "../matches/MatchRecommendations";
 import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
+import { CAPABILITIES } from "../../utils/capabilities";
+import Guard from "./Guard";
+import { UserProvider, useUserCapabilities } from "./UserContext";
 
 const FILTER_DEFAULTS = {
   gender: "",
@@ -51,7 +54,7 @@ const FILTER_FIELDS = [
   { name: "employment_status", labelKey: "home.filters.employmentStatus" },
 ];
 
-function Home() {
+function HomeContent({ accountLifecycle }) {
   const [activeUsers, setActiveUsers] = useState([]);
   const [expandedUserId, setExpandedUserId] = useState(null); // Track expanded user ID
   const [profileData, setProfileData] = useState({}); // Store profile data
@@ -64,8 +67,29 @@ function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
-  const discoveryDisabled = !lifecycleLoading && isDeactivated;
+  const { hasCapability } = useUserCapabilities();
+  const { isDeactivated = false, loading: lifecycleLoading = false } =
+    accountLifecycle || {};
+  const discoveryBlockedByLifecycle = !lifecycleLoading && isDeactivated;
+  const canViewHome = hasCapability(CAPABILITIES.DISCOVERY_VIEW_HOME);
+  const canViewActiveUsers = hasCapability(
+    CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS
+  );
+  const canUseFilters = hasCapability(CAPABILITIES.DISCOVERY_USE_FILTERS);
+  const canToggleFilterPanel = hasCapability(
+    CAPABILITIES.DISCOVERY_TOGGLE_FILTER_PANEL
+  );
+  const canExpandUserPreview = hasCapability(
+    CAPABILITIES.DISCOVERY_EXPAND_USER_PREVIEW
+  );
+  const canNavigateToProfile = hasCapability(
+    CAPABILITIES.DISCOVERY_NAVIGATE_TO_PROFILE
+  );
+  const canComposeRequest = hasCapability(
+    CAPABILITIES.DISCOVERY_COMPOSE_REQUEST
+  );
+  const canSendRequest = hasCapability(CAPABILITIES.DISCOVERY_SEND_REQUEST);
+  const discoveryDisabled = discoveryBlockedByLifecycle || !canSendRequest;
 
   const getUserIdentifier = useCallback((user) => {
     if (!user) {
@@ -81,6 +105,17 @@ function Home() {
 
   const fetchActiveUsers = useCallback(
     async (params = {}) => {
+      if (!canViewActiveUsers) {
+        setActiveUsers([]);
+        setExpandedUserId(null);
+        setProfileData({});
+        setFeedback(null);
+        setRequestMessage("");
+        setRequestMessageError("");
+        setLoadingUsers(false);
+        return;
+      }
+
       setLoadingUsers(true);
       try {
         const token = localStorage.getItem("token");
@@ -113,7 +148,7 @@ function Home() {
         setLoadingUsers(false);
       }
     },
-    [getUserIdentifier]
+    [canViewActiveUsers, getUserIdentifier]
   );
 
   const buildFilterParams = useCallback(() => {
@@ -138,20 +173,32 @@ function Home() {
     return params;
   }, [filters]);
 
-  const handleFilterChange = useCallback((event) => {
-    const { name, value } = event.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  }, []);
+  const handleFilterChange = useCallback(
+    (event) => {
+      if (!canUseFilters) {
+        return;
+      }
+      const { name, value } = event.target;
+      setFilters((prev) => ({ ...prev, [name]: value }));
+    },
+    [canUseFilters]
+  );
 
   const handleApplyFilters = useCallback(() => {
+    if (!canUseFilters) {
+      return;
+    }
     const params = buildFilterParams();
     fetchActiveUsers(params);
-  }, [buildFilterParams, fetchActiveUsers]);
+  }, [buildFilterParams, canUseFilters, fetchActiveUsers]);
 
   const handleClearFilters = useCallback(() => {
+    if (!canUseFilters) {
+      return;
+    }
     setFilters({ ...FILTER_DEFAULTS });
     fetchActiveUsers();
-  }, [fetchActiveUsers]);
+  }, [canUseFilters, fetchActiveUsers]);
 
   useEffect(() => {
     fetchActiveUsers();
@@ -159,6 +206,9 @@ function Home() {
 
   // Toggle and fetch detailed profile data
   const handleToggleExpand = async (rawUserId) => {
+    if (!canExpandUserPreview) {
+      return;
+    }
     const userId = Number(rawUserId);
     const normalizedUserId = Number.isNaN(userId) ? rawUserId : userId;
 
@@ -201,7 +251,7 @@ function Home() {
   };
 
   const handleSendRequest = async (rawUserId) => {
-    if (discoveryDisabled) {
+    if (discoveryDisabled || !canSendRequest) {
       return;
     }
 
@@ -242,10 +292,27 @@ function Home() {
     return Array.isArray(activeUsers) ? activeUsers : [];
   }, [activeUsers]);
 
+  const filterPanelOpen = showFilters && canToggleFilterPanel && canUseFilters;
+
+  if (!canViewHome) {
+    return (
+      <Container sx={{ p: spacing.pagePadding }}>
+        <Alert severity="info">
+          {t("home.messages.homeAccessRestricted", {
+            defaultValue: "Access to the discovery feed is unavailable for your account.",
+          })}
+        </Alert>
+      </Container>
+    );
+  }
+
   const renderActiveUser = (user, index) => {
     const userId = getUserIdentifier(user);
     const isExpanded = expandedUserId === userId;
     const isTopUser = index === 0;
+    const canExpand = canExpandUserPreview;
+    const canNavigate = canNavigateToProfile;
+    const canCompose = canComposeRequest;
     const displayName =
       user?.username ||
       (userId
@@ -258,7 +325,12 @@ function Home() {
       <Box
         key={userId ?? index}
         onClick={() => {
-          if (userId === undefined || userId === null || userId === "") {
+          if (
+            !canExpand ||
+            userId === undefined ||
+            userId === null ||
+            userId === ""
+          ) {
             return;
           }
           handleToggleExpand(userId);
@@ -266,14 +338,18 @@ function Home() {
         sx={{
           p: 2,
           borderRadius: 2,
-          cursor: "pointer",
+          cursor: canExpand ? "pointer" : "default",
           border: (theme) => `1px solid ${theme.palette.divider}`,
           bgcolor: (theme) =>
             isTopUser ? theme.palette.action.hover : theme.palette.background.paper,
           transition: "background-color 0.2s ease, border-color 0.2s ease",
-          "&:hover": {
-            bgcolor: (theme) => theme.palette.action.hover,
-          },
+          ...(canExpand
+            ? {
+                "&:hover": {
+                  bgcolor: (theme) => theme.palette.action.hover,
+                },
+              }
+            : {}),
         }}
       >
         <Stack spacing={spacing.section}>
@@ -344,17 +420,28 @@ function Home() {
             size="small"
             onClick={(event) => {
               event.stopPropagation();
-              if (userId === undefined || userId === null || userId === "") {
+              if (
+                !canNavigate ||
+                userId === undefined ||
+                userId === null ||
+                userId === ""
+              ) {
                 return;
               }
               navigate(`/profile/${userId}`);
             }}
+            disabled={
+              !canNavigate ||
+              userId === undefined ||
+              userId === null ||
+              userId === ""
+            }
             sx={{ alignSelf: "flex-start" }}
           >
             {t("home.labels.viewProfile")}
           </Button>
         </Stack>
-        <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+        <Collapse in={isExpanded && canExpand} timeout="auto" unmountOnExit>
           {loadingProfile && isExpanded ? (
             <Box sx={{ mt: spacing.section }}>
               <Stack spacing={spacing.section}>
@@ -365,7 +452,7 @@ function Home() {
               </Stack>
             </Box>
           ) : (
-            profileData && isExpanded && (
+            profileData && isExpanded && canExpand && (
               <Grow in={isExpanded}>
                 <Box sx={{ mt: spacing.section }}>
                   <Stack spacing={spacing.section}>
@@ -389,6 +476,9 @@ function Home() {
                         label={t("home.labels.requestMessage")}
                         value={requestMessage}
                         onChange={(event) => {
+                          if (!canCompose) {
+                            return;
+                          }
                           setRequestMessage(event.target.value);
                           setRequestMessageError("");
                         }}
@@ -398,7 +488,7 @@ function Home() {
                             : t("home.helpers.requestMessage")
                         }
                         error={Boolean(requestMessageError)}
-                        disabled={profileData.requestStatus}
+                        disabled={profileData.requestStatus || !canCompose}
                       />
                     </Box>
                     <Button
@@ -413,6 +503,7 @@ function Home() {
                       disabled={
                         discoveryDisabled ||
                         profileData.requestStatus ||
+                        !canSendRequest ||
                         userId === undefined ||
                         userId === null ||
                         userId === ""
@@ -443,142 +534,187 @@ function Home() {
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
-        {discoveryDisabled ? (
+        {discoveryBlockedByLifecycle ? (
           <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
         ) : null}
-        <MatchRecommendations limit={12} />
-        <Card elevation={3} sx={{ borderRadius: 3 }}>
-          <CardHeader
-            title={t("home.headers.activeUsers")}
-            subheader={t("home.headers.activeUsersSub")}
-            avatar={
-              <Avatar sx={{ bgcolor: "primary.main" }}>
-                <Group />
-              </Avatar>
-            }
-          />
-          <Divider />
-          <CardContent>
-            <Box sx={{ mb: spacing.section }}>
-              <Stack spacing={spacing.section}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {t("home.headers.filterTitle")}
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => setShowFilters((prev) => !prev)}
-                  >
-                    {showFilters ? t("home.filters.hide") : t("home.filters.show")}
-                  </Button>
-                </Stack>
-                <Collapse in={showFilters} timeout="auto" unmountOnExit>
-                  <Stack spacing={spacing.section}>
-                    <Grid container spacing={2}>
-                      {FILTER_FIELDS.map((field) => (
-                        <Grid item xs={12} sm={6} md={4} key={field.name}>
-                          <TextField
-                            fullWidth
-                            size="small"
-                            label={t(field.labelKey)}
-                            name={field.name}
-                            value={filters[field.name]}
-                            onChange={handleFilterChange}
-                          />
-                        </Grid>
-                      ))}
-                      <Grid item xs={12} sm={6} md={4}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label={t("home.filters.age")}
-                          name="age"
-                          type="number"
-                          value={filters.age}
-                          onChange={handleFilterChange}
-                          inputProps={{ min: 0 }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={4}>
-                        <TextField
-                          select
-                          fullWidth
-                          size="small"
-                          label={t("home.filters.horoscope")}
-                          name="horoscope_available"
-                          value={filters.horoscope_available}
-                          onChange={handleFilterChange}
+        <Guard can={CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS}>
+          <MatchRecommendations limit={12} />
+        </Guard>
+        <Guard
+          can={CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS}
+          fallback={
+            <Alert severity="info">
+              {t("home.messages.activeUsersUnavailable", {
+                defaultValue: "Active user discovery is not available for your account.",
+              })}
+            </Alert>
+          }
+        >
+          <Card elevation={3} sx={{ borderRadius: 3 }}>
+            <CardHeader
+              title={t("home.headers.activeUsers")}
+              subheader={t("home.headers.activeUsersSub")}
+              avatar={
+                <Avatar sx={{ bgcolor: "primary.main" }}>
+                  <Group />
+                </Avatar>
+              }
+            />
+            <Divider />
+            <CardContent>
+              <Guard can={CAPABILITIES.DISCOVERY_USE_FILTERS}>
+                {({ isAllowed }) =>
+                  !isAllowed ? null : (
+                    <Box sx={{ mb: spacing.section }}>
+                      <Stack spacing={spacing.section}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
                         >
-                          <MenuItem value="">{t("home.filters.any")}</MenuItem>
-                          <MenuItem value="true">{t("home.filters.yes")}</MenuItem>
-                          <MenuItem value="false">{t("home.filters.no")}</MenuItem>
-                        </TextField>
-                      </Grid>
-                    </Grid>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      justifyContent="flex-end"
-                      spacing={2}
-                    >
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={handleClearFilters}
-                        disabled={loadingUsers}
-                      >
-                        {t("common.actions.clearFilters")}
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={handleApplyFilters}
-                        disabled={loadingUsers}
-                      >
-                        {t("common.actions.applyFilters")}
-                      </Button>
-                    </Stack>
-                  </Stack>
-                </Collapse>
-              </Stack>
-            </Box>
-            {feedback?.key && !loadingUsers && (
-              <Typography
-                variant="body2"
-                color={feedback.type === "error" ? "error.main" : "success.main"}
-                sx={{ mb: spacing.section }}
-              >
-                {t(feedback.key)}
-              </Typography>
-            )}
-            {loadingUsers ? (
-              <Stack spacing={spacing.section}>
-                <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
-              </Stack>
-            ) : orderedUsers.length > 0 ? (
-              <Stack
-                spacing={spacing.section}
-                divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
-              >
-                {orderedUsers.map((user, index) => renderActiveUser(user, index))}
-              </Stack>
-            ) : (
-              <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
-                <Group fontSize="large" color="disabled" />
-                <Typography color="text.secondary">
-                  {t("home.labels.noActiveUsers")}
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {t("home.headers.filterTitle")}
+                          </Typography>
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() => {
+                              if (!canToggleFilterPanel) {
+                                return;
+                              }
+                              setShowFilters((prev) => !prev);
+                            }}
+                            disabled={!canToggleFilterPanel}
+                          >
+                            {showFilters
+                              ? t("home.filters.hide")
+                              : t("home.filters.show")}
+                          </Button>
+                        </Stack>
+                        <Collapse in={filterPanelOpen} timeout="auto" unmountOnExit>
+                          <Stack spacing={spacing.section}>
+                            <Grid container spacing={2}>
+                              {FILTER_FIELDS.map((field) => (
+                                <Grid item xs={12} sm={6} md={4} key={field.name}>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    label={t(field.labelKey)}
+                                    name={field.name}
+                                    value={filters[field.name]}
+                                    onChange={handleFilterChange}
+                                    disabled={!canUseFilters}
+                                  />
+                                </Grid>
+                              ))}
+                              <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                  fullWidth
+                                  size="small"
+                                  label={t("home.filters.age")}
+                                  name="age"
+                                  type="number"
+                                  value={filters.age}
+                                  onChange={handleFilterChange}
+                                  inputProps={{ min: 0 }}
+                                  disabled={!canUseFilters}
+                                />
+                              </Grid>
+                              <Grid item xs={12} sm={6} md={4}>
+                                <TextField
+                                  select
+                                  fullWidth
+                                  size="small"
+                                  label={t("home.filters.horoscope")}
+                                  name="horoscope_available"
+                                  value={filters.horoscope_available}
+                                  onChange={handleFilterChange}
+                                  disabled={!canUseFilters}
+                                >
+                                  <MenuItem value="">
+                                    {t("home.filters.any")}
+                                  </MenuItem>
+                                  <MenuItem value="true">
+                                    {t("home.filters.yes")}
+                                  </MenuItem>
+                                  <MenuItem value="false">
+                                    {t("home.filters.no")}
+                                  </MenuItem>
+                                </TextField>
+                              </Grid>
+                            </Grid>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              justifyContent="flex-end"
+                              spacing={2}
+                            >
+                              <Button
+                                variant="outlined"
+                                color="secondary"
+                                onClick={handleClearFilters}
+                                disabled={loadingUsers || !canUseFilters}
+                              >
+                                {t("common.actions.clearFilters")}
+                              </Button>
+                              <Button
+                                variant="contained"
+                                onClick={handleApplyFilters}
+                                disabled={loadingUsers || !canUseFilters}
+                              >
+                                {t("common.actions.applyFilters")}
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        </Collapse>
+                      </Stack>
+                    </Box>
+                  )
+                }
+              </Guard>
+              {feedback?.key && !loadingUsers && (
+                <Typography
+                  variant="body2"
+                  color={feedback.type === "error" ? "error.main" : "success.main"}
+                  sx={{ mb: spacing.section }}
+                >
+                  {t(feedback.key)}
                 </Typography>
-              </Stack>
-            )}
-          </CardContent>
+              )}
+              {loadingUsers ? (
+                <Stack spacing={spacing.section}>
+                  <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+                  <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+                  <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
+                </Stack>
+              ) : orderedUsers.length > 0 ? (
+                <Stack
+                  spacing={spacing.section}
+                  divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
+                >
+                  {orderedUsers.map((user, index) => renderActiveUser(user, index))}
+                </Stack>
+              ) : (
+                <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
+                  <Group fontSize="large" color="disabled" />
+                  <Typography color="text.secondary">
+                    {t("home.labels.noActiveUsers")}
+                  </Typography>
+                </Stack>
+              )}
+            </CardContent>
           </Card>
+        </Guard>
       </Stack>
     </Container>
+  );
+}
+
+function Home() {
+  const accountLifecycle = useAccountLifecycle();
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <HomeContent accountLifecycle={accountLifecycle} />
+    </UserProvider>
   );
 }
 
