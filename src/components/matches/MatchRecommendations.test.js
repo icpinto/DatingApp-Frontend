@@ -3,8 +3,10 @@ import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import MatchRecommendations from "./MatchRecommendations";
 import { AccountLifecycleContext } from "../../context/AccountLifecycleContext";
+import { UserProvider } from "../../context/UserContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { fetchMatches } from "../../services/matchmaking";
+import api from "../../services/api";
 
 jest.mock("../../i18n", () => ({
   useTranslation: () => ({
@@ -26,7 +28,7 @@ describe("MatchRecommendations discovery gating", () => {
     jest.clearAllMocks();
   });
 
-  it("shows the deactivation banner and skips loading matches when discovery is disabled", () => {
+  it("shows the deactivation banner and skips loading matches when discovery is disabled", async () => {
     const contextValue = {
       status: "deactivated",
       loading: false,
@@ -36,15 +38,25 @@ describe("MatchRecommendations discovery gating", () => {
       isDeactivated: true,
     };
 
+    fetchMatches.mockResolvedValue([]);
+    api.get.mockResolvedValue({ data: { requests: [] } });
+
     render(
       <AccountLifecycleContext.Provider value={contextValue}>
-        <MemoryRouter>
-          <MatchRecommendations />
-        </MemoryRouter>
+        <UserProvider
+          accountStatus={contextValue.status}
+          initialSnapshot={{ account: contextValue.status }}
+        >
+          <MemoryRouter>
+            <MatchRecommendations />
+          </MemoryRouter>
+        </UserProvider>
       </AccountLifecycleContext.Provider>
     );
 
-    expect(screen.getByText(ACCOUNT_DEACTIVATED_MESSAGE)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ACCOUNT_DEACTIVATED_MESSAGE)
+    ).toBeInTheDocument();
     expect(fetchMatches).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import { spacing } from "../../styles";
 import { CAPABILITIES } from "../../utils/capabilities";
-import { useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 function MessageComposer({
   value,

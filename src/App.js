@@ -26,8 +26,9 @@ import Requests from "./components/requests/Requests";
 import Messages from "./components/chat/Messages";
 import Payment from "./components/payment/Payment";
 import { WebSocketProvider } from "./context/WebSocketProvider";
-import { AccountLifecycleProvider } from "./context/AccountLifecycleContext";
+import { AccountLifecycleProvider, useAccountLifecycle } from "./context/AccountLifecycleContext";
 import { ColorModeContext } from "./context/ThemeContext";
+import { UserProvider } from "./context/UserContext";
 import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
 import api from "./services/api";
@@ -181,25 +182,43 @@ function TopBar() {
   );
 }
 
+function AppShell() {
+  return (
+    <WebSocketProvider>
+      <Router>
+        <div className="App">
+          <TopBar />
+          <Routes>
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/" element={<Login />} />
+            <Route path="/home" element={<MainTabs />} />
+            <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/requests" element={<Requests />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/payment" element={<Payment />} />
+          </Routes>
+        </div>
+      </Router>
+    </WebSocketProvider>
+  );
+}
+
+function AccountAwareUserProvider({ children }) {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      {children}
+    </UserProvider>
+  );
+}
+
 function App() {
   return (
     <AccountLifecycleProvider>
-      <WebSocketProvider>
-        <Router>
-          <div className="App">
-            <TopBar />
-            <Routes>
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/" element={<Login />} />
-              <Route path="/home" element={<MainTabs />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/requests" element={<Requests />} />
-              <Route path="/messages" element={<Messages />} />
-              <Route path="/payment" element={<Payment />} />
-            </Routes>
-          </div>
-        </Router>
-      </WebSocketProvider>
+      <AccountAwareUserProvider>
+        <AppShell />
+      </AccountAwareUserProvider>
     </AccountLifecycleProvider>
   );
 }

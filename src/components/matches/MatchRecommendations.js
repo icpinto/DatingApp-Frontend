@@ -28,7 +28,7 @@ import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 const MAX_SCORE = 100;
 
@@ -840,12 +840,10 @@ const MatchRecommendations = (props) => {
   const accountLifecycle = useAccountLifecycle();
 
   return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <MatchRecommendationsContent
-        {...props}
-        accountLifecycle={accountLifecycle}
-      />
-    </UserProvider>
+    <MatchRecommendationsContent
+      {...props}
+      accountLifecycle={accountLifecycle}
+    />
   );
 };
 

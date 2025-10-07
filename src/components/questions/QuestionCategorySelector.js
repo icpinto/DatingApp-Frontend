@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
 import questionnaireService from "../../services/questionnaireService";
 import Guard from "./Guard";
-import { useUserContext } from "./UserContext";
+import { useUserContext } from "../../context/UserContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 
 function QuestionCategorySelector({ value, onChange, disabled = false }) {

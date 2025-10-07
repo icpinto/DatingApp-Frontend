@@ -24,7 +24,7 @@ import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserCapabilities } from "./UserContext";
+import { useUserCapabilities, useUserContext } from "../../context/UserContext";
 import {
   pickFirst,
   toNumberOrUndefined,
@@ -155,6 +155,7 @@ function MessagesContent({
   const { conversations: wsConversations, markRead, hydrateConversations } =
     useWebSocket();
   const { hasCapability } = useUserCapabilities();
+  const { setConversationFacts, clearConversationFacts } = useUserContext();
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
   const chatDisabled = !lifecycleLoading && isDeactivated;
@@ -728,6 +729,36 @@ function MessagesContent({
     return getConversationUsers(selectedConversation);
   }, [selectedConversation]);
 
+  useEffect(() => {
+    if (!selectedConversation) {
+      clearConversationFacts();
+      return;
+    }
+
+    const lifecycleStatus = pickFirst(
+      selectedConversationDetails?.lifecycleStatus,
+      selectedConversation?.other_lifecycle_status,
+      selectedConversation?.otherLifecycleStatus,
+      selectedConversation?.partner_lifecycle_status,
+      selectedConversation?.partnerLifecycleStatus
+    );
+
+    setConversationFacts({
+      isBlocked: selectedConversationBlocked,
+      partnerLifecycle: lifecycleStatus,
+    });
+
+    return () => {
+      clearConversationFacts();
+    };
+  }, [
+    selectedConversation,
+    selectedConversationBlocked,
+    selectedConversationDetails,
+    setConversationFacts,
+    clearConversationFacts,
+  ]);
+
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section} sx={{ height: "100%" }}>
@@ -880,11 +911,7 @@ function MessagesContent({
 function Messages(props) {
   const accountLifecycle = useAccountLifecycle();
 
-  return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <MessagesContent {...props} accountLifecycle={accountLifecycle} />
-    </UserProvider>
-  );
+  return <MessagesContent {...props} accountLifecycle={accountLifecycle} />;
 }
 
 export default Messages;

@@ -11,7 +11,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { spacing } from "../../styles";
 import { CAPABILITIES } from "../../utils/capabilities";
-import { useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 function ChatHeaderSection({
   title,

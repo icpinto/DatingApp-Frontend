@@ -42,7 +42,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useNavigate } from "react-router-dom";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import Guard from "./Guard";
-import { UserProvider, useUserContext } from "./UserContext";
+import { useUserContext } from "../../context/UserContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
@@ -2073,11 +2073,7 @@ function OwnerProfileAccess({ accountLifecycle }) {
 function OwnerProfile() {
   const accountLifecycle = useAccountLifecycle();
 
-  return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <OwnerProfileAccess accountLifecycle={accountLifecycle} />
-    </UserProvider>
-  );
+  return <OwnerProfileAccess accountLifecycle={accountLifecycle} />;
 }
 
 export default OwnerProfile;

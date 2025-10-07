@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
+  Alert,
   Box,
   BottomNavigation,
   BottomNavigationAction,
@@ -23,17 +24,95 @@ import {
   flattenConversationEntry,
 } from "../../utils/conversationUtils";
 import { useWebSocket } from "../../context/WebSocketProvider";
+import { useUserCapabilities } from "../../context/UserContext";
+import { CAPABILITIES } from "../../utils/capabilities";
+
+const TAB_CONFIG = [
+  {
+    key: "home",
+    label: "Home",
+    capability: CAPABILITIES.NAV_ACCESS_HOME,
+    icon: () => <HomeIcon />,
+    render: () => <Home />,
+  },
+  {
+    key: "matches",
+    label: "Matches",
+    capability: CAPABILITIES.NAV_ACCESS_MATCHES,
+    icon: ({ requestCount }) => (
+      <Badge color="error" badgeContent={requestCount}>
+        <FavoriteIcon />
+      </Badge>
+    ),
+    render: ({ setRequestCount }) => (
+      <Requests onRequestCountChange={setRequestCount} />
+    ),
+  },
+  {
+    key: "insights",
+    label: "Match Insights",
+    capability: CAPABILITIES.NAV_ACCESS_INSIGHTS,
+    icon: () => <QuizIcon />,
+    render: () => <MatchInsights />,
+  },
+  {
+    key: "messages",
+    label: "Messages",
+    capability: CAPABILITIES.NAV_ACCESS_MESSAGES,
+    icon: ({ unreadMessages }) => (
+      <Badge color="error" badgeContent={unreadMessages}>
+        <ChatIcon />
+      </Badge>
+    ),
+    render: () => <Messages />,
+  },
+  {
+    key: "profile",
+    label: "Profile",
+    capability: CAPABILITIES.NAV_ACCESS_PROFILE,
+    icon: () => <PersonIcon />,
+    render: () => <OwnerProfile />,
+  },
+];
 
 function MainTabs() {
-  const [activeTab, setActiveTab] = useState(0);
+  const { hasCapability } = useUserCapabilities();
+  const visibleTabs = useMemo(
+    () => TAB_CONFIG.filter((tab) => hasCapability(tab.capability)),
+    [hasCapability]
+  );
+  const [activeTab, setActiveTab] = useState(() => visibleTabs[0]?.key ?? null);
   const [requestCount, setRequestCount] = useState(0);
   const { hydrateConversations, totalUnreadCount } = useWebSocket();
   const unreadMessages = useMemo(
     () => (typeof totalUnreadCount === "number" ? totalUnreadCount : 0),
     [totalUnreadCount]
   );
+  const canViewMatchesTab = useMemo(
+    () => visibleTabs.some((tab) => tab.key === "matches"),
+    [visibleTabs]
+  );
+  const canViewMessagesTab = useMemo(
+    () => visibleTabs.some((tab) => tab.key === "messages"),
+    [visibleTabs]
+  );
 
   useEffect(() => {
+    if (!visibleTabs.length) {
+      setActiveTab(null);
+      return;
+    }
+    if (!visibleTabs.some((tab) => tab.key === activeTab)) {
+      setActiveTab(visibleTabs[0].key);
+    }
+  }, [visibleTabs, activeTab]);
+
+  useEffect(() => {
+    if (!canViewMatchesTab) {
+      setRequestCount(0);
+      return;
+    }
+
     const fetchRequestCount = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -50,9 +129,13 @@ function MainTabs() {
     };
 
     fetchRequestCount();
-  }, []);
+  }, [canViewMatchesTab]);
 
   useEffect(() => {
+    if (!canViewMessagesTab) {
+      return;
+    }
+
     const fetchConversations = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -75,44 +158,51 @@ function MainTabs() {
     };
 
     fetchConversations();
-  }, [hydrateConversations]);
+  }, [canViewMessagesTab, hydrateConversations]);
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
+  const activeTabConfig = visibleTabs.find((tab) => tab.key === activeTab);
+  const renderActiveTab = () => {
+    if (!activeTabConfig) {
+      return (
+        <Box sx={{ px: 2, pt: 4 }}>
+          <Alert severity="info">
+            Navigation is currently unavailable for your account.
+          </Alert>
+        </Box>
+      );
+    }
+    return activeTabConfig.render({
+      setRequestCount,
+      requestCount,
+      unreadMessages,
+    });
+  };
+
   return (
     <Box sx={{ pb: 7 }}>
-      {activeTab === 0 && <Home />}
-      {activeTab === 1 && <Requests onRequestCountChange={setRequestCount} />}
-      {activeTab === 2 && <MatchInsights />}
-      {activeTab === 3 && <Messages />}
-      {activeTab === 4 && <OwnerProfile />}
+      {renderActiveTab()}
 
       <Paper
         sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
         elevation={3}
       >
         <BottomNavigation value={activeTab} onChange={handleChange} showLabels>
-          <BottomNavigationAction label="Home" icon={<HomeIcon />} />
-          <BottomNavigationAction
-            label="Matches"
-            icon={
-              <Badge color="error" badgeContent={requestCount}>
-                <FavoriteIcon />
-              </Badge>
-            }
-          />
-          <BottomNavigationAction label="Match Insights" icon={<QuizIcon />} />
-          <BottomNavigationAction
-            label="Messages"
-            icon={
-              <Badge color="error" badgeContent={unreadMessages}>
-                <ChatIcon />
-              </Badge>
-            }
-          />
-          <BottomNavigationAction label="Profile" icon={<PersonIcon />} />
+          {visibleTabs.map((tab) => (
+            <BottomNavigationAction
+              key={tab.key}
+              label={tab.label}
+              value={tab.key}
+              icon={
+                typeof tab.icon === "function"
+                  ? tab.icon({ requestCount, unreadMessages })
+                  : tab.icon
+              }
+            />
+          ))}
         </BottomNavigation>
       </Paper>
     </Box>

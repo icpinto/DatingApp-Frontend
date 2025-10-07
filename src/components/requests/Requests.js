@@ -21,7 +21,7 @@ import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserCapabilities } from "./UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 const normalizeRequests = (payload) => {
   if (!payload) return [];
@@ -536,9 +536,7 @@ function Requests(props) {
   const accountLifecycle = useAccountLifecycle();
 
   return (
-    <UserProvider accountStatus={accountLifecycle?.status}>
-      <RequestsContent {...props} accountLifecycle={accountLifecycle} />
-    </UserProvider>
+    <RequestsContent {...props} accountLifecycle={accountLifecycle} />
   );
 }
 

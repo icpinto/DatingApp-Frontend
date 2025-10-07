@@ -1,5 +1,5 @@
 import React from "react";
-import { useUserContext } from "./UserContext";
+import { useUserContext } from "../../context/UserContext";
 
 const Guard = ({ can, fallback = null, children }) => {
   const { hasCapability } = useUserContext();

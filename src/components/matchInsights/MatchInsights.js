@@ -6,7 +6,7 @@ import { spacing } from "../../styles";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { UserProvider, useUserCapabilities } from "./UserContext";
+import { useUserCapabilities, useUserContext } from "../../context/UserContext";
 
 const QuestionnaireSection = ({ lifecycleLoading }) => {
   const { hasCapability, getReason } = useUserCapabilities();
@@ -53,14 +53,17 @@ const QuestionnaireSection = ({ lifecycleLoading }) => {
 
 function MatchInsights() {
   const accountLifecycle = useAccountLifecycle();
+  const { updateCorePreferencesStatus } = useUserContext();
+
+  React.useEffect(() => {
+    updateCorePreferencesStatus({ loading: accountLifecycle?.loading });
+    return () => {
+      updateCorePreferencesStatus({ loading: false });
+    };
+  }, [accountLifecycle?.loading, updateCorePreferencesStatus]);
 
   return (
-    <UserProvider
-      accountStatus={accountLifecycle?.status}
-      lifecycleLoading={accountLifecycle?.loading}
-    >
-      <QuestionnaireSection lifecycleLoading={accountLifecycle?.loading} />
-    </UserProvider>
+    <QuestionnaireSection lifecycleLoading={accountLifecycle?.loading} />
   );
 }
 
