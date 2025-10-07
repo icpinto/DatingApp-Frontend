@@ -19,8 +19,19 @@ import api from "../../services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { CAPABILITIES } from "../../utils/capabilities";
+import Guard from "./Guard";
+import { UserProvider, useUserCapabilities } from "./UserContext";
 
-function Requests({ onRequestCountChange = () => {} }) {
+const normalizeRequests = (payload) => {
+  if (!payload) return [];
+  if (Array.isArray(payload.requests)) return payload.requests;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload)) return payload;
+  return [];
+};
+
+function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) {
   const [requests, setRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,54 +40,104 @@ function Requests({ onRequestCountChange = () => {} }) {
   const [profiles, setProfiles] = useState({});
   const [sentProfiles, setSentProfiles] = useState({});
   const { t } = useTranslation();
-  const { isDeactivated } = useAccountLifecycle();
+  const { hasCapability } = useUserCapabilities();
 
-  const normalizeRequests = (payload) => {
-    if (!payload) return [];
-    if (Array.isArray(payload.requests)) return payload.requests;
-    if (Array.isArray(payload.data)) return payload.data;
-    if (Array.isArray(payload)) return payload;
-    return [];
-  };
+  const canViewReceived = hasCapability(CAPABILITIES.REQUESTS_VIEW_RECEIVED);
+  const canViewSent = hasCapability(CAPABILITIES.REQUESTS_VIEW_SENT);
+  const canRespond = hasCapability(CAPABILITIES.REQUESTS_RESPOND);
+  const isDeactivated = accountLifecycle?.isDeactivated;
 
   useEffect(() => {
+    let isMounted = true;
+    const shouldFetchReceived = canViewReceived;
+    const shouldFetchSent = canViewSent;
+
     const fetchRequests = async () => {
+      if (!shouldFetchReceived && !shouldFetchSent) {
+        if (!isMounted) {
+          return;
+        }
+        setLoading(false);
+        setRequests([]);
+        setSentRequests([]);
+        setReceivedError(null);
+        setSentError(null);
+        return;
+      }
+
       setLoading(true);
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `${token}` } : {};
+      const operations = [];
 
-      const [receivedRes, sentRes] = await Promise.allSettled([
-        api.get("/user/requests", { headers }),
-        api.get("user/sentRequests", { headers }),
-      ]);
+      if (shouldFetchReceived) {
+        operations.push(api.get("/user/requests", { headers }));
+      }
+      if (shouldFetchSent) {
+        operations.push(api.get("user/sentRequests", { headers }));
+      }
 
-      if (receivedRes.status === "fulfilled") {
-        setRequests(normalizeRequests(receivedRes.value.data));
-        setReceivedError(null);
-      } else {
+      const results = await Promise.allSettled(operations);
+      let index = 0;
+
+      if (shouldFetchReceived) {
+        const result = results[index++];
+        if (isMounted) {
+          if (result.status === "fulfilled") {
+            setRequests(normalizeRequests(result.value.data));
+            setReceivedError(null);
+          } else {
+            setRequests([]);
+            setReceivedError("requests.messages.receivedError");
+          }
+        }
+      } else if (isMounted) {
         setRequests([]);
-        setReceivedError("requests.messages.receivedError");
+        setReceivedError(null);
       }
 
-      if (sentRes.status === "fulfilled") {
-        setSentRequests(normalizeRequests(sentRes.value.data));
-        setSentError(null);
-      } else {
+      if (shouldFetchSent) {
+        const result = results[index++];
+        if (isMounted) {
+          if (result.status === "fulfilled") {
+            setSentRequests(normalizeRequests(result.value.data));
+            setSentError(null);
+          } else {
+            setSentRequests([]);
+            setSentError("requests.messages.sentError");
+          }
+        }
+      } else if (isMounted) {
         setSentRequests([]);
-        setSentError("requests.messages.sentError");
+        setSentError(null);
       }
 
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     };
 
     fetchRequests();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [canViewReceived, canViewSent]);
 
   useEffect(() => {
+    if (!canViewReceived) {
+      onRequestCountChange(0);
+      return;
+    }
     onRequestCountChange(requests.length);
-  }, [requests, onRequestCountChange]);
+  }, [requests, onRequestCountChange, canViewReceived]);
 
   useEffect(() => {
+    if (!canViewReceived || requests.length === 0) {
+      setProfiles({});
+      return;
+    }
+
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
       const profilesData = {};
@@ -94,14 +155,16 @@ function Requests({ onRequestCountChange = () => {} }) {
       );
       setProfiles(profilesData);
     };
-    if (requests.length > 0) {
-      fetchProfiles();
-    } else {
-      setProfiles({});
-    }
-  }, [requests]);
+
+    fetchProfiles();
+  }, [requests, canViewReceived]);
 
   useEffect(() => {
+    if (!canViewSent || sentRequests.length === 0) {
+      setSentProfiles({});
+      return;
+    }
+
     const fetchSentProfiles = async () => {
       const token = localStorage.getItem("token");
       const profilesData = {};
@@ -120,14 +183,15 @@ function Requests({ onRequestCountChange = () => {} }) {
       );
       setSentProfiles(profilesData);
     };
-    if (sentRequests.length > 0) {
-      fetchSentProfiles();
-    } else {
-      setSentProfiles({});
-    }
-  }, [sentRequests]);
+
+    fetchSentProfiles();
+  }, [sentRequests, canViewSent]);
 
   const handleAccept = async (id) => {
+    if (!canRespond) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       await api.post(
@@ -146,6 +210,10 @@ function Requests({ onRequestCountChange = () => {} }) {
   };
 
   const handleReject = async (id) => {
+    if (!canRespond) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       await api.post(
@@ -242,7 +310,7 @@ function Requests({ onRequestCountChange = () => {} }) {
           >
             {description}
           </Typography>
-          {!isDeactivated && (
+          <Guard can={CAPABILITIES.REQUESTS_RESPOND}>
             <Stack direction="row" spacing={1}>
               <Button
                 variant="contained"
@@ -259,7 +327,7 @@ function Requests({ onRequestCountChange = () => {} }) {
                 {t("common.actions.reject")}
               </Button>
             </Stack>
-          )}
+          </Guard>
         </Stack>
       </Box>
     );
@@ -301,14 +369,14 @@ function Requests({ onRequestCountChange = () => {} }) {
               {avatarFallback}
             </Avatar>
             <Stack spacing={0.5} flexGrow={1} minWidth={0}>
-                {highlight && (
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {t("requests.labels.mostRecent")}
-                  </Typography>
-                )}
-                <Typography
-                  variant={highlight ? "h6" : "subtitle1"}
-                  sx={{ fontWeight: 600 }}
+              {highlight && (
+                <Typography variant="subtitle2" color="text.secondary">
+                  {t("requests.labels.mostRecent")}
+                </Typography>
+              )}
+              <Typography
+                variant={highlight ? "h6" : "subtitle1"}
+                sx={{ fontWeight: 600 }}
                 noWrap
               >
                 {username}
@@ -319,14 +387,16 @@ function Requests({ onRequestCountChange = () => {} }) {
                 </Typography>
               )}
             </Stack>
-            {statusLabel && (
-              <Chip
-                label={statusLabel}
-                color={getStatusColor(request.status)}
-                size="small"
-                sx={{ textTransform: "capitalize", fontWeight: 600 }}
-              />
-            )}
+            <Guard can={CAPABILITIES.REQUESTS_VIEW_STATUS}>
+              {statusLabel && (
+                <Chip
+                  label={statusLabel}
+                  color={getStatusColor(request.status)}
+                  size="small"
+                  sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                />
+              )}
+            </Guard>
           </Stack>
           <Typography
             variant="body2"
@@ -378,12 +448,10 @@ function Requests({ onRequestCountChange = () => {} }) {
       </Stack>
     );
 
-    if (isDeactivated) {
+    if (!canRespond && isDeactivated) {
       return (
         <Stack spacing={spacing.section}>
-          <Alert severity="warning">
-            {t("requests.messages.deactivatedReadOnly")}
-          </Alert>
+          <Alert severity="warning">{t("requests.messages.deactivatedReadOnly")}</Alert>
           {requestList}
         </Stack>
       );
@@ -429,34 +497,48 @@ function Requests({ onRequestCountChange = () => {} }) {
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
-        <Card elevation={3} sx={{ borderRadius: 3 }}>
-          <CardHeader
-            title={t("requests.headers.incoming")}
-            subheader={t("requests.headers.incomingSub")}
-            avatar={
-              <Avatar sx={{ bgcolor: "primary.main" }}>
-                <PersonAddAlt1 />
-              </Avatar>
-            }
-          />
-          <Divider />
-          <CardContent>{renderReceivedRequests()}</CardContent>
-        </Card>
-        <Card elevation={3} sx={{ borderRadius: 3 }}>
-          <CardHeader
-            title={t("requests.headers.sent")}
-            subheader={t("requests.headers.sentSub")}
-            avatar={
-              <Avatar sx={{ bgcolor: "secondary.main" }}>
-                <Send />
-              </Avatar>
-            }
-          />
-          <Divider />
-          <CardContent>{renderSentRequests()}</CardContent>
-        </Card>
+        <Guard can={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
+          <Card elevation={3} sx={{ borderRadius: 3 }}>
+            <CardHeader
+              title={t("requests.headers.incoming")}
+              subheader={t("requests.headers.incomingSub")}
+              avatar={
+                <Avatar sx={{ bgcolor: "primary.main" }}>
+                  <PersonAddAlt1 />
+                </Avatar>
+              }
+            />
+            <Divider />
+            <CardContent>{renderReceivedRequests()}</CardContent>
+          </Card>
+        </Guard>
+        <Guard can={CAPABILITIES.REQUESTS_VIEW_SENT}>
+          <Card elevation={3} sx={{ borderRadius: 3 }}>
+            <CardHeader
+              title={t("requests.headers.sent")}
+              subheader={t("requests.headers.sentSub")}
+              avatar={
+                <Avatar sx={{ bgcolor: "secondary.main" }}>
+                  <Send />
+                </Avatar>
+              }
+            />
+            <Divider />
+            <CardContent>{renderSentRequests()}</CardContent>
+          </Card>
+        </Guard>
       </Stack>
     </Container>
+  );
+}
+
+function Requests(props) {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <RequestsContent {...props} accountLifecycle={accountLifecycle} />
+    </UserProvider>
   );
 }
 
