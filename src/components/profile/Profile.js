@@ -132,7 +132,7 @@ function ProfileContent() {
       setFeedback(null);
       try {
         const token = localStorage.getItem("token");
-        const [profileResponse, requestResponse] = await Promise.all([
+        const [profileResult, requestResult] = await Promise.allSettled([
           api.get(`/user/profile/${userId}`, {
             headers: { Authorization: `${token}` },
           }),
@@ -145,9 +145,17 @@ function ProfileContent() {
           return;
         }
 
-        const formatted = formatProfileData(profileResponse.data);
+        if (profileResult.status !== "fulfilled") {
+          throw profileResult.reason;
+        }
+
+        const formatted = formatProfileData(profileResult.value.data);
         setProfile(formatted);
-        setRequestStatus(Boolean(requestResponse.data.requestStatus));
+        if (requestResult.status === "fulfilled") {
+          setRequestStatus(Boolean(requestResult.value.data.requestStatus));
+        } else {
+          setRequestStatus(false);
+        }
       } catch (error) {
         if (!active) {
           return;
