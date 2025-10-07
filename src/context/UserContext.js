@@ -43,6 +43,21 @@ const shallowEqual = (a = {}, b = {}) => {
   return true;
 };
 
+const areSnapshotsEqual = (a, b) =>
+  shallowEqual((a?.raw || a) ?? {}, (b?.raw || b) ?? {});
+
+const withoutConversation = (facts = {}) => {
+  const { conversation, ...rest } = facts;
+  return rest;
+};
+
+const areCapabilityFactsEqual = (a, b) => {
+  if (!shallowEqual(withoutConversation(a), withoutConversation(b))) {
+    return false;
+  }
+  return shallowEqual(a?.conversation || {}, b?.conversation || {});
+};
+
 const mergeFacts = (previous, next = {}) => {
   if (!next || typeof next !== "object") {
     return previous;
@@ -114,7 +129,29 @@ export const UserProvider = ({
     defaultCorePreferencesStatus
   );
 
-  const latestAccountStatusRef = useRef(snapshot.account);
+  const previousInitialSnapshotRef = useRef();
+
+  useEffect(() => {
+    const hasChanged = previousInitialSnapshotRef.current !== initialSnapshot;
+    previousInitialSnapshotRef.current = initialSnapshot;
+    if (!hasChanged) {
+      return;
+    }
+
+    setSnapshot((previous) => {
+      const base = normalize(defaultSnapshot, initialSnapshot);
+      const nextSnapshot =
+        accountStatus && (base.raw || base).account !== accountStatus
+          ? normalize(base, { account: accountStatus })
+          : base;
+
+      if (areSnapshotsEqual(previous, nextSnapshot)) {
+        return previous;
+      }
+
+      return nextSnapshot;
+    });
+  }, [initialSnapshot, accountStatus]);
 
   useEffect(() => {
     if (!accountStatus) {
@@ -125,11 +162,26 @@ export const UserProvider = ({
       if (previousAccount === accountStatus) {
         return previous;
       }
-      const nextSnapshot = normalize(previous, { account: accountStatus });
-      latestAccountStatusRef.current = nextSnapshot.account;
-      return nextSnapshot;
+      return normalize(previous, { account: accountStatus });
     });
   }, [accountStatus]);
+
+  useEffect(() => {
+    const nextFacts = {
+      ...defaultFacts,
+      ...(initialFacts || {}),
+      conversation: {
+        ...(initialFacts?.conversation || {}),
+      },
+    };
+
+    setCapabilityFacts((previous) => {
+      if (areCapabilityFactsEqual(previous, nextFacts)) {
+        return previous;
+      }
+      return nextFacts;
+    });
+  }, [initialFacts]);
 
   const setUser = useCallback((nextUser = {}) => {
     setSnapshot((previous) => normalize(previous, nextUser));
@@ -147,11 +199,16 @@ export const UserProvider = ({
   }, []);
 
   const setAccountStatus = useCallback((nextStatus) => {
-    if (!nextStatus || latestAccountStatusRef.current === nextStatus) {
+    if (!nextStatus) {
       return;
     }
-    latestAccountStatusRef.current = nextStatus;
-    setSnapshot((previous) => normalize(previous, { account: nextStatus }));
+    setSnapshot((previous) => {
+      const previousAccount = (previous.raw || previous).account;
+      if (previousAccount === nextStatus) {
+        return previous;
+      }
+      return normalize(previous, { account: nextStatus });
+    });
   }, []);
 
   const updateBillingStatus = useCallback((billingStatus) => {
