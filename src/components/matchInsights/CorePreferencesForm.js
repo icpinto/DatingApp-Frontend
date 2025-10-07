@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Avatar,
@@ -20,8 +20,9 @@ import {
 import SettingsIcon from "@mui/icons-material/Settings";
 import matchPreferencesService from "../../services/matchPreferences";
 import { spacing } from "../../styles";
-import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
+import { CAPABILITIES } from "../../utils/capabilities";
+import { useUserCapabilities, useUserContext } from "./UserContext";
 
 const DEFAULT_PREFERENCES = {
   minAge: 25,
@@ -119,30 +120,37 @@ const clampHeight = (value) =>
     HEIGHT_RANGE.max
   );
 
-function CorePreferencesForm({ onStatusChange }) {
+function CorePreferencesForm({ onStatusChange, lifecycleLoading = false }) {
   const userId = localStorage.getItem("user_id") || "";
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [hasSavedPreferences, setHasSavedPreferences] = useState(false);
-  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
-  const preferencesDisabled = useMemo(
-    () => !lifecycleLoading && isDeactivated,
-    [isDeactivated, lifecycleLoading]
-  );
+  const { updateCorePreferencesStatus } = useUserContext();
+  const { hasCapability, getReason } = useUserCapabilities();
+  const canEditPreferences = hasCapability(CAPABILITIES.INSIGHTS_EDIT_CORE_PREFERENCES);
+  const canSavePreferences = hasCapability(CAPABILITIES.INSIGHTS_SAVE_CORE_PREFERENCES);
+  const editRestrictionMessage =
+    getReason(CAPABILITIES.INSIGHTS_EDIT_CORE_PREFERENCES) || ACCOUNT_DEACTIVATED_MESSAGE;
+  const saveRestrictionMessage =
+    getReason(CAPABILITIES.INSIGHTS_SAVE_CORE_PREFERENCES) || editRestrictionMessage;
 
   const notifyStatus = useCallback(
-    (status) => {
+    (status = { isLoading: false, isReady: false }) => {
       onStatusChange?.(status);
+      updateCorePreferencesStatus({
+        loading: Boolean(status.isLoading),
+        hasSaved: Boolean(status.isReady),
+      });
     },
-    [onStatusChange]
+    [onStatusChange, updateCorePreferencesStatus]
   );
 
   useEffect(() => {
     notifyStatus({
       isLoading: loading || saving || lifecycleLoading,
-      isReady: !preferencesDisabled && hasSavedPreferences,
+      isReady: canEditPreferences && hasSavedPreferences,
     });
   }, [
     loading,
@@ -150,7 +158,7 @@ function CorePreferencesForm({ onStatusChange }) {
     hasSavedPreferences,
     notifyStatus,
     lifecycleLoading,
-    preferencesDisabled,
+    canEditPreferences,
   ]);
 
   const applyLoadedPreferences = useCallback((data) => {
@@ -233,7 +241,7 @@ function CorePreferencesForm({ onStatusChange }) {
       };
     }
 
-    if (preferencesDisabled) {
+    if (!canEditPreferences) {
       if (isMounted) {
         setLoading(false);
         setHasSavedPreferences(false);
@@ -251,7 +259,7 @@ function CorePreferencesForm({ onStatusChange }) {
   }, [
     applyLoadedPreferences,
     lifecycleLoading,
-    preferencesDisabled,
+    canEditPreferences,
     userId,
   ]);
 
@@ -316,11 +324,13 @@ function CorePreferencesForm({ onStatusChange }) {
   };
 
   const handleSave = async () => {
-    if (preferencesDisabled) {
+    if (!canSavePreferences) {
       setSnackbar({
         open: true,
         severity: "warning",
-        message: ACCOUNT_DEACTIVATED_MESSAGE,
+        message:
+          saveRestrictionMessage ||
+          "You do not have permission to save core preferences.",
       });
       return;
     }
@@ -374,8 +384,8 @@ function CorePreferencesForm({ onStatusChange }) {
         />
         <Divider />
         <CardContent>
-          {preferencesDisabled ? (
-            <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+          {!canEditPreferences ? (
+            <Alert severity="warning">{editRestrictionMessage}</Alert>
           ) : showLoadingState ? (
             <Stack spacing={spacing.section}>
               <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
@@ -658,7 +668,7 @@ function CorePreferencesForm({ onStatusChange }) {
                   variant="contained"
                   color="primary"
                   onClick={handleSave}
-                  disabled={saving || preferencesDisabled}
+                  disabled={saving || !canSavePreferences}
                 >
                   {saving ? "Saving..." : hasSavedPreferences ? "Update" : "Save"}
                 </Button>
