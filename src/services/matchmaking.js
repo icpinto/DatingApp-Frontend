@@ -11,7 +11,11 @@ const defaultQuery = {
   limit: 50,
 };
 
-export const fetchMatches = async (userId, queryOverrides = {}) => {
+export const fetchMatches = async (
+  userId,
+  queryOverrides = {},
+  options = {}
+) => {
   if (!userId) {
     throw new Error("A valid user id is required to fetch matches.");
   }
@@ -42,6 +46,7 @@ export const fetchMatches = async (userId, queryOverrides = {}) => {
     params,
     paramsSerializer: () => searchParams.toString(),
     headers: token ? { Authorization: `${token}` } : undefined,
+    signal: options.signal,
   });
 
   if (Array.isArray(response.data)) {

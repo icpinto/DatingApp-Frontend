@@ -25,6 +25,7 @@ import Profile from "./components/profile/Profile";
 import Requests from "./components/requests/Requests";
 import Messages from "./components/chat/Messages";
 import Payment from "./components/payment/Payment";
+import CapabilityRoute from "./components/routing/CapabilityRoute";
 import { WebSocketProvider } from "./context/WebSocketProvider";
 import { AccountLifecycleProvider, useAccountLifecycle } from "./context/AccountLifecycleContext";
 import { ColorModeContext } from "./context/ThemeContext";
@@ -32,6 +33,7 @@ import { UserProvider } from "./context/UserContext";
 import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
 import api from "./services/api";
+import { CAPABILITIES } from "./utils/capabilities";
 
 function TopBar() {
   const colorMode = useContext(ColorModeContext);
@@ -191,11 +193,46 @@ function AppShell() {
           <Routes>
             <Route path="/signup" element={<Signup />} />
             <Route path="/" element={<Login />} />
-            <Route path="/home" element={<MainTabs />} />
-            <Route path="/profile/:userId" element={<Profile />} />
-            <Route path="/requests" element={<Requests />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/payment" element={<Payment />} />
+            <Route
+              path="/home"
+              element={
+                <CapabilityRoute capability={CAPABILITIES.NAV_ACCESS_HOME}>
+                  <MainTabs />
+                </CapabilityRoute>
+              }
+            />
+            <Route
+              path="/profile/:userId"
+              element={
+                <CapabilityRoute capability={CAPABILITIES.PROFILE_VIEW_MEMBER}>
+                  <Profile />
+                </CapabilityRoute>
+              }
+            />
+            <Route
+              path="/requests"
+              element={
+                <CapabilityRoute capability={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
+                  <Requests />
+                </CapabilityRoute>
+              }
+            />
+            <Route
+              path="/messages"
+              element={
+                <CapabilityRoute capability={CAPABILITIES.MESSAGING_VIEW_INBOX}>
+                  <Messages />
+                </CapabilityRoute>
+              }
+            />
+            <Route
+              path="/payment"
+              element={
+                <CapabilityRoute capability={CAPABILITIES.BILLING_VIEW_PAYMENT}>
+                  <Payment />
+                </CapabilityRoute>
+              }
+            />
           </Routes>
         </div>
       </Router>

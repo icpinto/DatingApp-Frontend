@@ -22,6 +22,7 @@ import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../context/UserContext";
+import { isAbortError } from "../../utils/http";
 
 const normalizeRequests = (payload) => {
   if (!payload) return [];
@@ -49,6 +50,7 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
     const shouldFetchReceived = canViewReceived;
     const shouldFetchSent = canViewSent;
 
@@ -71,10 +73,14 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
       const operations = [];
 
       if (shouldFetchReceived) {
-        operations.push(api.get("/user/requests", { headers }));
+        operations.push(
+          api.get("/user/requests", { headers, signal: controller.signal })
+        );
       }
       if (shouldFetchSent) {
-        operations.push(api.get("user/sentRequests", { headers }));
+        operations.push(
+          api.get("user/sentRequests", { headers, signal: controller.signal })
+        );
       }
 
       const results = await Promise.allSettled(operations);
@@ -86,7 +92,7 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
           if (result.status === "fulfilled") {
             setRequests(normalizeRequests(result.value.data));
             setReceivedError(null);
-          } else {
+          } else if (!isAbortError(result.reason)) {
             setRequests([]);
             setReceivedError("requests.messages.receivedError");
           }
@@ -102,7 +108,7 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
           if (result.status === "fulfilled") {
             setSentRequests(normalizeRequests(result.value.data));
             setSentError(null);
-          } else {
+          } else if (!isAbortError(result.reason)) {
             setSentRequests([]);
             setSentError("requests.messages.sentError");
           }
@@ -121,6 +127,7 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [canViewReceived, canViewSent]);
 
@@ -135,8 +142,10 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
   useEffect(() => {
     if (!canViewReceived || requests.length === 0) {
       setProfiles({});
-      return;
+      return () => {};
     }
+
+    const controller = new AbortController();
 
     const fetchProfiles = async () => {
       const token = localStorage.getItem("token");
@@ -146,9 +155,13 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
           try {
             const res = await api.get(`/user/profile/${req.sender_id}`, {
               headers: { Authorization: `${token}` },
+              signal: controller.signal,
             });
             profilesData[req.sender_id] = res.data;
           } catch (e) {
+            if (isAbortError(e)) {
+              return;
+            }
             // ignore
           }
         })
@@ -157,13 +170,19 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
     };
 
     fetchProfiles();
+
+    return () => {
+      controller.abort();
+    };
   }, [requests, canViewReceived]);
 
   useEffect(() => {
     if (!canViewSent || sentRequests.length === 0) {
       setSentProfiles({});
-      return;
+      return () => {};
     }
+
+    const controller = new AbortController();
 
     const fetchSentProfiles = async () => {
       const token = localStorage.getItem("token");
@@ -174,9 +193,13 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
           try {
             const res = await api.get(`/user/profile/${req.receiver_id}`, {
               headers: { Authorization: `${token}` },
+              signal: controller.signal,
             });
             profilesData[req.receiver_id] = res.data;
           } catch (e) {
+            if (isAbortError(e)) {
+              return;
+            }
             // ignore
           }
         })
@@ -185,6 +208,10 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
     };
 
     fetchSentProfiles();
+
+    return () => {
+      controller.abort();
+    };
   }, [sentRequests, canViewSent]);
 
   const handleAccept = async (id) => {

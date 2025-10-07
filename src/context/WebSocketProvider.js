@@ -20,6 +20,8 @@ import {
   resolveConversationKey,
 } from "../utils/messageUtils";
 import { useAccountLifecycle } from "./AccountLifecycleContext";
+import { useUserCapabilities } from "./UserContext";
+import { CAPABILITIES } from "../utils/capabilities";
 
 const WebSocketContext = createContext(null);
 
@@ -103,16 +105,31 @@ export const WebSocketProvider = ({ children }) => {
   const joinedConversations = useRef(new Set());
   const [lastError, setLastError] = useState(null);
   const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle() ?? {};
+  const { hasCapability } = useUserCapabilities();
+  const messagingAllowed = hasCapability(CAPABILITIES.MESSAGING_VIEW_INBOX);
+
+  const resetMessagingState = useCallback(() => {
+    processedMessageIds.current.clear();
+    joinedConversations.current.clear();
+    setConversations({});
+    setLastError(null);
+  }, []);
 
   const baseUrl =
     process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
   const wsUrl = baseUrl.replace(/^http/, "ws");
 
-  const send = useCallback((data) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(data));
-    }
-  }, []);
+  const send = useCallback(
+    (data) => {
+      if (!messagingAllowed) {
+        return;
+      }
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify(data));
+      }
+    },
+    [messagingAllowed]
+  );
 
   const updateConversationState = useCallback((conversationId, updater) => {
     if (conversationId === undefined || conversationId === null) {
@@ -146,6 +163,10 @@ export const WebSocketProvider = ({ children }) => {
 
   const hydrateConversations = useCallback(
     (snapshotList) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       if (!Array.isArray(snapshotList) || snapshotList.length === 0) {
         return;
       }
@@ -197,11 +218,15 @@ export const WebSocketProvider = ({ children }) => {
         });
       });
     },
-    [updateConversationState]
+    [messagingAllowed, updateConversationState]
   );
 
   const joinConversation = useCallback(
     (conversationId) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       if (conversationId === undefined || conversationId === null) {
         return;
       }
@@ -210,11 +235,15 @@ export const WebSocketProvider = ({ children }) => {
       joinedConversations.current.add(key);
       send({ type: "join", conversation_id: key });
     },
-    [send]
+    [messagingAllowed, send]
   );
 
   const leaveConversation = useCallback(
     (conversationId) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       if (conversationId === undefined || conversationId === null) {
         return;
       }
@@ -223,11 +252,15 @@ export const WebSocketProvider = ({ children }) => {
       joinedConversations.current.delete(key);
       send({ type: "leave", conversation_id: key });
     },
-    [send]
+    [messagingAllowed, send]
   );
 
   const setConversationHistory = useCallback(
     (conversationId, messages) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       const normalizedMessages = normalizeMessageHistory(conversationId, messages, {
         pending: false,
       });
@@ -243,11 +276,15 @@ export const WebSocketProvider = ({ children }) => {
         messages: normalizedMessages,
       }));
     },
-    [updateConversationState]
+    [messagingAllowed, updateConversationState]
   );
 
   const addLocalMessage = useCallback(
     (conversationId, message) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       const normalized = normalizeMessage(conversationId, message, {
         pending: true,
       });
@@ -261,11 +298,15 @@ export const WebSocketProvider = ({ children }) => {
         };
       });
     },
-    [updateConversationState]
+    [messagingAllowed, updateConversationState]
   );
 
   const markRead = useCallback(
     (conversationId, messageId) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       if (conversationId === undefined || conversationId === null) {
         return;
       }
@@ -287,13 +328,25 @@ export const WebSocketProvider = ({ children }) => {
         };
       });
     },
-    [send, updateConversationState]
+    [messagingAllowed, send, updateConversationState]
   );
 
-  const sendMessage = useCallback((messageData) => send(messageData), [send]);
+  const sendMessage = useCallback(
+    (messageData) => {
+      if (!messagingAllowed) {
+        return;
+      }
+      send(messageData);
+    },
+    [messagingAllowed, send]
+  );
 
   const processIncomingMessage = useCallback(
     (msg) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       const payload = msg?.payload || {};
       const formatted = normalizeMessage(msg?.conversation_id, payload, {
         pending: false,
@@ -355,11 +408,15 @@ export const WebSocketProvider = ({ children }) => {
         };
       });
     },
-    [updateConversationState]
+    [messagingAllowed, updateConversationState]
   );
 
   const processConversationUpdate = useCallback(
     (msg) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       const payload = msg?.payload || {};
       const messagePayload =
         pickFirst(
@@ -480,11 +537,15 @@ export const WebSocketProvider = ({ children }) => {
         return updatedConversation;
       });
     },
-    [updateConversationState]
+    [messagingAllowed, updateConversationState]
   );
 
   const processReadReceipt = useCallback(
     (msg) => {
+      if (!messagingAllowed) {
+        return;
+      }
+
       if (
         !msg ||
         msg.conversation_id === undefined ||
@@ -504,7 +565,7 @@ export const WebSocketProvider = ({ children }) => {
         };
       });
     },
-    [updateConversationState]
+    [messagingAllowed, updateConversationState]
   );
 
   const handleServerError = useCallback((msg) => {
@@ -612,15 +673,29 @@ export const WebSocketProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    processedMessageIds.current.clear();
-    joinedConversations.current.clear();
-    setConversations({});
-    setLastError(null);
+    resetMessagingState();
     latestTokenRef.current = authToken;
-  }, [authToken]);
+  }, [authToken, resetMessagingState]);
 
   useEffect(() => {
-    if (!authToken) {
+    if (messagingAllowed) {
+      return;
+    }
+
+    shouldReconnect.current = false;
+    clearTimeout(reconnectTimeout.current);
+    reconnectTimeout.current = null;
+
+    if (ws.current) {
+      ws.current.close();
+      ws.current = null;
+    }
+
+    resetMessagingState();
+  }, [messagingAllowed, resetMessagingState]);
+
+  useEffect(() => {
+    if (!authToken || !messagingAllowed) {
       shouldReconnect.current = false;
       clearTimeout(reconnectTimeout.current);
       reconnectTimeout.current = null;
@@ -628,6 +703,10 @@ export const WebSocketProvider = ({ children }) => {
       if (ws.current) {
         ws.current.close();
         ws.current = null;
+      }
+
+      if (!messagingAllowed) {
+        resetMessagingState();
       }
 
       return undefined;
@@ -660,7 +739,14 @@ export const WebSocketProvider = ({ children }) => {
       cleanup();
       ws.current = null;
     };
-  }, [authToken, isDeactivated, lifecycleLoading, setupSocket]);
+  }, [
+    authToken,
+    isDeactivated,
+    lifecycleLoading,
+    messagingAllowed,
+    resetMessagingState,
+    setupSocket,
+  ]);
 
   const totalUnreadCount = useMemo(() => {
     if (!conversations || typeof conversations !== "object") {

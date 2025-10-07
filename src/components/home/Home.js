@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -29,6 +29,7 @@ import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../context/UserContext";
+import { isAbortError } from "../../utils/http";
 
 const FILTER_DEFAULTS = {
   gender: "",
@@ -65,6 +66,8 @@ function HomeContent({ accountLifecycle }) {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [filters, setFilters] = useState(() => ({ ...FILTER_DEFAULTS }));
   const [showFilters, setShowFilters] = useState(false);
+  const activeUsersAbortRef = useRef(null);
+  const profileAbortRef = useRef(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasCapability } = useUserCapabilities();
@@ -108,6 +111,10 @@ function HomeContent({ accountLifecycle }) {
   const fetchActiveUsers = useCallback(
     async (params = {}) => {
       if (!canViewActiveUsers) {
+        if (activeUsersAbortRef.current) {
+          activeUsersAbortRef.current.abort();
+          activeUsersAbortRef.current = null;
+        }
         setActiveUsers([]);
         setExpandedUserId(null);
         setProfileData({});
@@ -118,6 +125,12 @@ function HomeContent({ accountLifecycle }) {
         return;
       }
 
+      if (activeUsersAbortRef.current) {
+        activeUsersAbortRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      activeUsersAbortRef.current = controller;
       setLoadingUsers(true);
       try {
         const token = localStorage.getItem("token");
@@ -126,6 +139,7 @@ function HomeContent({ accountLifecycle }) {
             Authorization: `${token}`,
           },
           params,
+          signal: controller.signal,
         });
         const rawUsers = Array.isArray(response.data) ? response.data : [];
         const currentUserId = Number(localStorage.getItem("user_id"));
@@ -145,8 +159,13 @@ function HomeContent({ accountLifecycle }) {
         setRequestMessage("");
         setRequestMessageError("");
       } catch (error) {
-        setFeedback({ type: "error", key: "home.messages.loadActiveError" });
+        if (!isAbortError(error)) {
+          setFeedback({ type: "error", key: "home.messages.loadActiveError" });
+        }
       } finally {
+        if (activeUsersAbortRef.current === controller) {
+          activeUsersAbortRef.current = null;
+        }
         setLoadingUsers(false);
       }
     },
@@ -206,6 +225,19 @@ function HomeContent({ accountLifecycle }) {
     fetchActiveUsers();
   }, [fetchActiveUsers]);
 
+  useEffect(() => {
+    return () => {
+      if (activeUsersAbortRef.current) {
+        activeUsersAbortRef.current.abort();
+        activeUsersAbortRef.current = null;
+      }
+      if (profileAbortRef.current) {
+        profileAbortRef.current.abort();
+        profileAbortRef.current = null;
+      }
+    };
+  }, []);
+
   // Toggle and fetch detailed profile data
   const handleToggleExpand = async (rawUserId) => {
     if (!canExpandUserPreview) {
@@ -219,6 +251,10 @@ function HomeContent({ accountLifecycle }) {
     }
 
     if (expandedUserId === normalizedUserId) {
+      if (profileAbortRef.current) {
+        profileAbortRef.current.abort();
+        profileAbortRef.current = null;
+      }
       setExpandedUserId(null); // Collapse if already expanded
     } else {
       setExpandedUserId(normalizedUserId);
@@ -227,17 +263,24 @@ function HomeContent({ accountLifecycle }) {
       setRequestMessage("");
       setRequestMessageError("");
       setFeedback(null);
+      if (profileAbortRef.current) {
+        profileAbortRef.current.abort();
+      }
+      const controller = new AbortController();
+      profileAbortRef.current = controller;
       try {
         const token = localStorage.getItem("token");
+        const headers = {
+          Authorization: `${token}`,
+        };
         const response = await api.get(`/user/profile/${normalizedUserId}`, {
-          headers: {
-            Authorization: `${token}`,
-          },
+          headers,
+          signal: controller.signal,
         });
 
         const requestStatusResponse = await api.get(
           `/user/checkReqStatus/${normalizedUserId}`,
-          { headers: { Authorization: `${token}` } }
+          { headers, signal: controller.signal }
         );
 
         setProfileData({
@@ -245,9 +288,14 @@ function HomeContent({ accountLifecycle }) {
           requestStatus: requestStatusResponse.data.requestStatus,
         });
       } catch (error) {
-        setFeedback({ type: "error", key: "home.messages.profileError" });
+        if (!isAbortError(error)) {
+          setFeedback({ type: "error", key: "home.messages.profileError" });
+        }
       } finally {
         setLoadingProfile(false);
+        if (profileAbortRef.current === controller) {
+          profileAbortRef.current = null;
+        }
       }
     }
   };

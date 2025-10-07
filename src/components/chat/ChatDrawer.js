@@ -22,6 +22,7 @@ import {
   resolveMessageId,
   resolveMessageSenderId,
 } from "./chatDrawerUtils";
+import { isAbortError } from "../../utils/http";
 
 function ChatDrawer({
   conversationId,
@@ -178,10 +179,11 @@ function ChatDrawer({
       !open ||
       !canViewHistory
     ) {
-      return;
+      return () => {};
     }
 
     let isActive = true;
+    const controller = new AbortController();
 
     const fetchMessages = async () => {
       try {
@@ -192,6 +194,7 @@ function ChatDrawer({
             headers: {
               Authorization: `${token}`,
             },
+            signal: controller.signal,
           }
         );
 
@@ -200,6 +203,9 @@ function ChatDrawer({
           setError(null);
         }
       } catch (err) {
+        if (isAbortError(err)) {
+          return;
+        }
         if (isActive) {
           setError("Failed to fetch messages");
         }
@@ -210,6 +216,7 @@ function ChatDrawer({
 
     return () => {
       isActive = false;
+      controller.abort();
     };
   }, [
     canViewHistory,
@@ -219,7 +226,11 @@ function ChatDrawer({
   ]);
 
   useEffect(() => {
-    if (conversationId === undefined || conversationId === null) {
+    if (
+      conversationId === undefined ||
+      conversationId === null ||
+      !canViewHistory
+    ) {
       return undefined;
     }
 
@@ -230,7 +241,7 @@ function ChatDrawer({
     return () => {
       leaveConversation(conversationId);
     };
-  }, [conversationId, open, joinConversation, leaveConversation]);
+  }, [conversationId, open, canViewHistory, joinConversation, leaveConversation]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
