@@ -286,10 +286,15 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
     CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS
   );
   const canViewDetails = hasCapability(CAPABILITIES.MATCHES_VIEW_DETAILS);
-  const canSendRequest = hasCapability(CAPABILITIES.MATCHES_SEND_REQUEST);
+  const canSendRequestCapability = hasCapability(
+    CAPABILITIES.MATCHES_SEND_REQUEST
+  );
   const canNavigateToProfile = hasCapability(
     CAPABILITIES.MATCHES_NAVIGATE_TO_PROFILE
   );
+  const requestsBlockedByLifecycle = !lifecycleLoading && accountDeactivated;
+  const canSendRequest =
+    canSendRequestCapability && !requestsBlockedByLifecycle;
 
   useEffect(() => {
     if (lifecycleLoading) {
@@ -401,7 +406,7 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
   };
 
   const handleSendRequest = async (matchKey, rawUserId) => {
-    if (!canSendRequest) {
+    if (!canSendRequest || requestsBlockedByLifecycle) {
       return;
     }
 
@@ -525,7 +530,10 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
                   userId !== undefined && userId !== null && userId !== "";
                 const canExpandMatch = canViewDetails && hasUserIdentifier;
                 const canNavigateMatch = canNavigateToProfile && hasUserIdentifier;
-                const canSendForMatch = canSendRequest && hasUserIdentifier;
+                const canComposeForMatch =
+                  canSendRequestCapability && hasUserIdentifier;
+                const canSubmitRequestForMatch =
+                  canSendRequest && hasUserIdentifier;
                 const locationText =
                   details.location || match.location || "";
                 const bioText = details.bio || match.bio || "";
@@ -778,7 +786,9 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
                                           : t("home.helpers.requestMessage")
                                       }
                                       error={Boolean(requestErrorKey)}
-                                      disabled={requestStatus || !canSendForMatch}
+                                      disabled={
+                                        requestStatus || !canComposeForMatch
+                                      }
                                     />
                                   </Box>
                                   <Guard can={CAPABILITIES.MATCHES_SEND_REQUEST}>
@@ -788,14 +798,17 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
                                         color={requestStatus ? "secondary" : "primary"}
                                         onClick={(event) => {
                                           event.stopPropagation();
-                                          if (!canSubmitRequestAllowed || !canSendForMatch) {
+                                          if (
+                                            !canSubmitRequestAllowed ||
+                                            !canSubmitRequestForMatch
+                                          ) {
                                             return;
                                           }
                                           handleSendRequest(matchKey, userId);
                                         }}
                                         disabled={
                                           !canSubmitRequestAllowed ||
-                                          !canSendForMatch ||
+                                          !canSubmitRequestForMatch ||
                                           requestStatus ||
                                           sendingRequestFor === matchKey
                                         }
