@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Box,
   Typography,
@@ -41,13 +41,19 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useNavigate } from "react-router-dom";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import Guard from "./Guard";
+import { UserProvider, useUserContext } from "./UserContext";
+import { CAPABILITIES } from "../../utils/capabilities";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
 } from "../../utils/accountLifecycle";
 
-function ProfilePage() {
+function OwnerProfileContent({ accountLifecycle }) {
+  const lifecycleContext = accountLifecycle || {};
+  const { status: sharedLifecycleStatus, setStatus: setSharedLifecycleStatus } =
+    lifecycleContext;
   const [profile, setProfile] = useState(null);
   const [rawProfile, setRawProfile] = useState(null);
   const [enums, setEnums] = useState({});
@@ -113,8 +119,6 @@ function ProfilePage() {
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
   const [accountStatusLoading, setAccountStatusLoading] = useState(true);
-  const { status: sharedLifecycleStatus, setStatus: setSharedLifecycleStatus } =
-    useAccountLifecycle();
   const [accountLifecycleStatus, setAccountLifecycleStatus] = useState(
     sharedLifecycleStatus ?? null
   );
@@ -125,6 +129,52 @@ function ProfilePage() {
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
+  const { hasCapability, getReason } = useUserContext();
+
+  const capabilityReasons = useMemo(
+    () => ({
+      edit: getReason(CAPABILITIES.OWNER_PROFILE_EDIT),
+      uploadPhoto: getReason(CAPABILITIES.OWNER_PROFILE_UPLOAD_PHOTO),
+      submitIdentity: getReason(CAPABILITIES.OWNER_PROFILE_SUBMIT_IDENTITY),
+      sendOtp: getReason(CAPABILITIES.OWNER_PROFILE_SEND_OTP),
+      verifyOtp: getReason(CAPABILITIES.OWNER_PROFILE_VERIFY_OTP),
+      manageInterests: getReason(CAPABILITIES.OWNER_PROFILE_MANAGE_INTERESTS),
+      manageLanguages: getReason(
+        CAPABILITIES.OWNER_PROFILE_MANAGE_LANGUAGES
+      ),
+      save: getReason(CAPABILITIES.OWNER_PROFILE_SAVE),
+      payments: getReason(CAPABILITIES.OWNER_PROFILE_MANAGE_PAYMENTS),
+      toggleVisibility: getReason(
+        CAPABILITIES.OWNER_PROFILE_TOGGLE_VISIBILITY
+      ),
+      removeAccount: getReason(CAPABILITIES.OWNER_PROFILE_REMOVE_ACCOUNT),
+    }),
+    [getReason]
+  );
+
+  const canEditProfile = hasCapability(CAPABILITIES.OWNER_PROFILE_EDIT);
+  const canUploadPhoto = hasCapability(CAPABILITIES.OWNER_PROFILE_UPLOAD_PHOTO);
+  const canSubmitIdentity = hasCapability(
+    CAPABILITIES.OWNER_PROFILE_SUBMIT_IDENTITY
+  );
+  const canSendOtp = hasCapability(CAPABILITIES.OWNER_PROFILE_SEND_OTP);
+  const canVerifyOtp = hasCapability(CAPABILITIES.OWNER_PROFILE_VERIFY_OTP);
+  const canManageInterests = hasCapability(
+    CAPABILITIES.OWNER_PROFILE_MANAGE_INTERESTS
+  );
+  const canManageLanguages = hasCapability(
+    CAPABILITIES.OWNER_PROFILE_MANAGE_LANGUAGES
+  );
+  const canSaveProfile = hasCapability(CAPABILITIES.OWNER_PROFILE_SAVE);
+  const canManagePayments = hasCapability(
+    CAPABILITIES.OWNER_PROFILE_MANAGE_PAYMENTS
+  );
+  const canToggleVisibility = hasCapability(
+    CAPABILITIES.OWNER_PROFILE_TOGGLE_VISIBILITY
+  );
+  const canRemoveAccount = hasCapability(
+    CAPABILITIES.OWNER_PROFILE_REMOVE_ACCOUNT
+  );
 
   const updateAccountLifecycleStatus = useCallback(
     (nextStatus) => {
@@ -141,8 +191,9 @@ function ProfilePage() {
   }, [sharedLifecycleStatus]);
 
   const isLifecycleReadOnly =
-    accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED;
-  const lifecycleReadOnlyMessage = ACCOUNT_DEACTIVATED_MESSAGE;
+    accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED || !canEditProfile;
+  const lifecycleReadOnlyMessage =
+    capabilityReasons.edit || ACCOUNT_DEACTIVATED_MESSAGE;
 
   const loadAccountStatus = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -368,6 +419,15 @@ function ProfilePage() {
   };
 
   const handleIdentityVerification = () => {
+    if (!canSubmitIdentity) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.submitIdentity || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (!identityCardFile || !identitySelfieFile) {
       setErrors((prev) => ({
         ...prev,
@@ -414,6 +474,15 @@ function ProfilePage() {
   };
 
   const handleSendOtp = async () => {
+    if (!canSendOtp) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.sendOtp || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (!phoneNumber.trim()) {
       setErrors((prev) => ({
         ...prev,
@@ -462,6 +531,15 @@ function ProfilePage() {
   };
 
   const handleVerifyOtp = async () => {
+    if (!canVerifyOtp) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.verifyOtp || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (!otpCode.trim()) {
       setErrors((prev) => ({
         ...prev,
@@ -535,6 +613,15 @@ function ProfilePage() {
 
   // Handle adding a new interest
   const handleAddInterest = () => {
+    if (!canManageInterests) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.manageInterests || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (newInterest.trim()) {
       setFormData((prev) => ({ ...prev, interests: [...prev.interests, newInterest.trim()] }));
       setNewInterest(""); // Clear the input
@@ -542,6 +629,15 @@ function ProfilePage() {
   };
 
   const handleAddLanguage = () => {
+    if (!canManageLanguages) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.manageLanguages || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (newLanguage.trim()) {
       setFormData((prev) => ({ ...prev, languages: [...prev.languages, newLanguage.trim()] }));
       setNewLanguage("");
@@ -549,6 +645,15 @@ function ProfilePage() {
   };
 
   const handleFileChange = (e) => {
+    if (!canUploadPhoto) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.uploadPhoto || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (e.target.files && e.target.files[0]) {
       setProfileImage(e.target.files[0]);
     }
@@ -562,6 +667,15 @@ function ProfilePage() {
         open: true,
         messageKey: "",
         message: lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
+    if (!canSaveProfile) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.save || lifecycleReadOnlyMessage,
         severity: "info",
       });
       return;
@@ -736,6 +850,16 @@ function ProfilePage() {
   };
 
   const handleManagePayments = () => {
+    if (!canManagePayments) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.payments ||
+          "Billing management is currently unavailable.",
+        severity: "info",
+      });
+      return;
+    }
     setSnackbar({
       open: true,
       messageKey: "",
@@ -747,6 +871,17 @@ function ProfilePage() {
 
   const handleHideAccountToggle = async (event) => {
     if (isUpdatingAccountVisibility || accountStatusLoading) {
+      return;
+    }
+
+    if (!canToggleVisibility) {
+      event.preventDefault();
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.toggleVisibility || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
       return;
     }
 
@@ -823,6 +958,17 @@ function ProfilePage() {
   };
 
   const handleRemoveAccount = async () => {
+    if (!canRemoveAccount) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message:
+          capabilityReasons.removeAccount ||
+          "Account removal is currently unavailable.",
+        severity: "info",
+      });
+      return;
+    }
     const confirmed = window.confirm(
       "Are you sure you want to permanently remove your account? This action cannot be undone."
     );
@@ -921,7 +1067,7 @@ function ProfilePage() {
       setSnackbar({
         open: true,
         messageKey: "",
-        message: ACCOUNT_DEACTIVATED_MESSAGE,
+        message: lifecycleReadOnlyMessage,
         severity: "info",
       });
     }
@@ -933,7 +1079,7 @@ function ProfilePage() {
     <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
         {isLifecycleReadOnly && (
-          <Alert severity="info">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+          <Alert severity="info">{lifecycleReadOnlyMessage}</Alert>
         )}
         {shouldShowForm ? (
             <Card elevation={4} sx={{ borderRadius: 3 }}>
@@ -1719,7 +1865,7 @@ function ProfilePage() {
                       type="submit"
                       variant="contained"
                       color="primary"
-                      disabled={saving || isLifecycleReadOnly}
+                      disabled={saving || isLifecycleReadOnly || !canSaveProfile}
                       startIcon={
                         saving ? <CircularProgress size={16} color="inherit" /> : null
                       }
@@ -1799,6 +1945,7 @@ function ProfilePage() {
                     variant="outlined"
                     startIcon={<CreditCardIcon />}
                     onClick={handleManagePayments}
+                    disabled={!canManagePayments}
                   >
                     Manage payment details
                   </Button>
@@ -1840,7 +1987,11 @@ function ProfilePage() {
                       <Switch
                         checked={isAccountHidden}
                         onChange={handleHideAccountToggle}
-                        disabled={accountStatusLoading || isUpdatingAccountVisibility}
+                        disabled={
+                          accountStatusLoading ||
+                          isUpdatingAccountVisibility ||
+                          !canToggleVisibility
+                        }
                         inputProps={{
                           "aria-label": "Hide my profile",
                           "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
@@ -1873,7 +2024,7 @@ function ProfilePage() {
                         <DeleteForeverIcon />
                       )
                     }
-                    disabled={isRemovingAccount}
+                    disabled={isRemovingAccount || !canRemoveAccount}
                   >
                     {isRemovingAccount ? "Processing..." : "Remove my account"}
                   </Button>
@@ -1900,4 +2051,33 @@ function ProfilePage() {
     );
 }
 
-export default ProfilePage;
+function OwnerProfileAccess({ accountLifecycle }) {
+  const { getReason } = useUserContext();
+  const viewFallback = useCallback(
+    () => (
+      <Alert severity="warning">
+        {getReason(CAPABILITIES.OWNER_PROFILE_VIEW) ||
+          "Profile management is currently unavailable."}
+      </Alert>
+    ),
+    [getReason]
+  );
+
+  return (
+    <Guard can={CAPABILITIES.OWNER_PROFILE_VIEW} fallback={viewFallback}>
+      <OwnerProfileContent accountLifecycle={accountLifecycle} />
+    </Guard>
+  );
+}
+
+function OwnerProfile() {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <OwnerProfileAccess accountLifecycle={accountLifecycle} />
+    </UserProvider>
+  );
+}
+
+export default OwnerProfile;

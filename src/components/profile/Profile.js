@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
@@ -29,6 +29,10 @@ import { spacing } from "../../styles";
 import ProfileSections from "./ProfileSections";
 import { useTranslation } from "../../i18n";
 import { formatProfileData } from "./profileUtils";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { CAPABILITIES } from "../../utils/capabilities";
+import Guard from "./Guard";
+import { UserProvider, useUserContext } from "./UserContext";
 
 const calculateAge = (dateString) => {
   if (!dateString) {
@@ -88,7 +92,7 @@ const createVerificationChip = (label, status, t) => {
   );
 };
 
-function Profile() {
+function ProfileContent() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -100,6 +104,17 @@ function Profile() {
   const [requestMessage, setRequestMessage] = useState("");
   const [requestMessageError, setRequestMessageError] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
+  const { hasCapability, getReason } = useUserContext();
+
+  const sendRequestReason = useMemo(
+    () => getReason(CAPABILITIES.PROFILE_SEND_REQUEST),
+    [getReason]
+  );
+
+  const viewSectionsReason = useMemo(
+    () => getReason(CAPABILITIES.PROFILE_VIEW_SECTIONS),
+    [getReason]
+  );
 
   const handleNavigateBack = () => {
     if (typeof window !== "undefined" && window.history.length > 2) {
@@ -155,6 +170,9 @@ function Profile() {
   }, [userId]);
 
   const handleSendRequest = async () => {
+    if (!hasCapability(CAPABILITIES.PROFILE_SEND_REQUEST)) {
+      return;
+    }
     const trimmedMessage = requestMessage.trim();
 
     if (!trimmedMessage) {
@@ -225,9 +243,23 @@ function Profile() {
 
   const displayName = profile?.username || t("common.placeholders.user");
 
+  const profileUnavailableFallback = useCallback(
+    () => (
+      <Alert severity="warning">
+        {getReason(CAPABILITIES.PROFILE_VIEW_MEMBER) ||
+          t("profile.viewer.noProfile")}
+      </Alert>
+    ),
+    [getReason, t]
+  );
+
   return (
-    <Container sx={{ p: spacing.pagePadding }}>
-      <Stack spacing={spacing.section}>
+    <Guard
+      can={CAPABILITIES.PROFILE_VIEW_MEMBER}
+      fallback={profileUnavailableFallback}
+    >
+      <Container sx={{ p: spacing.pagePadding }}>
+        <Stack spacing={spacing.section}>
         <Button
           onClick={handleNavigateBack}
           startIcon={<ArrowBack />}
@@ -322,10 +354,21 @@ function Profile() {
                       </Typography>
                     </Grid>
                   </Grid>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {identityChip}
-                    {contactChip}
-                  </Stack>
+                  <Guard can={CAPABILITIES.PROFILE_VIEW_BADGES}>
+                    {({ isAllowed }) =>
+                      isAllowed && (
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {identityChip}
+                          {contactChip}
+                        </Stack>
+                      )
+                    }
+                  </Guard>
                   {languages.length > 0 && (
                     <Stack spacing={1}>
                       <Typography variant="overline" color="text.secondary">
@@ -374,7 +417,16 @@ function Profile() {
               />
               <Divider />
               <CardContent>
-                <ProfileSections data={profile} />
+                <Guard
+                  can={CAPABILITIES.PROFILE_VIEW_SECTIONS}
+                  fallback={
+                    <Alert severity="info">
+                      {viewSectionsReason || t("profile.viewer.noProfile")}
+                    </Alert>
+                  }
+                >
+                  <ProfileSections data={profile} />
+                </Guard>
               </CardContent>
             </Card>
 
@@ -390,43 +442,70 @@ function Profile() {
               />
               <Divider />
               <CardContent>
-                <Stack spacing={spacing.section}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    minRows={2}
-                    label={t("home.labels.requestMessage")}
-                    value={requestMessage}
-                    onChange={(event) => {
-                      setRequestMessage(event.target.value);
-                      setRequestMessageError("");
-                      setFeedback(null);
-                    }}
-                    helperText={
-                      requestMessageError
-                        ? t(requestMessageError)
-                        : t("home.helpers.requestMessage")
-                    }
-                    error={Boolean(requestMessageError)}
-                    disabled={requestStatus}
-                  />
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                    <Button
-                      variant="contained"
-                      onClick={handleSendRequest}
-                      disabled={requestStatus || sendingRequest}
-                    >
-                      {requestStatus
-                        ? t("home.labels.requestSent")
-                        : t("home.labels.sendRequest")}
-                    </Button>
-                  </Stack>
-                  {feedback?.key && (
-                    <Alert severity={feedback.type === "error" ? "error" : "success"}>
-                      {t(feedback.key)}
-                    </Alert>
-                  )}
-                </Stack>
+                <Guard can={CAPABILITIES.PROFILE_SEND_REQUEST}>
+                  {({ isAllowed }) => {
+                    const helperText = requestMessageError
+                      ? t(requestMessageError)
+                      : isAllowed
+                      ? t("home.helpers.requestMessage")
+                      : sendRequestReason ||
+                        "Activate your profile to send a connection request.";
+
+                    const isRequestDisabled =
+                      requestStatus || sendingRequest || !isAllowed;
+
+                    return (
+                      <Stack spacing={spacing.section}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          minRows={2}
+                          label={t("home.labels.requestMessage")}
+                          value={requestMessage}
+                          onChange={(event) => {
+                            setRequestMessage(event.target.value);
+                            setRequestMessageError("");
+                            setFeedback(null);
+                          }}
+                          helperText={helperText}
+                          error={Boolean(requestMessageError)}
+                          disabled={requestStatus || !isAllowed}
+                        />
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={2}
+                        >
+                          <Button
+                            variant="contained"
+                            onClick={() => {
+                              if (!isAllowed) {
+                                return;
+                              }
+                              handleSendRequest();
+                            }}
+                            disabled={isRequestDisabled}
+                          >
+                            {requestStatus
+                              ? t("home.labels.requestSent")
+                              : t("home.labels.sendRequest")}
+                          </Button>
+                        </Stack>
+                        {!isAllowed && sendRequestReason && (
+                          <Alert severity="info">{sendRequestReason}</Alert>
+                        )}
+                        {feedback?.key && (
+                          <Alert
+                            severity={
+                              feedback.type === "error" ? "error" : "success"
+                            }
+                          >
+                            {t(feedback.key)}
+                          </Alert>
+                        )}
+                      </Stack>
+                    );
+                  }}
+                </Guard>
               </CardContent>
             </Card>
           </Stack>
@@ -439,11 +518,22 @@ function Profile() {
           </Stack>
         )}
 
-        {loadError && profile && (
-          <Alert severity="error">{t(loadError)}</Alert>
-        )}
-      </Stack>
-    </Container>
+          {loadError && profile && (
+            <Alert severity="error">{t(loadError)}</Alert>
+          )}
+        </Stack>
+      </Container>
+    </Guard>
+  );
+}
+
+function Profile() {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <ProfileContent />
+    </UserProvider>
   );
 }
 

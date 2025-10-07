@@ -27,8 +27,15 @@ import questionnaireService from "../../services/questionnaireService";
 import QuestionCategorySelector from "./QuestionCategorySelector";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
+import Guard from "./Guard";
+import { CAPABILITIES } from "../../utils/capabilities";
+import { UserProvider, useUserContext } from "./UserContext";
 
-function QuestionsComponent({ isLocked = false, lockReason = "" }) {
+function QuestionsComponent({
+  isLocked = false,
+  lockReason = "",
+  accountLifecycle,
+}) {
   const [question, setQuestion] = useState(null);
   const [meAnswer, setMeAnswer] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
@@ -41,14 +48,27 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   });
 
   const userId = localStorage.getItem("user_id") || "";
-  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
+  const { isDeactivated = false, loading: lifecycleLoading = false } =
+    accountLifecycle || {};
+  const { hasCapability, getReason } = useUserContext();
   const questionnaireDisabled = useMemo(
     () => !lifecycleLoading && isDeactivated,
     [isDeactivated, lifecycleLoading]
   );
+  const canAnswerQuestionnaire = hasCapability(
+    CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE
+  );
+  const capabilityLockReason = canAnswerQuestionnaire
+    ? undefined
+    : getReason(CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE);
+  const isCapabilityLocked = !canAnswerQuestionnaire;
+  const effectiveLock = questionnaireDisabled || isLocked || isCapabilityLocked;
+  const combinedLockReason = questionnaireDisabled
+    ? ACCOUNT_DEACTIVATED_MESSAGE
+    : lockReason || capabilityLockReason;
 
   const fetchQuestion = useCallback(async () => {
-    if (questionnaireDisabled || isLocked) {
+    if (effectiveLock) {
       setLoading(false);
       return;
     }
@@ -70,7 +90,7 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
     } finally {
       setLoading(false);
     }
-  }, [isLocked, questionnaireDisabled, selectedCategory, userId]);
+  }, [effectiveLock, selectedCategory, userId]);
 
   useEffect(() => {
     fetchQuestion();
@@ -78,14 +98,14 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   }, [fetchQuestion]);
 
   useEffect(() => {
-    if (isLocked || questionnaireDisabled) {
+    if (effectiveLock) {
       setQuestion(null);
       setLoading(false);
     }
-  }, [isLocked, questionnaireDisabled]);
+  }, [effectiveLock]);
 
   const submitAnswer = async () => {
-    if (!question || isLocked || questionnaireDisabled) return;
+    if (!question || effectiveLock) return;
     const formatAnswer = (answer) => {
       if (questionType === "multiple_choice") {
         const selectedOption = options.find((option) => option.key === answer);
@@ -129,7 +149,7 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   };
 
   const handleNext = async () => {
-    if (isLocked || questionnaireDisabled) return;
+    if (effectiveLock) return;
 
     await submitAnswer();
     setMeAnswer("");
@@ -141,8 +161,21 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   const questionText = question ? question.question : "";
   const options = question && Array.isArray(question.options) ? question.options : [];
 
+  const viewFallback = useCallback(
+    () => (
+      <Alert severity="warning" sx={{ borderRadius: 2 }}>
+        {getReason(CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE) ||
+          "Match questionnaire is currently unavailable."}
+      </Alert>
+    ),
+    [getReason]
+  );
+
   return (
-    <>
+    <Guard
+      can={CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE}
+      fallback={viewFallback}
+    >
       <Card elevation={3} sx={{ borderRadius: 3 }}>
         <CardHeader
           avatar={
@@ -159,14 +192,15 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
             <QuestionCategorySelector
               value={selectedCategory}
               onChange={setSelectedCategory}
-              disabled={isLocked || questionnaireDisabled}
+              disabled={effectiveLock}
             />
 
             {questionnaireDisabled ? (
               <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
-            ) : isLocked ? (
+            ) : effectiveLock ? (
               <Typography color="text.secondary">
-                {lockReason || "Core preferences are required to continue."}
+                {combinedLockReason ||
+                  "Core preferences are required to continue."}
               </Typography>
             ) : loading ? (
               <Stack spacing={spacing.section}>
@@ -325,11 +359,11 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
                     color="primary"
                     onClick={handleNext}
                     endIcon={
-                      loading && !isLocked ? (
+                      loading && !effectiveLock ? (
                         <CircularProgress size={16} color="inherit" />
                       ) : null
                     }
-                    disabled={loading || isLocked}
+                    disabled={loading || effectiveLock}
                   >
                     Next
                   </Button>
@@ -357,4 +391,20 @@ function QuestionsComponent({ isLocked = false, lockReason = "" }) {
   );
 }
 
-export default QuestionsComponent;
+function Questions(props) {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider
+      accountStatus={accountLifecycle?.status}
+      questionnaireLocked={props.isLocked}
+    >
+      <QuestionsComponent
+        {...props}
+        accountLifecycle={accountLifecycle}
+      />
+    </UserProvider>
+  );
+}
+
+export default Questions;
