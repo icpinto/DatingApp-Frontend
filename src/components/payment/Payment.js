@@ -1,6 +1,10 @@
-import React from "react";
-import { Box, Typography, Button } from "@mui/material";
+import React, { useCallback } from "react";
+import { Alert, Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
+import { CAPABILITIES } from "../../utils/capabilities";
+import Guard from "./Guard";
+import { UserProvider, useUserContext } from "./UserContext";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -12,10 +16,14 @@ const loadRazorpayScript = () => {
   });
 };
 
-function Payment() {
+function PaymentContent() {
   const navigate = useNavigate();
+  const { hasCapability, getReason } = useUserContext();
 
   const handlePayment = async () => {
+    if (!hasCapability(CAPABILITIES.BILLING_INITIATE_PAYMENT)) {
+      return;
+    }
     const res = await loadRazorpayScript();
     if (!res) {
       alert("Razorpay SDK failed to load. Please check your connection.");
@@ -67,18 +75,63 @@ function Payment() {
     paymentObject.open();
   };
 
+  const paymentUnavailable = useCallback(
+    () => (
+      <Alert severity="warning" sx={{ borderRadius: 2 }}>
+        {getReason(CAPABILITIES.BILLING_VIEW_PAYMENT) ||
+          "Payments are currently unavailable."}
+      </Alert>
+    ),
+    [getReason]
+  );
+
+  const initiateReason = getReason(CAPABILITIES.BILLING_INITIATE_PAYMENT);
+
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Complete Payment
-      </Typography>
-      <Typography variant="body1" sx={{ mb: 2 }}>
-        Click the button below to proceed with the payment.
-      </Typography>
-      <Button variant="contained" color="primary" onClick={handlePayment}>
-        Pay Now
-      </Button>
-    </Box>
+    <Guard can={CAPABILITIES.BILLING_VIEW_PAYMENT} fallback={paymentUnavailable}>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Complete Payment
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          Click the button below to proceed with the payment.
+        </Typography>
+        <Guard can={CAPABILITIES.BILLING_INITIATE_PAYMENT}>
+          {({ isAllowed }) => (
+            <>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  if (!isAllowed) {
+                    return;
+                  }
+                  handlePayment();
+                }}
+                disabled={!isAllowed}
+              >
+                Pay Now
+              </Button>
+              {!isAllowed && initiateReason && (
+                <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+                  {initiateReason}
+                </Alert>
+              )}
+            </>
+          )}
+        </Guard>
+      </Box>
+    </Guard>
+  );
+}
+
+function Payment() {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <PaymentContent />
+    </UserProvider>
   );
 }
 
