@@ -26,6 +26,9 @@ import { useNavigate } from "react-router-dom";
 import { useTheme, lighten, darken } from "@mui/material/styles";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
+import { CAPABILITIES } from "../../utils/capabilities";
+import Guard from "./Guard";
+import { UserProvider, useUserCapabilities } from "./UserContext";
 
 const MAX_SCORE = 100;
 
@@ -262,7 +265,7 @@ const DimensionBreakdownList = ({ breakdown = [], sum = 0, overall = null, t }) 
   );
 };
 
-const MatchRecommendations = ({ limit = 10 }) => {
+const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
   const [matches, setMatches] = useState([]);
   const [status, setStatus] = useState({ loading: false, errorKey: "" });
   const [expandedMatchId, setExpandedMatchId] = useState(null);
@@ -275,15 +278,25 @@ const MatchRecommendations = ({ limit = 10 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle();
-  const discoveryDisabled = !lifecycleLoading && isDeactivated;
+  const { hasCapability } = useUserCapabilities();
+  const lifecycleLoading = accountLifecycle?.loading ?? false;
+  const accountDeactivated = accountLifecycle?.isDeactivated ?? false;
+
+  const canViewRecommendations = hasCapability(
+    CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS
+  );
+  const canViewDetails = hasCapability(CAPABILITIES.MATCHES_VIEW_DETAILS);
+  const canSendRequest = hasCapability(CAPABILITIES.MATCHES_SEND_REQUEST);
+  const canNavigateToProfile = hasCapability(
+    CAPABILITIES.MATCHES_NAVIGATE_TO_PROFILE
+  );
 
   useEffect(() => {
     if (lifecycleLoading) {
       return;
     }
 
-    if (discoveryDisabled) {
+    if (!canViewRecommendations) {
       setStatus({ loading: false, errorKey: "" });
       setMatches([]);
       setExpandedMatchId(null);
@@ -317,7 +330,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
     };
 
     loadMatches();
-  }, [limit, discoveryDisabled, lifecycleLoading]);
+  }, [limit, canViewRecommendations, lifecycleLoading]);
 
   const orderedMatches = useMemo(() => {
     if (!Array.isArray(matches)) {
@@ -327,7 +340,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
   }, [matches]);
 
   const handleToggleExpand = async (matchKey, rawUserId) => {
-    if (discoveryDisabled) {
+    if (!canViewDetails) {
       return;
     }
 
@@ -388,7 +401,7 @@ const MatchRecommendations = ({ limit = 10 }) => {
   };
 
   const handleSendRequest = async (matchKey, rawUserId) => {
-    if (discoveryDisabled) {
+    if (!canSendRequest) {
       return;
     }
 
@@ -450,6 +463,8 @@ const MatchRecommendations = ({ limit = 10 }) => {
     }
   };
 
+  const showLifecycleBanner = !lifecycleLoading && accountDeactivated;
+
   return (
     <Card elevation={3} sx={{ borderRadius: 3 }}>
       <CardHeader
@@ -463,314 +478,377 @@ const MatchRecommendations = ({ limit = 10 }) => {
       />
       <Divider />
       <CardContent>
-        {discoveryDisabled ? (
+        {showLifecycleBanner && (
           <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
-        ) : status.loading ? (
-          <Stack spacing={spacing.section}>
-            <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
-            <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
-            <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
-          </Stack>
-        ) : status.errorKey ? (
-          <Typography color="error" variant="body2">
-            {t(status.errorKey)}
-          </Typography>
-        ) : orderedMatches.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            {t("matches.messages.noMatches")}
-          </Typography>
-        ) : (
-          <Stack spacing={spacing.section}>
-            {orderedMatches.map((match, index) => {
-              const matchKey = getMatchIdentifier(match, `match-${index}`);
-              const userId = getMatchIdentifier(match);
-              const isExpanded = expandedMatchId === matchKey;
-              const details = profileDetails[matchKey] || {};
-              const requestStatus = Boolean(details.requestStatus);
-              const displayName =
-                match.username ||
-                t("common.placeholders.userNumber", { id: matchKey });
-              const avatarFallback = displayName.charAt(0)?.toUpperCase() || "?";
-              const messageValue = requestMessages[matchKey] || "";
-              const requestErrorKey = requestErrors[matchKey];
-              const feedbackForMatch = feedback[matchKey];
-              const isTopMatch = index === 0;
-              const canInteract =
-                !discoveryDisabled &&
-                userId !== undefined &&
-                userId !== null &&
-                userId !== "";
-              const locationText =
-                details.location || match.location || "";
-              const bioText = details.bio || match.bio || "";
-              const reasons = match.reasons;
-              const reasonsAreObject = isPlainObject(reasons);
-              const reasonsAreArrayOrString =
-                Array.isArray(reasons) || typeof reasons === "string";
-              const perDimensionScores =
-                reasonsAreObject && Array.isArray(reasons.per_dimension)
-                  ? reasons.per_dimension
-                  : [];
-              const overallCompatibilityPercentage =
-                reasonsAreObject && typeof reasons.raw_score === "number"
-                  ? clampScore(convertToPercentage(reasons.raw_score))
-                  : null;
-              const dimensionBreakdown = perDimensionScores.map(
-                (value, dimensionIndex) => {
-                  const percentage = convertToPercentage(value);
-                  const clampedPercentage = clampScore(percentage);
-                  return {
-                    label: t("matches.labels.dimensionWithIndex", {
-                      index: dimensionIndex + 1,
-                    }),
-                    value: clampedPercentage,
-                  };
-                }
-              );
-              const dimensionSum = dimensionBreakdown.reduce(
-                (accumulator, { value }) => accumulator + value,
-                0
-              );
-
-              return (
-                <Box
-                  key={matchKey}
-                  onClick={
-                    canInteract
-                      ? () => handleToggleExpand(matchKey, userId)
-                      : undefined
-                  }
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${theme.palette.divider}`,
-                    bgcolor: isTopMatch
-                      ? (theme) => theme.palette.action.hover
-                      : "background.paper",
-                    cursor: canInteract ? "pointer" : "default",
-                    transition: "background-color 0.2s ease, border-color 0.2s ease",
-                    "&:hover": canInteract
-                      ? {
-                          borderColor: (theme) => theme.palette.primary.light,
-                        }
-                      : undefined,
-                  }}
-                >
-                  <Stack spacing={spacing.section}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Avatar
-                        variant="rounded"
-                        src={match.profile_image}
-                        alt={match.username}
-                        sx={{ width: isTopMatch ? 72 : 56, height: isTopMatch ? 72 : 56 }}
-                      >
-                        {avatarFallback}
-                      </Avatar>
-                      <Stack spacing={0.25} flexGrow={1}>
-                        {isTopMatch && (
-                          <Typography variant="subtitle2" color="text.secondary">
-                            {t("matches.labels.topMatch")}
-                          </Typography>
-                        )}
-                        <Typography
-                          variant={isTopMatch ? "h6" : "subtitle1"}
-                          sx={{ fontWeight: 700 }}
-                        >
-                          {displayName}
-                        </Typography>
-                        {locationText && (
-                          <Typography
-                            variant={isTopMatch ? "body2" : "body2"}
-                            color="text.secondary"
-                          >
-                            {locationText}
-                          </Typography>
-                        )}
-                      </Stack>
-                      <MuiTooltip title={t("matches.labels.scoreTooltip")}>
-                        <Chip
-                          color={isTopMatch ? "primary" : "default"}
-                          label={t("matches.labels.matchScore", {
-                            score: formatScore(match.score),
-                          })}
-                          sx={{ fontWeight: 600 }}
-                        />
-                      </MuiTooltip>
-                    </Stack>
-
-                    {bioText && (
-                      <Typography variant="body2" color="text.secondary">
-                        {bioText}
-                      </Typography>
-                    )}
-
-                    <LinearProgress
-                      variant="determinate"
-                      value={clampScore(match.score)}
-                      sx={{
-                        height: isTopMatch ? 8 : 6,
-                        borderRadius: 4,
-                        backgroundColor: (theme) => lighten(theme.palette.primary.main, 0.6),
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 4,
-                          backgroundColor: (theme) => theme.palette.primary.main,
-                        },
-                      }}
-                    />
-
-                    {reasons && (
-                      <Box>
-                        {reasonsAreArrayOrString && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block" }}
-                          >
-                            {Array.isArray(reasons)
-                              ? reasons.join(", ")
-                              : reasons}
-                          </Typography>
-                        )}
-                        {reasonsAreObject && (
-                          <Stack spacing={1} mt={reasonsAreArrayOrString ? 1 : 0}>
-                            {overallCompatibilityPercentage !== null && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ fontWeight: 600, display: "block" }}
-                              >
-                                {t("matches.labels.overallCompatibility", {
-                                  score: formatScore(overallCompatibilityPercentage),
-                                })}
-                              </Typography>
-                            )}
-                            {dimensionBreakdown.length > 0 && (
-                              <Stack spacing={0.75}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{ fontWeight: 600 }}
-                                >
-                                  {t("matches.labels.compatibilityBreakdown")}
-                                </Typography>
-                                <DimensionBreakdownList
-                                  breakdown={dimensionBreakdown}
-                                  sum={dimensionSum}
-                                  overall={overallCompatibilityPercentage}
-                                  t={t}
-                                />
-                              </Stack>
-                            )}
-                          </Stack>
-                        )}
-                      </Box>
-                    )}
-
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (!canInteract) {
-                          return;
-                        }
-                        navigate(`/profile/${userId}`);
-                      }}
-                      disabled={!canInteract}
-                      sx={{ alignSelf: "flex-start" }}
-                    >
-                      {t("home.labels.viewProfile")}
-                    </Button>
-
-                    <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                      <Box
-                        sx={{ mt: spacing.section }}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        {loadingDetailsFor === matchKey ? (
-                          <Stack spacing={spacing.section}>
-                            <Skeleton width="80%" />
-                            <Skeleton width="60%" />
-                            <Skeleton width="40%" />
-                            <Skeleton variant="rectangular" width={160} height={40} />
-                          </Stack>
-                        ) : (
-                          <Stack spacing={spacing.section}>
-                            <Typography variant="body1">
-                              <strong>{t("home.labels.bio")}:</strong>{" "}
-                              {bioText || t("common.placeholders.noBio")}
-                            </Typography>
-                            <Typography variant="body1">
-                              <strong>{t("home.labels.location")}:</strong>{" "}
-                              {locationText || t("common.placeholders.notAvailable")}
-                            </Typography>
-                            {details.age && (
-                              <Typography variant="body1">
-                                <strong>{t("home.labels.age")}:</strong>{" "}
-                                {details.age}
-                              </Typography>
-                            )}
-                            <Box>
-                              <TextField
-                                fullWidth
-                                multiline
-                                minRows={2}
-                                label={t("home.labels.requestMessage")}
-                                value={messageValue}
-                                onChange={(event) =>
-                                  handleRequestMessageChange(matchKey, event.target.value)
-                                }
-                                helperText={
-                                  requestErrorKey
-                                    ? t(requestErrorKey)
-                                    : t("home.helpers.requestMessage")
-                                }
-                                error={Boolean(requestErrorKey)}
-                                disabled={requestStatus || discoveryDisabled}
-                              />
-                            </Box>
-                            <Button
-                              variant="contained"
-                              color={requestStatus ? "secondary" : "primary"}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleSendRequest(matchKey, userId);
-                              }}
-                              disabled={
-                                requestStatus ||
-                                sendingRequestFor === matchKey ||
-                                !canInteract
-                              }
-                              sx={{ alignSelf: "flex-start" }}
-                            >
-                              {requestStatus
-                                ? t("home.labels.requestSent")
-                                : t("home.labels.sendRequest")}
-                            </Button>
-                            {feedbackForMatch?.key && (
-                              <Typography
-                                color={
-                                  feedbackForMatch.type === "error"
-                                    ? "error.main"
-                                    : "success.main"
-                                }
-                              >
-                                {t(feedbackForMatch.key)}
-                              </Typography>
-                            )}
-                          </Stack>
-                        )}
-                      </Box>
-                    </Collapse>
-                  </Stack>
-                </Box>
-              );
-            })}
-          </Stack>
         )}
+        <Guard
+          can={CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS}
+          fallback={
+            showLifecycleBanner ? null : (
+              <Typography variant="body2" color="text.secondary">
+                {t("matches.messages.noMatches")}
+              </Typography>
+            )
+          }
+        >
+          {status.loading ? (
+            <Stack spacing={spacing.section}>
+              <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+              <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+              <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+            </Stack>
+          ) : status.errorKey ? (
+            <Typography color="error" variant="body2">
+              {t(status.errorKey)}
+            </Typography>
+          ) : orderedMatches.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              {t("matches.messages.noMatches")}
+            </Typography>
+          ) : (
+            <Stack spacing={spacing.section}>
+              {orderedMatches.map((match, index) => {
+                const matchKey = getMatchIdentifier(match, `match-${index}`);
+                const userId = getMatchIdentifier(match);
+                const isExpanded = expandedMatchId === matchKey;
+                const details = profileDetails[matchKey] || {};
+                const requestStatus = Boolean(details.requestStatus);
+                const displayName =
+                  match.username ||
+                  t("common.placeholders.userNumber", { id: matchKey });
+                const avatarFallback = displayName.charAt(0)?.toUpperCase() || "?";
+                const messageValue = requestMessages[matchKey] || "";
+                const requestErrorKey = requestErrors[matchKey];
+                const feedbackForMatch = feedback[matchKey];
+                const isTopMatch = index === 0;
+                const hasUserIdentifier =
+                  userId !== undefined && userId !== null && userId !== "";
+                const canExpandMatch = canViewDetails && hasUserIdentifier;
+                const canNavigateMatch = canNavigateToProfile && hasUserIdentifier;
+                const canSendForMatch = canSendRequest && hasUserIdentifier;
+                const locationText =
+                  details.location || match.location || "";
+                const bioText = details.bio || match.bio || "";
+                const reasons = match.reasons;
+                const reasonsAreObject = isPlainObject(reasons);
+                const reasonsAreArrayOrString =
+                  Array.isArray(reasons) || typeof reasons === "string";
+                const perDimensionScores =
+                  reasonsAreObject && Array.isArray(reasons.per_dimension)
+                    ? reasons.per_dimension
+                    : [];
+                const overallCompatibilityPercentage =
+                  reasonsAreObject && typeof reasons.raw_score === "number"
+                    ? clampScore(convertToPercentage(reasons.raw_score))
+                    : null;
+                const dimensionBreakdown = perDimensionScores.map(
+                  (value, dimensionIndex) => {
+                    const percentage = convertToPercentage(value);
+                    const clampedPercentage = clampScore(percentage);
+                    return {
+                      label: t("matches.labels.dimensionWithIndex", {
+                        index: dimensionIndex + 1,
+                      }),
+                      value: clampedPercentage,
+                    };
+                  }
+                );
+                const dimensionSum = dimensionBreakdown.reduce(
+                  (accumulator, { value }) => accumulator + value,
+                  0
+                );
+
+                return (
+                  <Guard can={CAPABILITIES.MATCHES_VIEW_DETAILS} key={matchKey}>
+                    {({ isAllowed }) => (
+                      <Box
+                        onClick={() => {
+                          if (!isAllowed || !canExpandMatch) {
+                            return;
+                          }
+                          handleToggleExpand(matchKey, userId);
+                        }}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          border: (theme) => `1px solid ${theme.palette.divider}`,
+                          bgcolor: isTopMatch
+                            ? (theme) => theme.palette.action.hover
+                            : "background.paper",
+                          cursor: isAllowed && canExpandMatch ? "pointer" : "default",
+                          transition:
+                            "background-color 0.2s ease, border-color 0.2s ease",
+                          "&:hover":
+                            isAllowed && canExpandMatch
+                              ? {
+                                  borderColor: (theme) => theme.palette.primary.light,
+                                }
+                              : undefined,
+                        }}
+                      >
+                        <Stack spacing={spacing.section}>
+                          <Stack direction="row" alignItems="center" spacing={2}>
+                            <Avatar
+                              variant="rounded"
+                              src={match.profile_image}
+                              alt={match.username}
+                              sx={{ width: isTopMatch ? 72 : 56, height: isTopMatch ? 72 : 56 }}
+                            >
+                              {avatarFallback}
+                            </Avatar>
+                            <Stack spacing={0.25} flexGrow={1}>
+                              {isTopMatch && (
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  {t("matches.labels.topMatch")}
+                                </Typography>
+                              )}
+                              <Typography
+                                variant={isTopMatch ? "h6" : "subtitle1"}
+                                sx={{ fontWeight: 700 }}
+                              >
+                                {displayName}
+                              </Typography>
+                              {locationText && (
+                                <Typography variant="body2" color="text.secondary">
+                                  {locationText}
+                                </Typography>
+                              )}
+                            </Stack>
+                            <Guard can={CAPABILITIES.MATCHES_VIEW_COMPATIBILITY}>
+                              {({ isAllowed: canShowMatchScore }) =>
+                                canShowMatchScore ? (
+                                  <MuiTooltip title={t("matches.labels.scoreTooltip")}>
+                                    <Chip
+                                      color={isTopMatch ? "primary" : "default"}
+                                      label={t("matches.labels.matchScore", {
+                                        score: formatScore(match.score),
+                                      })}
+                                      sx={{ fontWeight: 600 }}
+                                    />
+                                  </MuiTooltip>
+                                ) : null
+                              }
+                            </Guard>
+                          </Stack>
+
+                          {bioText && (
+                            <Typography variant="body2" color="text.secondary">
+                              {bioText}
+                            </Typography>
+                          )}
+
+                          {reasonsAreArrayOrString && (
+                            <Box>
+                              <Typography variant="subtitle2" color="text.primary" gutterBottom>
+                                {t("matches.labels.otherMatches")}
+                              </Typography>
+                              {Array.isArray(reasons) ? (
+                                <Stack direction="row" flexWrap="wrap" gap={1}>
+                                  {reasons.map((reason, reasonIndex) => (
+                                    <Chip
+                                      key={`${matchKey}-reason-${reasonIndex}`}
+                                      label={reason}
+                                    />
+                                  ))}
+                                </Stack>
+                              ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                  {reasons}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+
+                          <Guard can={CAPABILITIES.MATCHES_VIEW_COMPATIBILITY}>
+                            {({ isAllowed: canShowCompatibility }) =>
+                              canShowCompatibility ? (
+                                <Stack spacing={0.75}>
+                                  <Stack direction="row" spacing={1} alignItems="center">
+                                    <LinearProgress
+                                      variant="determinate"
+                                      value={Math.min(
+                                        100,
+                                        Math.max(0, Number(match.score) || 0)
+                                      )}
+                                      sx={{
+                                        height: 8,
+                                        borderRadius: 999,
+                                        flex: 1,
+                                        bgcolor: theme.palette.action.hover,
+                                      }}
+                                    />
+                                    <Typography variant="subtitle2" fontWeight={700}>
+                                      {t("matches.labels.matchScore", {
+                                        score: formatScore(
+                                          Math.min(MAX_SCORE, Number(match.score) || 0)
+                                        ),
+                                      })}
+                                    </Typography>
+                                  </Stack>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {t("matches.labels.scoreTooltip")}
+                                  </Typography>
+                                </Stack>
+                              ) : null
+                            }
+                          </Guard>
+
+                          <Guard can={CAPABILITIES.MATCHES_NAVIGATE_TO_PROFILE}>
+                            {({ isAllowed: canVisitProfileAllowed }) => (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  if (!canVisitProfileAllowed || !canNavigateMatch) {
+                                    return;
+                                  }
+                                  navigate(`/profile/${userId}`);
+                                }}
+                                disabled={!canVisitProfileAllowed || !canNavigateMatch}
+                                sx={{ alignSelf: "flex-start" }}
+                              >
+                                {t("home.labels.viewProfile")}
+                              </Button>
+                            )}
+                          </Guard>
+
+                          <Collapse in={isAllowed && isExpanded} timeout="auto" unmountOnExit>
+                            <Box
+                              sx={{ mt: spacing.section }}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {loadingDetailsFor === matchKey ? (
+                                <Stack spacing={spacing.section}>
+                                  <Skeleton width="80%" />
+                                  <Skeleton width="60%" />
+                                  <Skeleton width="40%" />
+                                  <Skeleton variant="rectangular" width={160} height={40} />
+                                </Stack>
+                              ) : (
+                                <Stack spacing={spacing.section}>
+                                  <Typography variant="body1">
+                                    <strong>{t("home.labels.bio")}:</strong>{" "}
+                                    {bioText || t("common.placeholders.noBio")}
+                                  </Typography>
+                                  <Typography variant="body1">
+                                    <strong>{t("home.labels.location")}:</strong>{" "}
+                                    {locationText || t("common.placeholders.notAvailable")}
+                                  </Typography>
+                                  {details.age && (
+                                    <Typography variant="body1">
+                                      <strong>{t("home.labels.age")}:</strong>{" "}
+                                      {details.age}
+                                    </Typography>
+                                  )}
+                                  <Guard can={CAPABILITIES.MATCHES_VIEW_COMPATIBILITY}>
+                                    {({ isAllowed: canShowBreakdown }) =>
+                                      canShowBreakdown && dimensionBreakdown.length > 0 ? (
+                                        <Stack spacing={spacing.item}>
+                                          <Typography
+                                            variant="subtitle2"
+                                            color="text.secondary"
+                                            fontWeight={600}
+                                          >
+                                            {t("matches.labels.compatibilityBreakdown")}
+                                          </Typography>
+                                          <DimensionBreakdownList
+                                            breakdown={dimensionBreakdown}
+                                            sum={dimensionSum}
+                                            overall={overallCompatibilityPercentage}
+                                            t={t}
+                                          />
+                                        </Stack>
+                                      ) : null
+                                    }
+                                  </Guard>
+                                  <Box>
+                                    <TextField
+                                      fullWidth
+                                      multiline
+                                      minRows={2}
+                                      label={t("home.labels.requestMessage")}
+                                      value={messageValue}
+                                      onChange={(event) =>
+                                        handleRequestMessageChange(matchKey, event.target.value)
+                                      }
+                                      helperText={
+                                        requestErrorKey
+                                          ? t(requestErrorKey)
+                                          : t("home.helpers.requestMessage")
+                                      }
+                                      error={Boolean(requestErrorKey)}
+                                      disabled={requestStatus || !canSendForMatch}
+                                    />
+                                  </Box>
+                                  <Guard can={CAPABILITIES.MATCHES_SEND_REQUEST}>
+                                    {({ isAllowed: canSubmitRequestAllowed }) => (
+                                      <Button
+                                        variant="contained"
+                                        color={requestStatus ? "secondary" : "primary"}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          if (!canSubmitRequestAllowed || !canSendForMatch) {
+                                            return;
+                                          }
+                                          handleSendRequest(matchKey, userId);
+                                        }}
+                                        disabled={
+                                          !canSubmitRequestAllowed ||
+                                          !canSendForMatch ||
+                                          requestStatus ||
+                                          sendingRequestFor === matchKey
+                                        }
+                                        sx={{ alignSelf: "flex-start" }}
+                                      >
+                                        {requestStatus
+                                          ? t("home.labels.requestSent")
+                                          : t("home.labels.sendRequest")}
+                                      </Button>
+                                    )}
+                                  </Guard>
+                                  {feedbackForMatch?.key && (
+                                    <Typography
+                                      color={
+                                        feedbackForMatch.type === "error"
+                                          ? "error.main"
+                                          : "success.main"
+                                      }
+                                    >
+                                      {t(feedbackForMatch.key)}
+                                    </Typography>
+                                  )}
+                                </Stack>
+                              )}
+                            </Box>
+                          </Collapse>
+                        </Stack>
+                      </Box>
+                    )}
+                  </Guard>
+                );
+              })}
+            </Stack>
+          )}
+        </Guard>
       </CardContent>
     </Card>
   );
 };
+
+const MatchRecommendations = (props) => {
+  const accountLifecycle = useAccountLifecycle();
+
+  return (
+    <UserProvider accountStatus={accountLifecycle?.status}>
+      <MatchRecommendationsContent
+        {...props}
+        accountLifecycle={accountLifecycle}
+      />
+    </UserProvider>
+  );
+};
+
+export { MatchRecommendationsContent };
 
 export default MatchRecommendations;
