@@ -84,9 +84,9 @@ function HomeContent({ accountLifecycle }) {
   const canExpandUserPreview = hasCapability(
     CAPABILITIES.DISCOVERY_EXPAND_USER_PREVIEW
   );
-  const canNavigateToProfile = hasCapability(
-    CAPABILITIES.DISCOVERY_NAVIGATE_TO_PROFILE
-  );
+  const canNavigateToProfile =
+    discoveryBlockedByLifecycle ||
+    hasCapability(CAPABILITIES.DISCOVERY_NAVIGATE_TO_PROFILE);
   const canComposeRequest = hasCapability(
     CAPABILITIES.DISCOVERY_COMPOSE_REQUEST
   );
