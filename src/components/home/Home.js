@@ -71,10 +71,12 @@ function HomeContent({ accountLifecycle }) {
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
   const discoveryBlockedByLifecycle = !lifecycleLoading && isDeactivated;
-  const canViewHome = hasCapability(CAPABILITIES.DISCOVERY_VIEW_HOME);
-  const canViewActiveUsers = hasCapability(
-    CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS
-  );
+  const canViewHome =
+    discoveryBlockedByLifecycle ||
+    hasCapability(CAPABILITIES.DISCOVERY_VIEW_HOME);
+  const canViewActiveUsers =
+    discoveryBlockedByLifecycle ||
+    hasCapability(CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS);
   const canUseFilters = hasCapability(CAPABILITIES.DISCOVERY_USE_FILTERS);
   const canToggleFilterPanel = hasCapability(
     CAPABILITIES.DISCOVERY_TOGGLE_FILTER_PANEL
@@ -531,17 +533,18 @@ function HomeContent({ accountLifecycle }) {
     );
   };
 
+  const activeUsersGuardRequirement = discoveryBlockedByLifecycle
+    ? null
+    : CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS;
+
   return (
     <Container sx={{ p: spacing.pagePadding }}>
       <Stack spacing={spacing.section}>
-        {discoveryBlockedByLifecycle ? (
-          <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
-        ) : null}
         <Guard can={CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS}>
           <MatchRecommendations limit={12} />
         </Guard>
         <Guard
-          can={CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS}
+          can={activeUsersGuardRequirement}
           fallback={
             <Alert severity="info">
               {t("home.messages.activeUsersUnavailable", {

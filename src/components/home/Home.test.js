@@ -23,7 +23,7 @@ jest.mock("../matches/MatchRecommendations", () => () => (
 ));
 
 describe("Home discovery gating", () => {
-  it("hides active users and shows the deactivation banner when discovery is disabled", async () => {
+  it("keeps active users visible without showing the deactivation banner", async () => {
     const contextValue = {
       status: "deactivated",
       loading: false,
@@ -49,9 +49,11 @@ describe("Home discovery gating", () => {
     );
 
     expect(
-      await screen.findByText(
-        "Access to the discovery feed is unavailable for your account."
-      )
+      await screen.findByText("home.headers.activeUsers")
     ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(ACCOUNT_DEACTIVATED_MESSAGE)
+    ).not.toBeInTheDocument();
   });
 });
