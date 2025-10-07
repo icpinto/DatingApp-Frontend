@@ -5,6 +5,11 @@ import Home from "./Home";
 import { AccountLifecycleContext } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 
+jest.mock("../../services/api", () => ({
+  get: jest.fn(),
+  post: jest.fn(),
+}));
+
 jest.mock("../../i18n", () => ({
   useTranslation: () => ({
     t: (key, options) => options?.defaultValue ?? key,
@@ -36,5 +41,8 @@ describe("Home discovery gating", () => {
 
     expect(screen.getByText(ACCOUNT_DEACTIVATED_MESSAGE)).toBeInTheDocument();
     expect(screen.queryByText("home.headers.activeUsers")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Active user discovery is not available for your account.")
+    ).toBeInTheDocument();
   });
 });
