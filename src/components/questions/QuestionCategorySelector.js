@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
 import questionnaireService from "../../services/questionnaireService";
 import Guard from "./Guard";
@@ -7,19 +7,39 @@ import { CAPABILITIES } from "../../utils/capabilities";
 
 function QuestionCategorySelector({ value, onChange, disabled = false }) {
   const [categories, setCategories] = useState([]);
-  const { getReason } = useUserContext();
+  const { getReason, hasCapability } = useUserContext();
+  const canSelectCategory = useMemo(
+    () => hasCapability(CAPABILITIES.INSIGHTS_SELECT_CATEGORY),
+    [hasCapability]
+  );
 
   useEffect(() => {
+    if (disabled || !canSelectCategory) {
+      setCategories([]);
+      return;
+    }
+
+    let isSubscribed = true;
+
     const fetchCategories = async () => {
       try {
         const res = await questionnaireService.get("/questions/categories");
-        setCategories(res.data?.categories || []);
+        if (isSubscribed) {
+          setCategories(res.data?.categories || []);
+        }
       } catch (err) {
-        console.error("Error fetching categories:", err);
+        if (isSubscribed) {
+          console.error("Error fetching categories:", err);
+        }
       }
     };
+
     fetchCategories();
-  }, []);
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [disabled, canSelectCategory]);
 
   const capabilityReason = getReason(CAPABILITIES.INSIGHTS_SELECT_CATEGORY);
 
