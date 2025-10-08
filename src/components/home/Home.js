@@ -101,7 +101,7 @@ function HomeContent({ accountLifecycle }) {
 
   const fetchActiveUsers = useCallback(
     async (params = {}) => {
-      if (!canViewActiveUsers) {
+      if (discoveryBlockedByLifecycle || !canViewActiveUsers) {
         if (activeUsersAbortRef.current) {
           activeUsersAbortRef.current.abort();
           activeUsersAbortRef.current = null;
@@ -160,7 +160,11 @@ function HomeContent({ accountLifecycle }) {
         setLoadingUsers(false);
       }
     },
-    [canViewActiveUsers, getUserIdentifier]
+    [
+      canViewActiveUsers,
+      discoveryBlockedByLifecycle,
+      getUserIdentifier,
+    ]
   );
 
   const buildFilterParams = useCallback(() => {
@@ -231,7 +235,7 @@ function HomeContent({ accountLifecycle }) {
 
   // Toggle and fetch detailed profile data
   const handleToggleExpand = async (rawUserId) => {
-    if (!canExpandUserPreview) {
+    if (!canExpandUserPreview || discoveryBlockedByLifecycle) {
       return;
     }
     const userId = Number(rawUserId);

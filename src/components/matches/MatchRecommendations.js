@@ -321,10 +321,14 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
       return () => {};
     }
 
-    if (!canViewRecommendations) {
+    if (!canViewRecommendations || requestsBlockedByLifecycle) {
       setStatus({ loading: false, errorKey: "" });
       setMatches([]);
       setExpandedMatchId(null);
+      setProfileDetails({});
+      setRequestMessages({});
+      setRequestErrors({});
+      setFeedback({});
       if (detailAbortRef.current) {
         detailAbortRef.current.abort();
         detailAbortRef.current = null;
@@ -374,6 +378,7 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
     limit,
     canViewRecommendations,
     lifecycleLoading,
+    requestsBlockedByLifecycle,
     detailAbortRef,
   ]);
 
@@ -385,7 +390,7 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
   }, [matches]);
 
   const handleToggleExpand = async (matchKey, rawUserId) => {
-    if (!canViewDetails) {
+    if (!canViewDetails || requestsBlockedByLifecycle) {
       return;
     }
 
