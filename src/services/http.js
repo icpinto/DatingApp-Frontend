@@ -2,7 +2,7 @@
 import axios from "axios";
 import { isAbortError } from "../utils/http";
 
-const pendingControllers = new Set<AbortController>();
+const pendingControllers = new Set();
 
 const baseURL =
   process.env.REACT_APP_API_SERVICE_URL || "http://localhost:8080";
