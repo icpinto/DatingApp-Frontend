@@ -9,7 +9,7 @@ jest.mock("./i18n", () => ({
   languageOptions: [],
 }));
 
-jest.mock("./services/api", () => ({
+jest.mock("./shared/services/api", () => ({
   get: jest.fn(() => Promise.resolve({ data: {} })),
   post: jest.fn(() => Promise.resolve({ data: {} })),
 }));
