@@ -1,4 +1,4 @@
-import httpClient from "../../services/http";
+import httpClient from "./api";
 
 const chatBaseURL =
   process.env.REACT_APP_CHAT_SERVICE_URL || "http://localhost:8082";

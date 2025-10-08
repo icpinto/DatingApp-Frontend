@@ -22,7 +22,7 @@ import {
 import { useAccountLifecycle } from "./AccountLifecycleContext";
 import { useUserCapabilities } from "./UserContext";
 import { CAPABILITIES } from "../../domain/capabilities";
-import { createWebSocketManager } from "../../services/ws";
+import { createWebSocketManager } from "../services/ws";
 
 const WebSocketContext = createContext(null);
 

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Alert, Box, Typography } from "@mui/material";
 import { CAPABILITIES } from "../../domain/capabilities";
-import { cancelAllRequests } from "../../services/http";
+import { cancelAllRequests } from "../services/api";
 import { useWebSocket } from "../context/WebSocketProvider";
 import { useUserCapabilities, useUserContext } from "../context/UserContext";
 
