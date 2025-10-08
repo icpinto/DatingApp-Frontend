@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useUserCapabilities } from "../context/UserContext";
+import { useUserCapabilities, useUserContext } from "../context/UserContext";
 import { trackExternalRequest } from "../services/api";
 import { isAbortError } from "../../utils/http";
 
@@ -132,6 +132,21 @@ export const useCapabilityQuery = (
   } = options;
 
   const { hasCapability } = useUserCapabilities();
+  const { user } = useUserContext();
+  const accountScopeKey = useMemo(() => {
+    const rawUser = user?.raw || {};
+    return (
+      rawUser.id ??
+      rawUser.userId ??
+      rawUser.user_id ??
+      rawUser.accountId ??
+      rawUser.account_id ??
+      rawUser.account?.id ??
+      rawUser.email ??
+      rawUser.username ??
+      "anonymous"
+    );
+  }, [user]);
   const normalizedCapabilities = useMemo(
     () => normalizeCapabilities(requiredCapabilities),
     [requiredCapabilities]
@@ -144,8 +159,8 @@ export const useCapabilityQuery = (
 
   const enabled = capabilityReady && baseEnabled;
   const serializedKey = useMemo(
-    () => stableSerialize(queryKey),
-    [queryKey]
+    () => stableSerialize([accountScopeKey, queryKey]),
+    [accountScopeKey, queryKey]
   );
 
   const entryRef = useRef();
