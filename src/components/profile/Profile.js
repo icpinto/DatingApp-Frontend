@@ -31,7 +31,7 @@ import { useTranslation } from "../../i18n";
 import { formatProfileData } from "./profileUtils";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { useUserContext } from "../../context/UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 import { isAbortError } from "../../utils/http";
 
 const calculateAge = (dateString) => {
@@ -104,22 +104,23 @@ function ProfileContent() {
   const [requestMessage, setRequestMessage] = useState("");
   const [requestMessageError, setRequestMessageError] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
-  const { hasCapability, getReason } = useUserContext();
-  const canViewProfile = hasCapability(CAPABILITIES.PROFILE_VIEW_MEMBER);
+  const { groups } = useUserCapabilities();
+  const profileCapabilities = groups.profile;
+  const canViewProfile = profileCapabilities.viewMember.can;
 
   const sendRequestReason = useMemo(
-    () => getReason(CAPABILITIES.PROFILE_SEND_REQUEST),
-    [getReason]
+    () => profileCapabilities.sendRequest.reason,
+    [profileCapabilities.sendRequest.reason]
   );
 
   const viewSectionsReason = useMemo(
-    () => getReason(CAPABILITIES.PROFILE_VIEW_SECTIONS),
-    [getReason]
+    () => profileCapabilities.viewSections.reason,
+    [profileCapabilities.viewSections.reason]
   );
 
   const viewProfileReason = useMemo(
-    () => getReason(CAPABILITIES.PROFILE_VIEW_MEMBER),
-    [getReason]
+    () => profileCapabilities.viewMember.reason,
+    [profileCapabilities.viewMember.reason]
   );
 
   const handleNavigateBack = () => {
@@ -202,7 +203,7 @@ function ProfileContent() {
   }, [userId, canViewProfile, viewProfileReason]);
 
   const handleSendRequest = async () => {
-    if (!hasCapability(CAPABILITIES.PROFILE_SEND_REQUEST)) {
+    if (!profileCapabilities.sendRequest.can) {
       return;
     }
     const trimmedMessage = requestMessage.trim();
@@ -278,11 +279,11 @@ function ProfileContent() {
   const profileUnavailableFallback = useCallback(
     () => (
       <Alert severity="warning">
-        {getReason(CAPABILITIES.PROFILE_VIEW_MEMBER) ||
+        {profileCapabilities.viewMember.reason ||
           t("profile.viewer.noProfile")}
       </Alert>
     ),
-    [getReason, t]
+    [profileCapabilities.viewMember.reason, t]
   );
 
   return (

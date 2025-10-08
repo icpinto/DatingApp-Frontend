@@ -29,7 +29,7 @@ import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import Guard from "./Guard";
 import { CAPABILITIES } from "../../utils/capabilities";
-import { useUserContext } from "../../context/UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 function QuestionsComponent({
   isLocked = false,
@@ -50,17 +50,18 @@ function QuestionsComponent({
   const userId = localStorage.getItem("user_id") || "";
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
-  const { hasCapability, getReason } = useUserContext();
+  const { groups } = useUserCapabilities();
+  const insightCapabilities = groups.insights;
   const questionnaireDisabled = useMemo(
     () => !lifecycleLoading && isDeactivated,
     [isDeactivated, lifecycleLoading]
   );
-  const canAnswerQuestionnaire = hasCapability(
-    CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE
-  );
+  const answerCapability = insightCapabilities.answerQuestionnaire;
+  const viewQuestionnaireCapability = insightCapabilities.viewQuestionnaire;
+  const canAnswerQuestionnaire = answerCapability.can;
   const capabilityLockReason = canAnswerQuestionnaire
     ? undefined
-    : getReason(CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE);
+    : answerCapability.reason;
   const isCapabilityLocked = !canAnswerQuestionnaire;
   const effectiveLock = questionnaireDisabled || isLocked || isCapabilityLocked;
   const combinedLockReason = questionnaireDisabled
@@ -164,11 +165,11 @@ function QuestionsComponent({
   const viewFallback = useCallback(
     () => (
       <Alert severity="warning" sx={{ borderRadius: 2 }}>
-        {getReason(CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE) ||
+        {viewQuestionnaireCapability.reason ||
           "Match questionnaire is currently unavailable."}
       </Alert>
     ),
-    [getReason]
+    [viewQuestionnaireCapability.reason]
   );
 
   return (

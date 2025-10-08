@@ -10,7 +10,6 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { spacing } from "../../styles";
-import { CAPABILITIES } from "../../utils/capabilities";
 import { useUserCapabilities } from "../../context/UserContext";
 
 function ChatHeaderSection({
@@ -23,14 +22,18 @@ function ChatHeaderSection({
   isBlocked,
   isBlocking,
 }) {
-  const { hasCapability } = useUserCapabilities();
-  const canBlockUsers = hasCapability(CAPABILITIES.MESSAGING_BLOCK_USER);
+  const { groups } = useUserCapabilities();
+  const blockCapability = groups.messaging.blockUser;
+  const canBlockUsers = blockCapability.can;
   const blockButtonDisabled = isBlocked || isBlocking || !canBlockUsers;
   const blockButtonLabel = isBlocked
     ? "Blocked"
     : isBlocking
     ? "Blocking…"
     : "Block user";
+  const blockButtonTitle = canBlockUsers
+    ? undefined
+    : blockCapability.reason || "You do not have permission to block users.";
 
   return (
     <CardHeader
@@ -50,11 +53,7 @@ function ChatHeaderSection({
             size="small"
             onClick={onBlockUser}
             disabled={blockButtonDisabled}
-            title={
-              !canBlockUsers
-                ? "You do not have permission to block users."
-                : undefined
-            }
+            title={blockButtonTitle}
           >
             {blockButtonLabel}
           </Button>

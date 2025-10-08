@@ -11,7 +11,7 @@ import {
   defaultUserSnapshot,
   normalizeSnapshotPayload,
 } from "../utils/userDimensions";
-import { deriveCapabilities } from "../utils/capabilities";
+import { CAPABILITY_GROUPS, deriveCapabilities } from "../utils/capabilities";
 
 const noop = () => {};
 
@@ -86,6 +86,35 @@ const mergeFacts = (previous, next = {}) => {
   return changed ? merged : previous;
 };
 
+const buildCapabilityEntry = (capability, allowed, reasons) => ({
+  capability,
+  can: Boolean(allowed[capability]),
+  reason: reasons[capability],
+});
+
+const buildCapabilitySelection = (schema, allowed, reasons) => {
+  if (!schema) {
+    return {};
+  }
+
+  if (typeof schema === "string") {
+    return buildCapabilityEntry(schema, allowed, reasons);
+  }
+
+  if (Array.isArray(schema)) {
+    return schema.map((entry) => buildCapabilitySelection(entry, allowed, reasons));
+  }
+
+  if (typeof schema === "object") {
+    return Object.entries(schema).reduce((acc, [key, value]) => {
+      acc[key] = buildCapabilitySelection(value, allowed, reasons);
+      return acc;
+    }, {});
+  }
+
+  return {};
+};
+
 export const UserContext = createContext({
   user: defaultSnapshot,
   setUser: noop,
@@ -104,6 +133,7 @@ export const UserContext = createContext({
   updateCorePreferencesStatus: noop,
   corePreferencesStatus: defaultCorePreferencesStatus,
   questionnaireLocked: defaultFacts.questionnaireLocked,
+  capabilitySelectors: { select: () => ({}), groups: {} },
 });
 
 export const UserProvider = ({
@@ -284,8 +314,14 @@ export const UserProvider = ({
     [snapshot, capabilityFacts]
   );
 
-  const allowed = capabilityMatrix.allowed || {};
-  const reasons = capabilityMatrix.reasons || {};
+  const allowed = useMemo(
+    () => capabilityMatrix.allowed || {},
+    [capabilityMatrix.allowed]
+  );
+  const reasons = useMemo(
+    () => capabilityMatrix.reasons || {},
+    [capabilityMatrix.reasons]
+  );
 
   const capabilities = useMemo(() => {
     const set = new Set();
@@ -302,6 +338,22 @@ export const UserProvider = ({
   ]);
 
   const getReason = useCallback((capability) => reasons[capability], [reasons]);
+
+  const selectCapabilities = useCallback(
+    (schema) => buildCapabilitySelection(schema, allowed, reasons),
+    [allowed, reasons]
+  );
+
+  const capabilitySelectors = useMemo(
+    () => ({
+      select: selectCapabilities,
+      groups: Object.entries(CAPABILITY_GROUPS).reduce((acc, [groupKey, schema]) => {
+        acc[groupKey] = selectCapabilities(schema);
+        return acc;
+      }, {}),
+    }),
+    [selectCapabilities]
+  );
 
   const value = useMemo(
     () => ({
@@ -322,6 +374,7 @@ export const UserProvider = ({
       updateCorePreferencesStatus,
       corePreferencesStatus,
       questionnaireLocked: capabilityFacts.questionnaireLocked,
+      capabilitySelectors,
     }),
     [
       snapshot,
@@ -340,6 +393,7 @@ export const UserProvider = ({
       clearConversationFacts,
       updateCorePreferencesStatus,
       corePreferencesStatus,
+      capabilitySelectors,
     ]
   );
 
@@ -349,12 +403,16 @@ export const UserProvider = ({
 export const useUserContext = () => useContext(UserContext);
 
 export const useUserCapabilities = () => {
-  const { capabilities, hasCapability, getReason } = useUserContext();
+  const { capabilities, hasCapability, getReason, capabilitySelectors } =
+    useUserContext();
   const capabilityList = useMemo(() => Array.from(capabilities), [capabilities]);
   return {
     capabilities: capabilityList,
     hasCapability,
     getReason,
+    groups: capabilitySelectors.groups,
+    select: capabilitySelectors.select,
+    selectors: capabilitySelectors,
   };
 };
 

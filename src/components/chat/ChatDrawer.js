@@ -11,7 +11,6 @@ import chatService from "../../services/chatService";
 import { useWebSocket } from "../../context/WebSocketProvider";
 import { spacing } from "../../styles";
 import { toNumberOrUndefined } from "../../utils/conversationUtils";
-import { CAPABILITIES } from "../../utils/capabilities";
 import ChatHeaderSection from "./ChatHeaderSection";
 import ChatMessageList from "./ChatMessageList";
 import MessageComposerSection from "./MessageComposer";
@@ -53,14 +52,15 @@ function ChatDrawer({
   const [isBlocking, setIsBlocking] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const messagesContainerRef = useRef(null);
-  const { hasCapability } = useUserCapabilities();
-  const canViewHistory = hasCapability(CAPABILITIES.MESSAGING_VIEW_HISTORY);
-  const canMarkRead = hasCapability(CAPABILITIES.MESSAGING_MARK_READ);
-  const canSendMessage = hasCapability(CAPABILITIES.MESSAGING_SEND_MESSAGE);
-  const canBlockUsers = hasCapability(CAPABILITIES.MESSAGING_BLOCK_USER);
-  const canViewPartnerStatus = hasCapability(
-    CAPABILITIES.MESSAGING_VIEW_PARTNER_STATUS
-  );
+  const { groups } = useUserCapabilities();
+  const messagingCapabilities = groups.messaging;
+  const canViewHistory = messagingCapabilities.viewHistory.can;
+  const canMarkRead = messagingCapabilities.markRead.can;
+  const canSendMessage = messagingCapabilities.sendMessage.can;
+  const blockCapability = messagingCapabilities.blockUser;
+  const canBlockUsers = blockCapability.can;
+  const blockRestrictionReason = blockCapability.reason;
+  const canViewPartnerStatus = messagingCapabilities.viewPartnerStatus.can;
 
   const normalizedConversationId = useMemo(
     () => toNumberOrUndefined(conversationId),
@@ -381,7 +381,9 @@ function ChatDrawer({
     }
 
     if (!canBlockUsers) {
-      setBlockError("You do not have permission to block users.");
+      setBlockError(
+        blockRestrictionReason || "You do not have permission to block users."
+      );
       return;
     }
 
@@ -405,7 +407,7 @@ function ChatDrawer({
     } finally {
       setIsBlocking(false);
     }
-  }, [canBlockUsers, conversationId, receiverId]);
+  }, [blockRestrictionReason, canBlockUsers, conversationId, receiverId]);
 
   if (!open) {
     return null;

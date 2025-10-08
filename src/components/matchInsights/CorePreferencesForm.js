@@ -21,7 +21,6 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import matchPreferencesService from "../../services/matchPreferences";
 import { spacing } from "../../styles";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
-import { CAPABILITIES } from "../../utils/capabilities";
 import { useUserCapabilities, useUserContext } from "../../context/UserContext";
 
 const DEFAULT_PREFERENCES = {
@@ -128,13 +127,16 @@ function CorePreferencesForm({ onStatusChange, lifecycleLoading = false }) {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [hasSavedPreferences, setHasSavedPreferences] = useState(false);
   const { updateCorePreferencesStatus } = useUserContext();
-  const { hasCapability, getReason } = useUserCapabilities();
-  const canEditPreferences = hasCapability(CAPABILITIES.INSIGHTS_EDIT_CORE_PREFERENCES);
-  const canSavePreferences = hasCapability(CAPABILITIES.INSIGHTS_SAVE_CORE_PREFERENCES);
+  const { groups } = useUserCapabilities();
+  const insightCapabilities = groups.insights;
+  const editCapability = insightCapabilities.editCorePreferences;
+  const saveCapability = insightCapabilities.saveCorePreferences;
+  const canEditPreferences = editCapability.can;
+  const canSavePreferences = saveCapability.can;
   const editRestrictionMessage =
-    getReason(CAPABILITIES.INSIGHTS_EDIT_CORE_PREFERENCES) || ACCOUNT_DEACTIVATED_MESSAGE;
+    editCapability.reason || ACCOUNT_DEACTIVATED_MESSAGE;
   const saveRestrictionMessage =
-    getReason(CAPABILITIES.INSIGHTS_SAVE_CORE_PREFERENCES) || editRestrictionMessage;
+    saveCapability.reason || editRestrictionMessage;
 
   const notifyStatus = useCallback(
     (status = { isLoading: false, isReady: false }) => {

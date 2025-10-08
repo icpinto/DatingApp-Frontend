@@ -155,23 +155,17 @@ function MessagesContent({
   const { t } = useTranslation();
   const { conversations: wsConversations, markRead, hydrateConversations } =
     useWebSocket();
-  const { hasCapability } = useUserCapabilities();
+  const { groups } = useUserCapabilities();
   const { setConversationFacts, clearConversationFacts } = useUserContext();
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
   const chatDisabled = !lifecycleLoading && isDeactivated;
-  const canViewInbox = hasCapability(CAPABILITIES.MESSAGING_VIEW_INBOX);
-  const canViewConversationList = hasCapability(
-    CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS
-  );
-  const canOpenConversation = hasCapability(
-    CAPABILITIES.MESSAGING_OPEN_CONVERSATION
-  );
-  const canViewHistory = hasCapability(CAPABILITIES.MESSAGING_VIEW_HISTORY);
-  const canMarkRead = hasCapability(CAPABILITIES.MESSAGING_MARK_READ);
-  const canViewPartnerStatus = hasCapability(
-    CAPABILITIES.MESSAGING_VIEW_PARTNER_STATUS
-  );
+  const messagingCapabilities = groups.messaging;
+  const canViewInbox = messagingCapabilities.viewInbox.can;
+  const canViewConversationList = messagingCapabilities.viewConversations.can;
+  const canOpenConversation = messagingCapabilities.openConversation.can;
+  const canMarkRead = messagingCapabilities.markRead.can;
+  const canViewPartnerStatus = messagingCapabilities.viewPartnerStatus.can;
 
   const resolveLifecyclePlaceholder = useCallback(
     (status) => {

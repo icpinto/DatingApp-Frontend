@@ -77,11 +77,11 @@ const TAB_CONFIG = [
 ];
 
 function MainTabs() {
-  const { hasCapability } = useUserCapabilities();
-  const visibleTabs = useMemo(
-    () => TAB_CONFIG.filter((tab) => hasCapability(tab.capability)),
-    [hasCapability]
-  );
+  const { select } = useUserCapabilities();
+  const visibleTabs = useMemo(() => {
+    const selection = select(TAB_CONFIG.map((tab) => tab.capability));
+    return TAB_CONFIG.filter((tab, index) => selection[index]?.can);
+  }, [select]);
   const [activeTab, setActiveTab] = useState(() => visibleTabs[0]?.key ?? null);
   const [requestCount, setRequestCount] = useState(0);
   const { hydrateConversations, totalUnreadCount } = useWebSocket();

@@ -2,7 +2,6 @@ import React from "react";
 import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { spacing } from "../../styles";
-import { CAPABILITIES } from "../../utils/capabilities";
 import { useUserCapabilities } from "../../context/UserContext";
 
 function ChatMessageList({
@@ -15,11 +14,13 @@ function ChatMessageList({
   blockSuccess,
   lifecycleStatus,
 }) {
-  const { hasCapability } = useUserCapabilities();
-  const canViewHistory = hasCapability(CAPABILITIES.MESSAGING_VIEW_HISTORY);
-  const canViewPartnerStatus = hasCapability(
-    CAPABILITIES.MESSAGING_VIEW_PARTNER_STATUS
-  );
+  const { groups } = useUserCapabilities();
+  const viewHistoryCapability = groups.messaging.viewHistory;
+  const partnerStatusCapability = groups.messaging.viewPartnerStatus;
+  const canViewHistory = viewHistoryCapability.can;
+  const canViewPartnerStatus = partnerStatusCapability.can;
+  const viewHistoryDeniedMessage =
+    viewHistoryCapability.reason || "You do not have permission to view this conversation.";
 
   if (!canViewHistory) {
     return (
@@ -41,7 +42,7 @@ function ChatMessageList({
         }}
       >
         <Typography variant="body2">
-          You do not have permission to view this conversation.
+          {viewHistoryDeniedMessage}
         </Typography>
       </Box>
     );

@@ -3,7 +3,7 @@ import { Alert, Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
-import { useUserContext } from "../../context/UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -17,10 +17,13 @@ const loadRazorpayScript = () => {
 
 function PaymentContent() {
   const navigate = useNavigate();
-  const { hasCapability, getReason } = useUserContext();
+  const { groups } = useUserCapabilities();
+  const billingCapabilities = groups.billing;
+  const initiateCapability = billingCapabilities.initiatePayment;
+  const viewCapability = billingCapabilities.viewPayment;
 
   const handlePayment = async () => {
-    if (!hasCapability(CAPABILITIES.BILLING_INITIATE_PAYMENT)) {
+    if (!initiateCapability.can) {
       return;
     }
     const res = await loadRazorpayScript();
@@ -77,14 +80,14 @@ function PaymentContent() {
   const paymentUnavailable = useCallback(
     () => (
       <Alert severity="warning" sx={{ borderRadius: 2 }}>
-        {getReason(CAPABILITIES.BILLING_VIEW_PAYMENT) ||
+        {viewCapability.reason ||
           "Payments are currently unavailable."}
       </Alert>
     ),
-    [getReason]
+    [viewCapability.reason]
   );
 
-  const initiateReason = getReason(CAPABILITIES.BILLING_INITIATE_PAYMENT);
+  const initiateReason = initiateCapability.reason;
 
   return (
     <Guard can={CAPABILITIES.BILLING_VIEW_PAYMENT} fallback={paymentUnavailable}>

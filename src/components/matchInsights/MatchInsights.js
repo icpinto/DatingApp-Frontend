@@ -9,17 +9,21 @@ import Guard from "./Guard";
 import { useUserCapabilities, useUserContext } from "../../context/UserContext";
 
 const QuestionnaireSection = ({ lifecycleLoading }) => {
-  const { hasCapability, getReason } = useUserCapabilities();
-  const canAnswer = hasCapability(CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE);
+  const { groups } = useUserCapabilities();
+  const insightCapabilities = groups.insights;
+  const answerCapability = insightCapabilities.answerQuestionnaire;
+  const viewQuestionnaireCapability = insightCapabilities.viewQuestionnaire;
+  const viewDashboardCapability = insightCapabilities.viewDashboard;
+  const canAnswer = answerCapability.can;
 
   const questionnaireLockReason = canAnswer
     ? undefined
-    : getReason(CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE) ||
+    : answerCapability.reason ||
       "Save your core match preferences to unlock the questionnaire.";
 
   const questionnaireFallback = (
     <Alert severity="info" sx={{ borderRadius: 2 }}>
-      {getReason(CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE) ||
+      {viewQuestionnaireCapability.reason ||
         questionnaireLockReason ||
         "Match questionnaire is currently unavailable."}
     </Alert>
@@ -28,7 +32,7 @@ const QuestionnaireSection = ({ lifecycleLoading }) => {
   const dashboardFallback = (
     <Box sx={{ px: { xs: 2, md: 6 }, py: { xs: 2, md: 4 } }}>
       <Alert severity="warning" sx={{ borderRadius: 2 }}>
-        {getReason(CAPABILITIES.INSIGHTS_VIEW_DASHBOARD) ||
+        {viewDashboardCapability.reason ||
           "Match insights are currently unavailable."}
       </Alert>
     </Box>
