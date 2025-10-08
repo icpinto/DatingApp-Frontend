@@ -18,22 +18,25 @@ import { useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import LogoutIcon from "@mui/icons-material/Logout";
-import Signup from "./components/auth/Signup";
-import Login from "./components/auth/Login";
-import MainTabs from "./components/tabs/MainTabs";
-import Profile from "./components/profile/Profile";
-import Requests from "./components/requests/Requests";
-import Messages from "./components/chat/Messages";
-import Payment from "./components/payment/Payment";
-import CapabilityRoute from "./components/routing/CapabilityRoute";
-import { WebSocketProvider } from "./context/WebSocketProvider";
-import { AccountLifecycleProvider, useAccountLifecycle } from "./context/AccountLifecycleContext";
-import { ColorModeContext } from "./context/ThemeContext";
-import { UserProvider } from "./context/UserContext";
+import Signup from "./features/auth/Signup";
+import Login from "./features/auth/Login";
+import MainTabs from "./shared/components/tabs/MainTabs";
+import Profile from "./features/profile/Profile";
+import Requests from "./features/requests/Requests";
+import Messages from "./features/messages/Messages";
+import Payment from "./features/premium/Payment";
+import CapabilityRoute from "./shared/components/routing/CapabilityRoute";
+import { WebSocketProvider } from "./shared/context/WebSocketProvider";
+import {
+  AccountLifecycleProvider,
+  useAccountLifecycle,
+} from "./shared/context/AccountLifecycleContext";
+import { ColorModeContext } from "./shared/context/ThemeContext";
+import { UserProvider } from "./shared/context/UserContext";
 import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
-import api from "./services/api";
-import { CAPABILITIES } from "./utils/capabilities";
+import api from "./shared/services/api";
+import { CAPABILITIES } from "./domain/capabilities";
 
 function TopBar() {
   const colorMode = useContext(ColorModeContext);

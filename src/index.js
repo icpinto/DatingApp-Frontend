@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import ThemeContext from './context/ThemeContext';
+import ThemeContext from './shared/context/ThemeContext';
 import { I18nextProvider } from './i18n';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

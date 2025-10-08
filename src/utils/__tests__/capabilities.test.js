@@ -1,12 +1,12 @@
 import {
   CAPABILITIES,
   selectCapabilities,
-} from "../capabilities";
+} from "../../domain/capabilities";
 import {
   ACCOUNT_STATUS,
   defaultUserSnapshot,
   normalizeSnapshotPayload,
-} from "../userDimensions";
+} from "../../domain/user";
 
 const buildFacts = (overrides = {}) => ({
   user: normalizeSnapshotPayload({
