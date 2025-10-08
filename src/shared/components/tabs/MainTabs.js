@@ -33,6 +33,7 @@ import { useWebSocket } from "../../context/WebSocketProvider";
 import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import useCapabilityQuery from "../../hooks/useCapabilityQuery";
+import { isNetworkError } from "../../../utils/http";
 
 const LazyMatchInsights = lazy(() =>
   import("../../../features/home/insights/MatchInsights")
@@ -154,10 +155,17 @@ function MainTabs() {
       if (!token) {
         return [];
       }
-      const response = await chatService.get("/conversations", { signal });
-      return normalizeConversationList(response.data)
-        .map(flattenConversationEntry)
-        .filter(Boolean);
+      try {
+        const response = await chatService.get("/conversations", { signal });
+        return normalizeConversationList(response.data)
+          .map(flattenConversationEntry)
+          .filter(Boolean);
+      } catch (error) {
+        if (isNetworkError(error)) {
+          return [];
+        }
+        throw error;
+      }
     },
     {
       enabled: canViewMessagesTab,
