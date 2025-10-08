@@ -25,7 +25,6 @@ import { spacing } from "../../styles";
 import MatchRecommendations from "../matches/MatchRecommendations";
 import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
-import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../utils/accountLifecycle";
 import { CAPABILITIES } from "../../utils/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../context/UserContext";
@@ -70,30 +69,22 @@ function HomeContent({ accountLifecycle }) {
   const profileAbortRef = useRef(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { hasCapability } = useUserCapabilities();
+  const { groups } = useUserCapabilities();
+  const discoveryCapabilities = groups.discovery;
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
   const discoveryBlockedByLifecycle = !lifecycleLoading && isDeactivated;
   const canViewHome =
-    discoveryBlockedByLifecycle ||
-    hasCapability(CAPABILITIES.DISCOVERY_VIEW_HOME);
+    discoveryBlockedByLifecycle || discoveryCapabilities.viewHome.can;
   const canViewActiveUsers =
-    discoveryBlockedByLifecycle ||
-    hasCapability(CAPABILITIES.DISCOVERY_VIEW_ACTIVE_USERS);
-  const canUseFilters = hasCapability(CAPABILITIES.DISCOVERY_USE_FILTERS);
-  const canToggleFilterPanel = hasCapability(
-    CAPABILITIES.DISCOVERY_TOGGLE_FILTER_PANEL
-  );
-  const canExpandUserPreview = hasCapability(
-    CAPABILITIES.DISCOVERY_EXPAND_USER_PREVIEW
-  );
+    discoveryBlockedByLifecycle || discoveryCapabilities.viewActiveUsers.can;
+  const canUseFilters = discoveryCapabilities.useFilters.can;
+  const canToggleFilterPanel = discoveryCapabilities.toggleFilterPanel.can;
+  const canExpandUserPreview = discoveryCapabilities.expandUserPreview.can;
   const canNavigateToProfile =
-    discoveryBlockedByLifecycle ||
-    hasCapability(CAPABILITIES.DISCOVERY_NAVIGATE_TO_PROFILE);
-  const canComposeRequest = hasCapability(
-    CAPABILITIES.DISCOVERY_COMPOSE_REQUEST
-  );
-  const canSendRequest = hasCapability(CAPABILITIES.DISCOVERY_SEND_REQUEST);
+    discoveryBlockedByLifecycle || discoveryCapabilities.navigateToProfile.can;
+  const canComposeRequest = discoveryCapabilities.composeRequest.can;
+  const canSendRequest = discoveryCapabilities.sendRequest.can;
   const discoveryDisabled = discoveryBlockedByLifecycle || !canSendRequest;
 
   const getUserIdentifier = useCallback((user) => {

@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import { spacing } from "../../styles";
-import { CAPABILITIES } from "../../utils/capabilities";
 import { useUserCapabilities } from "../../context/UserContext";
 
 function MessageComposer({
@@ -12,12 +11,13 @@ function MessageComposer({
   isDisabled = false,
   disabledReason,
 }) {
-  const { hasCapability } = useUserCapabilities();
-  const canSendMessage = hasCapability(CAPABILITIES.MESSAGING_SEND_MESSAGE);
+  const { groups } = useUserCapabilities();
+  const sendCapability = groups.messaging.sendMessage;
+  const canSendMessage = sendCapability.can;
   const composerDisabled = Boolean(isBlocked || isDisabled || !canSendMessage);
   const effectiveDisabledReason =
     !canSendMessage
-      ? "You do not have permission to send messages."
+      ? sendCapability.reason || "You do not have permission to send messages."
       : disabledReason;
 
   if (composerDisabled) {

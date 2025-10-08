@@ -1,8 +1,8 @@
 import React from "react";
-import { useUserContext } from "../context/UserContext";
+import { useUserCapabilities } from "../context/UserContext";
 
 const Guard = ({ can, fallback = null, children }) => {
-  const { hasCapability } = useUserContext();
+  const { select } = useUserCapabilities();
 
   const requirements = React.useMemo(() => {
     if (!can) {
@@ -11,12 +11,19 @@ const Guard = ({ can, fallback = null, children }) => {
     return Array.isArray(can) ? can.filter(Boolean) : [can];
   }, [can]);
 
+  const selection = React.useMemo(() => {
+    if (!requirements.length) {
+      return [];
+    }
+    return select(requirements);
+  }, [requirements, select]);
+
   const isAllowed = React.useMemo(() => {
     if (requirements.length === 0) {
       return true;
     }
-    return requirements.every((capability) => hasCapability(capability));
-  }, [requirements, hasCapability]);
+    return selection.every((entry) => entry?.can);
+  }, [requirements, selection]);
 
   if (typeof children === "function") {
     return <>{children({ isAllowed })}</>;

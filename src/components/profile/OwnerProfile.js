@@ -42,7 +42,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { useNavigate } from "react-router-dom";
 import { useAccountLifecycle } from "../../context/AccountLifecycleContext";
 import Guard from "./Guard";
-import { useUserContext } from "../../context/UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
@@ -131,7 +131,8 @@ function OwnerProfileContent({ accountLifecycle }) {
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
-  const { hasCapability, getReason } = useUserContext();
+  const { groups } = useUserCapabilities();
+  const ownerProfileCapabilities = groups.ownerProfile;
 
   useEffect(() => {
     hasLoadedProfileRef.current = false;
@@ -139,48 +140,32 @@ function OwnerProfileContent({ accountLifecycle }) {
 
   const capabilityReasons = useMemo(
     () => ({
-      edit: getReason(CAPABILITIES.OWNER_PROFILE_EDIT),
-      uploadPhoto: getReason(CAPABILITIES.OWNER_PROFILE_UPLOAD_PHOTO),
-      submitIdentity: getReason(CAPABILITIES.OWNER_PROFILE_SUBMIT_IDENTITY),
-      sendOtp: getReason(CAPABILITIES.OWNER_PROFILE_SEND_OTP),
-      verifyOtp: getReason(CAPABILITIES.OWNER_PROFILE_VERIFY_OTP),
-      manageInterests: getReason(CAPABILITIES.OWNER_PROFILE_MANAGE_INTERESTS),
-      manageLanguages: getReason(
-        CAPABILITIES.OWNER_PROFILE_MANAGE_LANGUAGES
-      ),
-      save: getReason(CAPABILITIES.OWNER_PROFILE_SAVE),
-      payments: getReason(CAPABILITIES.OWNER_PROFILE_MANAGE_PAYMENTS),
-      toggleVisibility: getReason(
-        CAPABILITIES.OWNER_PROFILE_TOGGLE_VISIBILITY
-      ),
-      removeAccount: getReason(CAPABILITIES.OWNER_PROFILE_REMOVE_ACCOUNT),
+      edit: ownerProfileCapabilities.edit.reason,
+      uploadPhoto: ownerProfileCapabilities.uploadPhoto.reason,
+      submitIdentity: ownerProfileCapabilities.submitIdentity.reason,
+      sendOtp: ownerProfileCapabilities.sendOtp.reason,
+      verifyOtp: ownerProfileCapabilities.verifyOtp.reason,
+      manageInterests: ownerProfileCapabilities.manageInterests.reason,
+      manageLanguages: ownerProfileCapabilities.manageLanguages.reason,
+      save: ownerProfileCapabilities.save.reason,
+      payments: ownerProfileCapabilities.managePayments.reason,
+      toggleVisibility: ownerProfileCapabilities.toggleVisibility.reason,
+      removeAccount: ownerProfileCapabilities.removeAccount.reason,
     }),
-    [getReason]
+    [ownerProfileCapabilities]
   );
 
-  const canEditProfile = hasCapability(CAPABILITIES.OWNER_PROFILE_EDIT);
-  const canUploadPhoto = hasCapability(CAPABILITIES.OWNER_PROFILE_UPLOAD_PHOTO);
-  const canSubmitIdentity = hasCapability(
-    CAPABILITIES.OWNER_PROFILE_SUBMIT_IDENTITY
-  );
-  const canSendOtp = hasCapability(CAPABILITIES.OWNER_PROFILE_SEND_OTP);
-  const canVerifyOtp = hasCapability(CAPABILITIES.OWNER_PROFILE_VERIFY_OTP);
-  const canManageInterests = hasCapability(
-    CAPABILITIES.OWNER_PROFILE_MANAGE_INTERESTS
-  );
-  const canManageLanguages = hasCapability(
-    CAPABILITIES.OWNER_PROFILE_MANAGE_LANGUAGES
-  );
-  const canSaveProfile = hasCapability(CAPABILITIES.OWNER_PROFILE_SAVE);
-  const canManagePayments = hasCapability(
-    CAPABILITIES.OWNER_PROFILE_MANAGE_PAYMENTS
-  );
-  const canToggleVisibility = hasCapability(
-    CAPABILITIES.OWNER_PROFILE_TOGGLE_VISIBILITY
-  );
-  const canRemoveAccount = hasCapability(
-    CAPABILITIES.OWNER_PROFILE_REMOVE_ACCOUNT
-  );
+  const canEditProfile = ownerProfileCapabilities.edit.can;
+  const canUploadPhoto = ownerProfileCapabilities.uploadPhoto.can;
+  const canSubmitIdentity = ownerProfileCapabilities.submitIdentity.can;
+  const canSendOtp = ownerProfileCapabilities.sendOtp.can;
+  const canVerifyOtp = ownerProfileCapabilities.verifyOtp.can;
+  const canManageInterests = ownerProfileCapabilities.manageInterests.can;
+  const canManageLanguages = ownerProfileCapabilities.manageLanguages.can;
+  const canSaveProfile = ownerProfileCapabilities.save.can;
+  const canManagePayments = ownerProfileCapabilities.managePayments.can;
+  const canToggleVisibility = ownerProfileCapabilities.toggleVisibility.can;
+  const canRemoveAccount = ownerProfileCapabilities.removeAccount.can;
 
   const updateAccountLifecycleStatus = useCallback(
     (nextStatus) => {
@@ -1130,7 +1115,7 @@ function OwnerProfileContent({ accountLifecycle }) {
     }
 
     previousLifecycleStatusRef.current = accountLifecycleStatus;
-  }, [accountLifecycleStatus, isLifecycleReadOnly]);
+  }, [accountLifecycleStatus, isLifecycleReadOnly, lifecycleReadOnlyMessage]);
 
   return (
     <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
@@ -2109,15 +2094,15 @@ function OwnerProfileContent({ accountLifecycle }) {
 }
 
 function OwnerProfileAccess({ accountLifecycle }) {
-  const { getReason } = useUserContext();
+  const { groups } = useUserCapabilities();
+  const viewCapability = groups.ownerProfile.view;
   const viewFallback = useCallback(
     () => (
       <Alert severity="warning">
-        {getReason(CAPABILITIES.OWNER_PROFILE_VIEW) ||
-          "Profile management is currently unavailable."}
+        {viewCapability.reason || "Profile management is currently unavailable."}
       </Alert>
     ),
-    [getReason]
+    [viewCapability.reason]
   );
 
   return (

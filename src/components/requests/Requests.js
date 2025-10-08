@@ -41,11 +41,12 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
   const [profiles, setProfiles] = useState({});
   const [sentProfiles, setSentProfiles] = useState({});
   const { t } = useTranslation();
-  const { hasCapability } = useUserCapabilities();
+  const { groups } = useUserCapabilities();
 
-  const canViewReceived = hasCapability(CAPABILITIES.REQUESTS_VIEW_RECEIVED);
-  const canViewSent = hasCapability(CAPABILITIES.REQUESTS_VIEW_SENT);
-  const canRespond = hasCapability(CAPABILITIES.REQUESTS_RESPOND);
+  const requestCapabilities = groups.requests;
+  const canViewReceived = requestCapabilities.viewReceived.can;
+  const canViewSent = requestCapabilities.viewSent.can;
+  const canRespond = requestCapabilities.respond.can;
   const isDeactivated = accountLifecycle?.isDeactivated;
 
   useEffect(() => {

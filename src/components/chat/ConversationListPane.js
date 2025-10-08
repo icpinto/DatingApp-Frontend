@@ -14,7 +14,6 @@ import {
 import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
 import { alpha } from "@mui/material/styles";
 import { spacing } from "../../styles";
-import { CAPABILITIES } from "../../utils/capabilities";
 import { useUserCapabilities } from "../../context/UserContext";
 
 function ConversationListPane({
@@ -24,13 +23,14 @@ function ConversationListPane({
   selectedConversationKey,
   onConversationSelect,
 }) {
-  const { hasCapability } = useUserCapabilities();
-  const canViewConversationList = hasCapability(
-    CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS
-  );
-  const canOpenConversation = hasCapability(
-    CAPABILITIES.MESSAGING_OPEN_CONVERSATION
-  );
+  const { groups } = useUserCapabilities();
+  const conversationCapabilities = groups.messaging;
+  const viewListCapability = conversationCapabilities.viewConversations;
+  const openConversationCapability = conversationCapabilities.openConversation;
+  const canViewConversationList = viewListCapability.can;
+  const canOpenConversation = openConversationCapability.can;
+  const viewListDeniedMessage =
+    viewListCapability.reason || "You do not have permission to view your conversations.";
 
   const handleSelectConversation = (conversation) => {
     if (!canOpenConversation) {
@@ -85,7 +85,7 @@ function ConversationListPane({
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            You do not have permission to view your conversations.
+            {viewListDeniedMessage}
           </Typography>
         </CardContent>
       </Card>

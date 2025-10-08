@@ -279,21 +279,16 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { hasCapability } = useUserCapabilities();
+  const { groups } = useUserCapabilities();
   const detailAbortRef = useRef(null);
   const lifecycleLoading = accountLifecycle?.loading ?? false;
   const accountDeactivated = accountLifecycle?.isDeactivated ?? false;
 
-  const canViewRecommendations = hasCapability(
-    CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS
-  );
-  const canViewDetails = hasCapability(CAPABILITIES.MATCHES_VIEW_DETAILS);
-  const canSendRequestCapability = hasCapability(
-    CAPABILITIES.MATCHES_SEND_REQUEST
-  );
-  const canNavigateToProfile = hasCapability(
-    CAPABILITIES.MATCHES_NAVIGATE_TO_PROFILE
-  );
+  const matchCapabilities = groups.matches;
+  const canViewRecommendations = matchCapabilities.viewRecommendations.can;
+  const canViewDetails = matchCapabilities.viewDetails.can;
+  const canSendRequestCapability = matchCapabilities.sendRequest.can;
+  const canNavigateToProfile = matchCapabilities.navigateToProfile.can;
   const requestsBlockedByLifecycle = !lifecycleLoading && accountDeactivated;
   const canSendRequest =
     canSendRequestCapability && !requestsBlockedByLifecycle;

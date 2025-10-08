@@ -21,7 +21,6 @@ import {
 } from "../utils/messageUtils";
 import { useAccountLifecycle } from "./AccountLifecycleContext";
 import { useUserCapabilities } from "./UserContext";
-import { CAPABILITIES } from "../utils/capabilities";
 
 const WebSocketContext = createContext(null);
 
@@ -105,8 +104,8 @@ export const WebSocketProvider = ({ children }) => {
   const joinedConversations = useRef(new Set());
   const [lastError, setLastError] = useState(null);
   const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle() ?? {};
-  const { hasCapability } = useUserCapabilities();
-  const messagingAllowed = hasCapability(CAPABILITIES.MESSAGING_VIEW_INBOX);
+  const { groups } = useUserCapabilities();
+  const messagingAllowed = groups.messaging.viewInbox.can;
 
   const resetMessagingState = useCallback(() => {
     processedMessageIds.current.clear();

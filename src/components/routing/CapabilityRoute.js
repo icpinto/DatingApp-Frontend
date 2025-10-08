@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Navigate } from "react-router-dom";
-import { useUserContext } from "../../context/UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 
 const buildRequirementList = (requirements) => {
   if (!requirements) {
@@ -28,25 +28,32 @@ const CapabilityRoute = ({
   redirect,
   fallback: FallbackComponent = DefaultFallback,
 }) => {
-  const { hasCapability, getReason } = useUserContext();
+  const { select } = useUserCapabilities();
   const requirementList = useMemo(
     () => buildRequirementList(capabilities ?? capability),
     [capability, capabilities]
   );
 
+  const selection = useMemo(() => {
+    if (!requirementList.length) {
+      return [];
+    }
+    return select(requirementList);
+  }, [requirementList, select]);
+
   const isAllowed = useMemo(() => {
     if (!requirementList.length) {
       return true;
     }
-    return requirementList.every((key) => hasCapability(key));
-  }, [requirementList, hasCapability]);
+    return selection.every((entry) => entry?.can);
+  }, [requirementList, selection]);
 
   if (isAllowed) {
     return <>{children}</>;
   }
 
-  const firstReason = requirementList
-    .map((key) => getReason(key))
+  const firstReason = selection
+    .map((entry) => entry?.reason)
     .find((value) => typeof value === "string" && value.trim().length > 0);
 
   if (redirect) {

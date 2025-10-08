@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
 import questionnaireService from "../../services/questionnaireService";
 import Guard from "./Guard";
-import { useUserContext } from "../../context/UserContext";
+import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../utils/capabilities";
 
 function QuestionCategorySelector({ value, onChange, disabled = false }) {
   const [categories, setCategories] = useState([]);
-  const { getReason, hasCapability } = useUserContext();
-  const canSelectCategory = useMemo(
-    () => hasCapability(CAPABILITIES.INSIGHTS_SELECT_CATEGORY),
-    [hasCapability]
-  );
+  const { groups } = useUserCapabilities();
+  const selectCapability = groups.insights.selectCategory;
+  const canSelectCategory = selectCapability.can;
 
   useEffect(() => {
     if (disabled || !canSelectCategory) {
@@ -41,7 +39,7 @@ function QuestionCategorySelector({ value, onChange, disabled = false }) {
     };
   }, [disabled, canSelectCategory]);
 
-  const capabilityReason = getReason(CAPABILITIES.INSIGHTS_SELECT_CATEGORY);
+  const capabilityReason = selectCapability.reason;
 
   return (
     <Guard can={CAPABILITIES.INSIGHTS_SELECT_CATEGORY}>
