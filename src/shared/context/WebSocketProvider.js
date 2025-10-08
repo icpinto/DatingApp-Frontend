@@ -21,6 +21,8 @@ import {
 } from "../../utils/messageUtils";
 import { useAccountLifecycle } from "./AccountLifecycleContext";
 import { useUserCapabilities } from "./UserContext";
+import { CAPABILITIES } from "../../domain/capabilities";
+import { createWebSocketManager } from "../../services/ws";
 
 const WebSocketContext = createContext(null);
 
@@ -93,19 +95,18 @@ const upsertMessageById = (messages, formatted) => {
 };
 
 export const WebSocketProvider = ({ children }) => {
-  const ws = useRef(null);
-  const reconnectTimeout = useRef(null);
-  const shouldReconnect = useRef(true);
-
+  const wsClientRef = useRef(null);
   const [authToken, setAuthToken] = useState(() => localStorage.getItem("token"));
-  const latestTokenRef = useRef(authToken);
   const [conversations, setConversations] = useState({});
   const processedMessageIds = useRef(new Set());
   const joinedConversations = useRef(new Set());
   const [lastError, setLastError] = useState(null);
   const { isDeactivated, loading: lifecycleLoading } = useAccountLifecycle() ?? {};
-  const { groups } = useUserCapabilities();
+  const { groups, hasCapability } = useUserCapabilities();
   const messagingAllowed = groups.messaging.viewInbox.can;
+  const appShellAccessible = hasCapability
+    ? hasCapability(CAPABILITIES.APP_VIEW_SHELL)
+    : true;
 
   const resetMessagingState = useCallback(() => {
     processedMessageIds.current.clear();
@@ -114,18 +115,23 @@ export const WebSocketProvider = ({ children }) => {
     setLastError(null);
   }, []);
 
-  const baseUrl =
-    process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
+  const baseUrl = process.env.REACT_APP_CHAT_WS_URL || "http://localhost:8081";
   const wsUrl = baseUrl.replace(/^http/, "ws");
+
+  if (!wsClientRef.current) {
+    wsClientRef.current = createWebSocketManager(wsUrl, {
+      reconnectDelay: 5000,
+      pingInterval: 30000,
+    });
+  }
+  const wsClient = wsClientRef.current;
 
   const send = useCallback(
     (data) => {
       if (!messagingAllowed) {
         return;
       }
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(JSON.stringify(data));
-      }
+      wsClientRef.current?.send(data);
     },
     [messagingAllowed]
   );
@@ -603,59 +609,6 @@ export const WebSocketProvider = ({ children }) => {
     [messageHandlers]
   );
 
-  const setupSocket = useCallback(
-    (token) => {
-      const activeToken = token ?? latestTokenRef.current;
-
-      if (reconnectTimeout.current) {
-        clearTimeout(reconnectTimeout.current);
-        reconnectTimeout.current = null;
-      }
-
-      if (ws.current) {
-        ws.current.close();
-      }
-
-      const wsEndpoint = activeToken
-        ? `${wsUrl}/ws?token=${encodeURIComponent(activeToken)}`
-        : `${wsUrl}/ws`;
-
-      const socket = new WebSocket(wsEndpoint);
-      ws.current = socket;
-
-      socket.addEventListener("open", () => {
-        console.log("Connected to WebSocket");
-        joinedConversations.current.forEach((id) =>
-          socket.send(JSON.stringify({ type: "join", conversation_id: id }))
-        );
-      });
-
-      socket.addEventListener("message", handleMessage);
-      socket.addEventListener("error", (error) => {
-        console.error("WebSocket error:", error);
-      });
-      socket.addEventListener("close", () => {
-        console.log("WebSocket connection closed.");
-        if (shouldReconnect.current) {
-          reconnectTimeout.current = setTimeout(() => setupSocket(), 5000);
-        }
-      });
-
-      const pingInterval = setInterval(() => {
-        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-          ws.current.send(JSON.stringify({ type: "ping" }));
-        }
-      }, 30000);
-
-      return () => {
-        clearInterval(pingInterval);
-        socket.removeEventListener("message", handleMessage);
-        socket.close();
-      };
-    },
-    [handleMessage, wsUrl]
-  );
-
   useEffect(() => {
     const handleTokenChange = () => {
       const nextToken = localStorage.getItem("token");
@@ -672,80 +625,73 @@ export const WebSocketProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    resetMessagingState();
-    latestTokenRef.current = authToken;
-  }, [authToken, resetMessagingState]);
+    wsClient.setHandlers({
+      onOpen: () => {
+        joinedConversations.current.forEach((id) =>
+          wsClient.send({ type: "join", conversation_id: id })
+        );
+      },
+      onMessage: handleMessage,
+      onError: (error) => {
+        console.error("WebSocket error:", error);
+      },
+      onClose: () => {
+        // rely on state resets via reconnection logic
+      },
+    });
+  }, [handleMessage, wsClient]);
 
   useEffect(() => {
-    if (messagingAllowed) {
+    wsClient.updateToken(authToken);
+    if (!authToken) {
+      resetMessagingState();
+    }
+  }, [authToken, resetMessagingState, wsClient]);
+
+  useEffect(() => {
+    const capabilityEnabled =
+      messagingAllowed &&
+      !isDeactivated &&
+      !lifecycleLoading &&
+      appShellAccessible &&
+      Boolean(authToken);
+
+    wsClient.setCapabilityEnabled(
+      messagingAllowed && !isDeactivated && !lifecycleLoading && appShellAccessible
+    );
+
+    if (!messagingAllowed || !appShellAccessible) {
+      resetMessagingState();
+    }
+
+    if (!capabilityEnabled) {
+      if (!appShellAccessible) {
+        wsClient.shutdown();
+      } else {
+        wsClient.disconnect();
+      }
       return;
     }
 
-    shouldReconnect.current = false;
-    clearTimeout(reconnectTimeout.current);
-    reconnectTimeout.current = null;
-
-    if (ws.current) {
-      ws.current.close();
-      ws.current = null;
-    }
-
-    resetMessagingState();
-  }, [messagingAllowed, resetMessagingState]);
-
-  useEffect(() => {
-    if (!authToken || !messagingAllowed) {
-      shouldReconnect.current = false;
-      clearTimeout(reconnectTimeout.current);
-      reconnectTimeout.current = null;
-
-      if (ws.current) {
-        ws.current.close();
-        ws.current = null;
-      }
-
-      if (!messagingAllowed) {
-        resetMessagingState();
-      }
-
-      return undefined;
-    }
-
-    if (lifecycleLoading) {
-      return undefined;
-    }
-
-    if (isDeactivated) {
-      shouldReconnect.current = false;
-      clearTimeout(reconnectTimeout.current);
-      reconnectTimeout.current = null;
-
-      if (ws.current) {
-        ws.current.close();
-        ws.current = null;
-      }
-
-      return undefined;
-    }
-
-    shouldReconnect.current = true;
-    const cleanup = setupSocket(authToken);
-
-    return () => {
-      shouldReconnect.current = false;
-      clearTimeout(reconnectTimeout.current);
-      reconnectTimeout.current = null;
-      cleanup();
-      ws.current = null;
-    };
+    wsClient.connect(authToken);
   }, [
     authToken,
+    appShellAccessible,
     isDeactivated,
     lifecycleLoading,
     messagingAllowed,
     resetMessagingState,
-    setupSocket,
+    wsClient,
   ]);
+
+  useEffect(() => () => {
+    wsClient.disconnect();
+  }, [wsClient]);
+
+  const shutdown = useCallback(() => {
+    wsClient.shutdown();
+    resetMessagingState();
+  }, [resetMessagingState, wsClient]);
 
   const totalUnreadCount = useMemo(() => {
     if (!conversations || typeof conversations !== "object") {
@@ -777,6 +723,7 @@ export const WebSocketProvider = ({ children }) => {
       addLocalMessage,
       hydrateConversations,
       totalUnreadCount,
+      shutdown,
     }),
     [
       conversations,
@@ -789,6 +736,7 @@ export const WebSocketProvider = ({ children }) => {
       addLocalMessage,
       hydrateConversations,
       totalUnreadCount,
+      shutdown,
     ]
   );
 

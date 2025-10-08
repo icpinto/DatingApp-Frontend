@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { HourglassEmpty, PersonAddAlt1, Send } from "@mui/icons-material";
-import api from "../../shared/services/api";
+import api, { trackExternalRequest } from "../../shared/services/api";
 import { spacing } from "../../styles";
 import { useTranslation } from "../../i18n";
 import { useAccountLifecycle } from "../../shared/context/AccountLifecycleContext";
@@ -23,6 +23,7 @@ import { CAPABILITIES } from "../../domain/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../shared/context/UserContext";
 import { isAbortError } from "../../utils/http";
+import useCapabilityEffect from "../../shared/hooks/useCapabilityEffect";
 
 const normalizeRequests = (payload) => {
   if (!payload) return [];
@@ -49,88 +50,89 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
   const canRespond = requestCapabilities.respond.can;
   const isDeactivated = accountLifecycle?.isDeactivated;
 
-  useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-    const shouldFetchReceived = canViewReceived;
-    const shouldFetchSent = canViewSent;
-
-    const fetchRequests = async () => {
-      if (!shouldFetchReceived && !shouldFetchSent) {
-        if (!isMounted) {
-          return;
-        }
+  useCapabilityEffect(
+    [
+      canViewReceived ? CAPABILITIES.REQUESTS_VIEW_RECEIVED : null,
+      canViewSent ? CAPABILITIES.REQUESTS_VIEW_SENT : null,
+    ],
+    () => {
+      if (!canViewReceived && !canViewSent) {
         setLoading(false);
         setRequests([]);
         setSentRequests([]);
         setReceivedError(null);
         setSentError(null);
-        return;
+        return undefined;
       }
 
+      let isMounted = true;
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `${token}` } : {};
+      const controller = new AbortController();
+      const unregister = trackExternalRequest(controller);
       const operations = [];
 
-      if (shouldFetchReceived) {
+      if (canViewReceived) {
+        operations.push(api.get("/user/requests", { signal: controller.signal }));
+      }
+
+      if (canViewSent) {
         operations.push(
-          api.get("/user/requests", { headers, signal: controller.signal })
+          api.get("user/sentRequests", { signal: controller.signal })
         );
       }
-      if (shouldFetchSent) {
-        operations.push(
-          api.get("user/sentRequests", { headers, signal: controller.signal })
-        );
-      }
 
-      const results = await Promise.allSettled(operations);
-      let index = 0;
+      const handleResults = async () => {
+        const results = await Promise.allSettled(operations);
+        let index = 0;
 
-      if (shouldFetchReceived) {
-        const result = results[index++];
-        if (isMounted) {
-          if (result.status === "fulfilled") {
-            setRequests(normalizeRequests(result.value.data));
-            setReceivedError(null);
-          } else if (!isAbortError(result.reason)) {
-            setRequests([]);
-            setReceivedError("requests.messages.receivedError");
+        if (canViewReceived) {
+          const result = results[index++];
+          if (isMounted) {
+            if (result.status === "fulfilled") {
+              setRequests(normalizeRequests(result.value.data));
+              setReceivedError(null);
+            } else if (!isAbortError(result.reason)) {
+              setRequests([]);
+              setReceivedError("requests.messages.receivedError");
+            }
           }
+        } else if (isMounted) {
+          setRequests([]);
+          setReceivedError(null);
         }
-      } else if (isMounted) {
-        setRequests([]);
-        setReceivedError(null);
-      }
 
-      if (shouldFetchSent) {
-        const result = results[index++];
-        if (isMounted) {
-          if (result.status === "fulfilled") {
-            setSentRequests(normalizeRequests(result.value.data));
-            setSentError(null);
-          } else if (!isAbortError(result.reason)) {
-            setSentRequests([]);
-            setSentError("requests.messages.sentError");
+        if (canViewSent) {
+          const result = results[index++];
+          if (isMounted) {
+            if (result.status === "fulfilled") {
+              setSentRequests(normalizeRequests(result.value.data));
+              setSentError(null);
+            } else if (!isAbortError(result.reason)) {
+              setSentRequests([]);
+              setSentError("requests.messages.sentError");
+            }
           }
+        } else if (isMounted) {
+          setSentRequests([]);
+          setSentError(null);
         }
-      } else if (isMounted) {
-        setSentRequests([]);
-        setSentError(null);
-      }
 
-      if (isMounted) {
-        setLoading(false);
-      }
-    };
+        if (isMounted) {
+          setLoading(false);
+        }
+      };
 
-    fetchRequests();
+      handleResults();
 
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [canViewReceived, canViewSent]);
+      return () => {
+        isMounted = false;
+        unregister();
+        controller.abort();
+      };
+    },
+    [canViewReceived, canViewSent],
+    { enabled: canViewReceived || canViewSent }
+  );
 
   useEffect(() => {
     if (!canViewReceived) {
@@ -140,80 +142,90 @@ function RequestsContent({ onRequestCountChange = () => {}, accountLifecycle }) 
     onRequestCountChange(requests.length);
   }, [requests, onRequestCountChange, canViewReceived]);
 
-  useEffect(() => {
-    if (!canViewReceived || requests.length === 0) {
-      setProfiles({});
-      return () => {};
-    }
+  useCapabilityEffect(
+    CAPABILITIES.REQUESTS_VIEW_RECEIVED,
+    () => {
+      if (!canViewReceived || requests.length === 0) {
+        setProfiles({});
+        return undefined;
+      }
 
-    const controller = new AbortController();
+      const controller = new AbortController();
+      const unregister = trackExternalRequest(controller);
 
-    const fetchProfiles = async () => {
-      const token = localStorage.getItem("token");
-      const profilesData = {};
-      await Promise.all(
-        requests.map(async (req) => {
-          try {
-            const res = await api.get(`/user/profile/${req.sender_id}`, {
-              headers: { Authorization: `${token}` },
-              signal: controller.signal,
-            });
-            profilesData[req.sender_id] = res.data;
-          } catch (e) {
-            if (isAbortError(e)) {
-              return;
+      const fetchProfiles = async () => {
+        const profilesData = {};
+        await Promise.all(
+          requests.map(async (req) => {
+            try {
+              const res = await api.get(`/user/profile/${req.sender_id}`, {
+                signal: controller.signal,
+              });
+              profilesData[req.sender_id] = res.data;
+            } catch (e) {
+              if (isAbortError(e)) {
+                return;
+              }
+              profilesData[req.sender_id] = null;
             }
-            // ignore
-          }
-        })
-      );
-      setProfiles(profilesData);
-    };
+          })
+        );
+        setProfiles(profilesData);
+      };
 
-    fetchProfiles();
+      fetchProfiles();
 
-    return () => {
-      controller.abort();
-    };
-  }, [requests, canViewReceived]);
+      return () => {
+        unregister();
+        controller.abort();
+      };
+    },
+    [requests, canViewReceived],
+    { enabled: canViewReceived && requests.length > 0 }
+  );
 
-  useEffect(() => {
-    if (!canViewSent || sentRequests.length === 0) {
-      setSentProfiles({});
-      return () => {};
-    }
+  useCapabilityEffect(
+    CAPABILITIES.REQUESTS_VIEW_SENT,
+    () => {
+      if (!canViewSent || sentRequests.length === 0) {
+        setSentProfiles({});
+        return undefined;
+      }
 
-    const controller = new AbortController();
+      const controller = new AbortController();
+      const unregister = trackExternalRequest(controller);
 
-    const fetchSentProfiles = async () => {
-      const token = localStorage.getItem("token");
-      const profilesData = {};
-      await Promise.all(
-        sentRequests.map(async (req) => {
-          if (!req.receiver_id) return;
-          try {
-            const res = await api.get(`/user/profile/${req.receiver_id}`, {
-              headers: { Authorization: `${token}` },
-              signal: controller.signal,
-            });
-            profilesData[req.receiver_id] = res.data;
-          } catch (e) {
-            if (isAbortError(e)) {
-              return;
+      const fetchSentProfiles = async () => {
+        const profilesData = {};
+        await Promise.all(
+          sentRequests.map(async (req) => {
+            if (!req.receiver_id) return;
+            try {
+              const res = await api.get(`/user/profile/${req.receiver_id}`, {
+                signal: controller.signal,
+              });
+              profilesData[req.receiver_id] = res.data;
+            } catch (e) {
+              if (isAbortError(e)) {
+                return;
+              }
+              profilesData[req.receiver_id] = null;
             }
-            // ignore
-          }
-        })
-      );
-      setSentProfiles(profilesData);
-    };
+          })
+        );
+        setSentProfiles(profilesData);
+      };
 
-    fetchSentProfiles();
+      fetchSentProfiles();
 
-    return () => {
-      controller.abort();
-    };
-  }, [sentRequests, canViewSent]);
+      return () => {
+        unregister();
+        controller.abort();
+      };
+    },
+    [sentRequests, canViewSent],
+    { enabled: canViewSent && sentRequests.length > 0 }
+  );
 
   const handleAccept = async (id) => {
     if (!canRespond) {

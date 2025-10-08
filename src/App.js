@@ -27,6 +27,7 @@ import Messages from "./features/messages/Messages";
 import Payment from "./features/premium/Payment";
 import CapabilityRoute from "./shared/components/routing/CapabilityRoute";
 import { WebSocketProvider } from "./shared/context/WebSocketProvider";
+import AppAccessBoundary from "./shared/components/AppAccessBoundary";
 import {
   AccountLifecycleProvider,
   useAccountLifecycle,
@@ -190,55 +191,57 @@ function TopBar() {
 function AppShell() {
   return (
     <WebSocketProvider>
-      <Router>
-        <div className="App">
-          <TopBar />
-          <Routes>
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/" element={<Login />} />
-            <Route
-              path="/home"
-              element={
-                <CapabilityRoute capability={CAPABILITIES.NAV_ACCESS_HOME}>
-                  <MainTabs />
-                </CapabilityRoute>
-              }
-            />
-            <Route
-              path="/profile/:userId"
-              element={
-                <CapabilityRoute capability={CAPABILITIES.PROFILE_VIEW_MEMBER}>
-                  <Profile />
-                </CapabilityRoute>
-              }
-            />
-            <Route
-              path="/requests"
-              element={
-                <CapabilityRoute capability={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
-                  <Requests />
-                </CapabilityRoute>
-              }
-            />
-            <Route
-              path="/messages"
-              element={
-                <CapabilityRoute capability={CAPABILITIES.MESSAGING_VIEW_INBOX}>
-                  <Messages />
-                </CapabilityRoute>
-              }
-            />
-            <Route
-              path="/payment"
-              element={
-                <CapabilityRoute capability={CAPABILITIES.BILLING_VIEW_PAYMENT}>
-                  <Payment />
-                </CapabilityRoute>
-              }
-            />
-          </Routes>
-        </div>
-      </Router>
+      <AppAccessBoundary>
+        <Router>
+          <div className="App">
+            <TopBar />
+            <Routes>
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<Login />} />
+              <Route
+                path="/home"
+                element={
+                  <CapabilityRoute capability={CAPABILITIES.NAV_ACCESS_HOME}>
+                    <MainTabs />
+                  </CapabilityRoute>
+                }
+              />
+              <Route
+                path="/profile/:userId"
+                element={
+                  <CapabilityRoute capability={CAPABILITIES.PROFILE_VIEW_MEMBER}>
+                    <Profile />
+                  </CapabilityRoute>
+                }
+              />
+              <Route
+                path="/requests"
+                element={
+                  <CapabilityRoute capability={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
+                    <Requests />
+                  </CapabilityRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <CapabilityRoute capability={CAPABILITIES.MESSAGING_VIEW_INBOX}>
+                    <Messages />
+                  </CapabilityRoute>
+                }
+              />
+              <Route
+                path="/payment"
+                element={
+                  <CapabilityRoute capability={CAPABILITIES.BILLING_VIEW_PAYMENT}>
+                    <Payment />
+                  </CapabilityRoute>
+                }
+              />
+            </Routes>
+          </div>
+        </Router>
+      </AppAccessBoundary>
     </WebSocketProvider>
   );
 }
