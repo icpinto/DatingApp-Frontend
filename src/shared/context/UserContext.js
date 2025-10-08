@@ -417,12 +417,20 @@ export const useUserCapabilities = () => {
   const { capabilities, hasCapability, getReason, capabilitySelectors } =
     useUserContext();
   const capabilityList = useMemo(() => Array.from(capabilities), [capabilities]);
+  const memoizedGroups = useMemo(
+    () => capabilitySelectors.groups,
+    [capabilitySelectors]
+  );
+  const memoizedSelect = useCallback(
+    (schema) => capabilitySelectors.select(schema),
+    [capabilitySelectors]
+  );
   return {
     capabilities: capabilityList,
     hasCapability,
     getReason,
-    groups: capabilitySelectors.groups,
-    select: capabilitySelectors.select,
+    groups: memoizedGroups,
+    select: memoizedSelect,
     selectors: capabilitySelectors,
   };
 };

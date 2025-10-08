@@ -1,9 +1,17 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Box,
   BottomNavigation,
   BottomNavigationAction,
+  CircularProgress,
   Paper,
   Badge,
 } from "@mui/material";
@@ -14,10 +22,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
 import Home from "../../../features/home/Home";
 import Requests from "../../../features/requests/Requests";
-import Messages from "../../../features/messages/Messages";
 import OwnerProfile from "../../../features/profile/OwnerProfile";
-import MatchInsights from "../../../features/home/insights/MatchInsights";
-import api, { trackExternalRequest } from "../../services/api";
+import api from "../../services/api";
 import chatService from "../../services/chatService";
 import {
   normalizeConversationList,
@@ -26,10 +32,20 @@ import {
 import { useWebSocket } from "../../context/WebSocketProvider";
 import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../../domain/capabilities";
-import { isAbortError } from "../../../utils/http";
-import useCapabilityEffect from "../../hooks/useCapabilityEffect";
+import useCapabilityQuery from "../../hooks/useCapabilityQuery";
 
-const TAB_CONFIG = [
+const LazyMatchInsights = lazy(() =>
+  import("../../../features/home/insights/MatchInsights")
+);
+const LazyMessages = lazy(() => import("../../../features/messages/Messages"));
+
+const TabLoader = () => (
+  <Box sx={{ px: 2, py: 4, display: "flex", justifyContent: "center" }}>
+    <CircularProgress size={24} thickness={5} />
+  </Box>
+);
+
+const buildTabDefinitions = ({ requestCount, unreadMessages, setRequestCount }) => [
   {
     key: "home",
     label: "Home",
@@ -41,32 +57,38 @@ const TAB_CONFIG = [
     key: "matches",
     label: "Matches",
     capability: CAPABILITIES.NAV_ACCESS_MATCHES,
-    icon: ({ requestCount }) => (
+    icon: () => (
       <Badge color="error" badgeContent={requestCount}>
         <FavoriteIcon />
       </Badge>
     ),
-    render: ({ setRequestCount }) => (
-      <Requests onRequestCountChange={setRequestCount} />
-    ),
+    render: () => <Requests onRequestCountChange={setRequestCount} />,
   },
   {
     key: "insights",
     label: "Match Insights",
     capability: CAPABILITIES.NAV_ACCESS_INSIGHTS,
     icon: () => <QuizIcon />,
-    render: () => <MatchInsights />,
+    render: () => (
+      <Suspense fallback={<TabLoader />}>
+        <LazyMatchInsights />
+      </Suspense>
+    ),
   },
   {
     key: "messages",
     label: "Messages",
     capability: CAPABILITIES.NAV_ACCESS_MESSAGES,
-    icon: ({ unreadMessages }) => (
+    icon: () => (
       <Badge color="error" badgeContent={unreadMessages}>
         <ChatIcon />
       </Badge>
     ),
-    render: () => <Messages />,
+    render: () => (
+      <Suspense fallback={<TabLoader />}>
+        <LazyMessages />
+      </Suspense>
+    ),
   },
   {
     key: "profile",
@@ -79,17 +101,21 @@ const TAB_CONFIG = [
 
 function MainTabs() {
   const { select } = useUserCapabilities();
-  const visibleTabs = useMemo(() => {
-    const selection = select(TAB_CONFIG.map((tab) => tab.capability));
-    return TAB_CONFIG.filter((tab, index) => selection[index]?.can);
-  }, [select]);
-  const [activeTab, setActiveTab] = useState(() => visibleTabs[0]?.key ?? null);
   const [requestCount, setRequestCount] = useState(0);
   const { hydrateConversations, totalUnreadCount } = useWebSocket();
   const unreadMessages = useMemo(
     () => (typeof totalUnreadCount === "number" ? totalUnreadCount : 0),
     [totalUnreadCount]
   );
+  const tabs = useMemo(
+    () => buildTabDefinitions({ requestCount, unreadMessages, setRequestCount }),
+    [requestCount, unreadMessages, setRequestCount]
+  );
+  const visibleTabs = useMemo(() => {
+    const selection = select(tabs.map((tab) => tab.capability));
+    return tabs.filter((tab, index) => selection[index]?.can);
+  }, [select, tabs]);
+  const [activeTab, setActiveTab] = useState(() => visibleTabs[0]?.key ?? null);
   const canViewMatchesTab = useMemo(
     () => visibleTabs.some((tab) => tab.key === "matches"),
     [visibleTabs]
@@ -97,6 +123,48 @@ function MainTabs() {
   const canViewMessagesTab = useMemo(
     () => visibleTabs.some((tab) => tab.key === "messages"),
     [visibleTabs]
+  );
+
+  const requestCountQuery = useCapabilityQuery(
+    CAPABILITIES.REQUESTS_VIEW_RECEIVED,
+    ["requests", "received", "count"],
+    async ({ signal }) => {
+      const res = await api.get("/user/requests", { signal });
+      const requests = Array.isArray(res.data?.requests)
+        ? res.data.requests
+        : [];
+      return requests.length;
+    },
+    {
+      enabled: canViewMatchesTab,
+      staleTime: 60_000,
+      cacheTime: 5 * 60_000,
+      refetchInterval: () => 120_000,
+    }
+  );
+
+  const conversationBootstrapQuery = useCapabilityQuery(
+    [
+      CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS,
+      CAPABILITIES.MESSAGING_VIEW_INBOX,
+    ],
+    ["messaging", "conversations", "bootstrap"],
+    async ({ signal }) => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return [];
+      }
+      const response = await chatService.get("/conversations", { signal });
+      return normalizeConversationList(response.data)
+        .map(flattenConversationEntry)
+        .filter(Boolean);
+    },
+    {
+      enabled: canViewMessagesTab,
+      staleTime: 30_000,
+      cacheTime: 2 * 60_000,
+      refetchInterval: () => 60_000,
+    }
   );
 
   useEffect(() => {
@@ -112,89 +180,46 @@ function MainTabs() {
   useEffect(() => {
     if (!canViewMatchesTab) {
       setRequestCount(0);
+      return;
     }
-  }, [canViewMatchesTab]);
 
-  useCapabilityEffect(
-    CAPABILITIES.REQUESTS_VIEW_RECEIVED,
-    () => {
-      if (!canViewMatchesTab) {
-        return undefined;
-      }
+    if (typeof requestCountQuery.data === "number") {
+      setRequestCount(requestCountQuery.data);
+    } else if (requestCountQuery.isError) {
+      setRequestCount(0);
+    }
+  }, [canViewMatchesTab, requestCountQuery.data, requestCountQuery.isError]);
 
-      const controller = new AbortController();
-      const unregister = trackExternalRequest(controller);
+  const lastHydratedRef = useRef(0);
+  useEffect(() => {
+    if (!canViewMessagesTab) {
+      lastHydratedRef.current = 0;
+      return;
+    }
 
-      const fetchRequestCount = async () => {
-        try {
-          const res = await api.get("/user/requests", {
-            signal: controller.signal,
-          });
-          const count = Array.isArray(res.data?.requests)
-            ? res.data.requests.length
-            : 0;
-          setRequestCount(count);
-        } catch (e) {
-          if (!isAbortError(e)) {
-            setRequestCount(0);
-          }
-        }
-      };
+    if (!conversationBootstrapQuery.isSuccess) {
+      return;
+    }
 
-      fetchRequestCount();
+    if (
+      conversationBootstrapQuery.updatedAt &&
+      conversationBootstrapQuery.updatedAt <= lastHydratedRef.current
+    ) {
+      return;
+    }
 
-      return () => {
-        unregister();
-        controller.abort();
-      };
-    },
-    [canViewMatchesTab, setRequestCount],
-    { enabled: canViewMatchesTab }
-  );
-
-  useCapabilityEffect(
-    CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS,
-    () => {
-      if (!canViewMessagesTab) {
-        return undefined;
-      }
-
-      const controller = new AbortController();
-      const unregister = trackExternalRequest(controller);
-
-      const fetchConversations = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            return;
-          }
-
-          const response = await chatService.get("/conversations", {
-            signal: controller.signal,
-          });
-
-          const conversations = normalizeConversationList(response.data)
-            .map(flattenConversationEntry)
-            .filter(Boolean);
-
-          hydrateConversations(conversations);
-        } catch (error) {
-          if (!isAbortError(error)) {
-            // Ignore initial unread fetch errors and default to existing socket state.
-          }
-        }
-      };
-
-      fetchConversations();
-
-      return () => {
-        unregister();
-        controller.abort();
-      };
-    },
-    [canViewMessagesTab, hydrateConversations],
-    { enabled: canViewMessagesTab }
-  );
+    lastHydratedRef.current = conversationBootstrapQuery.updatedAt || Date.now();
+    const conversations = Array.isArray(conversationBootstrapQuery.data)
+      ? conversationBootstrapQuery.data
+      : [];
+    hydrateConversations(conversations);
+  }, [
+    canViewMessagesTab,
+    conversationBootstrapQuery.data,
+    conversationBootstrapQuery.isSuccess,
+    conversationBootstrapQuery.updatedAt,
+    hydrateConversations,
+  ]);
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
