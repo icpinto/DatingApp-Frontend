@@ -17,7 +17,7 @@ import Requests from "../../../features/requests/Requests";
 import Messages from "../../../features/messages/Messages";
 import OwnerProfile from "../../../features/profile/OwnerProfile";
 import MatchInsights from "../../../features/home/insights/MatchInsights";
-import api from "../../services/api";
+import api, { trackExternalRequest } from "../../services/api";
 import chatService from "../../services/chatService";
 import {
   normalizeConversationList,
@@ -27,6 +27,7 @@ import { useWebSocket } from "../../context/WebSocketProvider";
 import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import { isAbortError } from "../../../utils/http";
+import useCapabilityEffect from "../../hooks/useCapabilityEffect";
 
 const TAB_CONFIG = [
   {
@@ -111,73 +112,89 @@ function MainTabs() {
   useEffect(() => {
     if (!canViewMatchesTab) {
       setRequestCount(0);
-      return () => {};
     }
-
-    const controller = new AbortController();
-
-    const fetchRequestCount = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await api.get("/user/requests", {
-          headers: { Authorization: `${token}` },
-          signal: controller.signal,
-        });
-        const count = Array.isArray(res.data.requests)
-          ? res.data.requests.length
-          : 0;
-        setRequestCount(count);
-      } catch (e) {
-        if (!isAbortError(e)) {
-          setRequestCount(0);
-        }
-      }
-    };
-
-    fetchRequestCount();
-
-    return () => {
-      controller.abort();
-    };
   }, [canViewMatchesTab]);
 
-  useEffect(() => {
-    if (!canViewMessagesTab) {
-      return () => {};
-    }
-
-    const controller = new AbortController();
-
-    const fetchConversations = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          return;
-        }
-
-        const response = await chatService.get("/conversations", {
-          headers: { Authorization: `${token}` },
-          signal: controller.signal,
-        });
-
-        const conversations = normalizeConversationList(response.data)
-          .map(flattenConversationEntry)
-          .filter(Boolean);
-
-        hydrateConversations(conversations);
-      } catch (error) {
-        if (!isAbortError(error)) {
-          // Ignore initial unread fetch errors and default to existing socket state.
-        }
+  useCapabilityEffect(
+    CAPABILITIES.REQUESTS_VIEW_RECEIVED,
+    () => {
+      if (!canViewMatchesTab) {
+        return undefined;
       }
-    };
 
-    fetchConversations();
+      const controller = new AbortController();
+      const unregister = trackExternalRequest(controller);
 
-    return () => {
-      controller.abort();
-    };
-  }, [canViewMessagesTab, hydrateConversations]);
+      const fetchRequestCount = async () => {
+        try {
+          const res = await api.get("/user/requests", {
+            signal: controller.signal,
+          });
+          const count = Array.isArray(res.data?.requests)
+            ? res.data.requests.length
+            : 0;
+          setRequestCount(count);
+        } catch (e) {
+          if (!isAbortError(e)) {
+            setRequestCount(0);
+          }
+        }
+      };
+
+      fetchRequestCount();
+
+      return () => {
+        unregister();
+        controller.abort();
+      };
+    },
+    [canViewMatchesTab, setRequestCount],
+    { enabled: canViewMatchesTab }
+  );
+
+  useCapabilityEffect(
+    CAPABILITIES.MESSAGING_VIEW_CONVERSATIONS,
+    () => {
+      if (!canViewMessagesTab) {
+        return undefined;
+      }
+
+      const controller = new AbortController();
+      const unregister = trackExternalRequest(controller);
+
+      const fetchConversations = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            return;
+          }
+
+          const response = await chatService.get("/conversations", {
+            signal: controller.signal,
+          });
+
+          const conversations = normalizeConversationList(response.data)
+            .map(flattenConversationEntry)
+            .filter(Boolean);
+
+          hydrateConversations(conversations);
+        } catch (error) {
+          if (!isAbortError(error)) {
+            // Ignore initial unread fetch errors and default to existing socket state.
+          }
+        }
+      };
+
+      fetchConversations();
+
+      return () => {
+        unregister();
+        controller.abort();
+      };
+    },
+    [canViewMessagesTab, hydrateConversations],
+    { enabled: canViewMessagesTab }
+  );
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
