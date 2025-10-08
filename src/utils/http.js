@@ -17,4 +17,22 @@ export const isAbortError = (error) => {
   return message.includes("aborted") || message.includes("canceled");
 };
 
-export default { isAbortError };
+export const isNetworkError = (error) => {
+  if (!error) {
+    return false;
+  }
+
+  const code = typeof error.code === "string" ? error.code.toUpperCase() : "";
+  if (code === "ERR_NETWORK") {
+    return true;
+  }
+
+  if (!error.response) {
+    const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
+    return message.includes("network error");
+  }
+
+  return false;
+};
+
+export default { isAbortError, isNetworkError };
