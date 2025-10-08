@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { Suspense, lazy, useContext, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
 import {
   AppBar,
@@ -13,6 +13,7 @@ import {
   Button,
   Snackbar,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -23,8 +24,6 @@ import Login from "./features/auth/Login";
 import MainTabs from "./shared/components/tabs/MainTabs";
 import Profile from "./features/profile/Profile";
 import Requests from "./features/requests/Requests";
-import Messages from "./features/messages/Messages";
-import Payment from "./features/premium/Payment";
 import CapabilityRoute from "./shared/components/routing/CapabilityRoute";
 import { WebSocketProvider } from "./shared/context/WebSocketProvider";
 import AppAccessBoundary from "./shared/components/AppAccessBoundary";
@@ -38,6 +37,15 @@ import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
 import api from "./shared/services/api";
 import { CAPABILITIES } from "./domain/capabilities";
+
+const MessagesPage = lazy(() => import("./features/messages/Messages"));
+const PaymentPage = lazy(() => import("./features/premium/Payment"));
+
+const RouteLoader = () => (
+  <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+    <CircularProgress size={32} thickness={5} />
+  </Box>
+);
 
 function TopBar() {
   const colorMode = useContext(ColorModeContext);
@@ -226,7 +234,9 @@ function AppShell() {
                 path="/messages"
                 element={
                   <CapabilityRoute capability={CAPABILITIES.MESSAGING_VIEW_INBOX}>
-                    <Messages />
+                    <Suspense fallback={<RouteLoader />}>
+                      <MessagesPage />
+                    </Suspense>
                   </CapabilityRoute>
                 }
               />
@@ -234,7 +244,9 @@ function AppShell() {
                 path="/payment"
                 element={
                   <CapabilityRoute capability={CAPABILITIES.BILLING_VIEW_PAYMENT}>
-                    <Payment />
+                    <Suspense fallback={<RouteLoader />}>
+                      <PaymentPage />
+                    </Suspense>
                   </CapabilityRoute>
                 }
               />
