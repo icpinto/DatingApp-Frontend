@@ -17,9 +17,18 @@ import PrivacyTipOutlinedIcon from "@mui/icons-material/PrivacyTipOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined";
 import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
-import { lighten } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
 import useLegalContent from "../../shared/components/layout/useLegalContent";
 import { useTranslation } from "../../i18n";
+
+const SECTION_BACKGROUND = "#111827";
+const SECTION_TEXT_COLOR = "rgba(248, 250, 252, 0.94)";
+const SECTION_SUBTEXT_COLOR = "rgba(226, 232, 240, 0.72)";
+const SECTION_DIVIDER_COLOR = "rgba(148, 163, 184, 0.28)";
+const SUMMARY_HOVER_COLOR = alpha("#1f2937", 0.45);
+const SUMMARY_ACTIVE_COLOR = alpha("#1f2937", 0.58);
+const DETAIL_BASE_COLOR = alpha("#0f172a", 0.72);
+const DETAIL_ACTIVE_COLOR = alpha("#0f172a", 0.88);
 
 function ProfileLegalInformation() {
   const { t } = useTranslation();
@@ -43,7 +52,33 @@ function ProfileLegalInformation() {
   };
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 3 }}>
+    <Card
+      elevation={6}
+      sx={{
+        borderRadius: 3,
+        overflow: "hidden",
+        backgroundColor: SECTION_BACKGROUND,
+        color: SECTION_TEXT_COLOR,
+        border: `1px solid ${SECTION_DIVIDER_COLOR}`,
+        boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+        "& .MuiCardHeader-title": {
+          color: SECTION_TEXT_COLOR,
+          letterSpacing: "0.02em",
+        },
+        "& .MuiCardHeader-subheader": {
+          color: SECTION_SUBTEXT_COLOR,
+        },
+        "& .MuiTypography-root": {
+          color: SECTION_TEXT_COLOR,
+        },
+        "& .MuiTypography-root.MuiTypography-colorTextSecondary": {
+          color: SECTION_SUBTEXT_COLOR,
+        },
+        "& .MuiDivider-root": {
+          borderColor: SECTION_DIVIDER_COLOR,
+        },
+      }}
+    >
       <CardHeader
         avatar={<InfoOutlinedIcon color="primary" />}
         title={t("profile.legal.title", { defaultValue: "Helpful information" })}
@@ -67,13 +102,11 @@ function ProfileLegalInformation() {
                 elevation={0}
                 sx={{
                   borderRadius: 2,
-                  border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-                  transition: (theme) =>
-                    theme.transitions.create(["box-shadow", "transform", "border"], {
-                      duration: theme.transitions.duration.short,
-                    }),
+                  border: `1px solid ${SECTION_DIVIDER_COLOR}`,
                   position: "relative",
                   overflow: "hidden",
+                  backgroundColor: alpha("#0f172a", 0.55),
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
                   "&::before": {
                     display: "none",
                   },
@@ -87,7 +120,7 @@ function ProfileLegalInformation() {
                     background: "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
                   },
                   "&:hover": {
-                    boxShadow: 4,
+                    boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
                     transform: "translateY(-2px)",
                   },
                 }}
@@ -98,10 +131,7 @@ function ProfileLegalInformation() {
                   expandIcon={
                     <ExpandMoreIcon
                       sx={{
-                        transition: (theme) =>
-                          theme.transitions.create("transform", {
-                            duration: theme.transitions.duration.shortest,
-                          }),
+                        transition: "transform 0.2s ease",
                         transform:
                           expanded === section.id ? "rotate(180deg)" : "rotate(0deg)",
                       }}
@@ -113,17 +143,11 @@ function ProfileLegalInformation() {
                     },
                     px: 2.5,
                     py: 2,
-                    transition: (theme) =>
-                      theme.transitions.create("background-color", {
-                        duration: theme.transitions.duration.short,
-                      }),
-                    backgroundColor: (theme) =>
-                      expanded === section.id
-                        ? lighten(theme.palette.background.paper, 0.04)
-                        : "transparent",
+                    backgroundColor:
+                      expanded === section.id ? SUMMARY_ACTIVE_COLOR : "transparent",
+                    transition: "background-color 0.2s ease",
                     "&:hover": {
-                      backgroundColor: (theme) =>
-                        lighten(theme.palette.background.paper, 0.08),
+                      backgroundColor: SUMMARY_HOVER_COLOR,
                     },
                   }}
                 >
@@ -150,13 +174,7 @@ function ProfileLegalInformation() {
                       >
                         {section.title}
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          color: (theme) => lighten(theme.palette.text.secondary, 0.1),
-                        }}
-                      >
+                      <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
                         {section.summary}
                       </Typography>
                     </Stack>
@@ -166,9 +184,9 @@ function ProfileLegalInformation() {
                   sx={{
                     px: 2.5,
                     py: 2.5,
-                    borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                    background: (theme) =>
-                      lighten(theme.palette.background.paper, expanded === section.id ? 0.06 : 0.03),
+                    borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
+                    backgroundColor:
+                      expanded === section.id ? DETAIL_ACTIVE_COLOR : DETAIL_BASE_COLOR,
                   }}
                 >
                   <Stack spacing={1.75}>
@@ -176,10 +194,7 @@ function ProfileLegalInformation() {
                       <Typography
                         key={index}
                         variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          color: (theme) => lighten(theme.palette.text.secondary, 0.08),
-                        }}
+                        sx={{ color: SECTION_SUBTEXT_COLOR }}
                       >
                         {paragraph}
                       </Typography>

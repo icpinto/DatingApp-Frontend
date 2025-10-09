@@ -56,7 +56,113 @@ import {
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
 } from "../../domain/accountLifecycle";
-import { lighten } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+
+const SECTION_BACKGROUNDS = {
+  profile: "#111827",
+  account: "#030712",
+  legal: "#111827",
+};
+
+const SECTION_TEXT_COLOR = "rgba(248, 250, 252, 0.94)";
+const SECTION_SUBTEXT_COLOR = "rgba(226, 232, 240, 0.72)";
+const SECTION_DIVIDER_COLOR = "rgba(148, 163, 184, 0.28)";
+
+const sectionWrapperStyles = {
+  mt: 8,
+  mb: 8,
+};
+
+const sectionTitleStyles = {
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.18em",
+  color: "rgba(148, 163, 184, 0.85)",
+  mb: 2.5,
+};
+
+const createSectionCardStyles = (background) => ({
+  borderRadius: 3,
+  overflow: "hidden",
+  backgroundColor: background,
+  color: SECTION_TEXT_COLOR,
+  border: `1px solid ${SECTION_DIVIDER_COLOR}`,
+  boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+  "& .MuiCardHeader-title": {
+    color: SECTION_TEXT_COLOR,
+    letterSpacing: "0.02em",
+  },
+  "& .MuiCardHeader-subheader": {
+    color: SECTION_SUBTEXT_COLOR,
+  },
+  "& .MuiTypography-root": {
+    color: SECTION_TEXT_COLOR,
+  },
+  "& .MuiTypography-root.MuiTypography-colorTextSecondary": {
+    color: SECTION_SUBTEXT_COLOR,
+  },
+  "& .MuiTypography-caption": {
+    color: "rgba(148, 163, 184, 0.7)",
+  },
+  "& .MuiDivider-root": {
+    borderColor: SECTION_DIVIDER_COLOR,
+  },
+  "& .MuiAlert-root": {
+    backgroundColor: alpha("#1e293b", 0.65),
+    color: SECTION_TEXT_COLOR,
+    borderRadius: 2,
+    "& .MuiAlert-icon": {
+      color: SECTION_TEXT_COLOR,
+    },
+  },
+});
+
+const createAccountAccordionStyles = (isEnabled) => ({
+  borderRadius: 2,
+  border: `1px solid ${SECTION_DIVIDER_COLOR}`,
+  position: "relative",
+  overflow: "hidden",
+  backgroundColor: alpha("#0f172a", 0.55),
+  transition: "transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease",
+  "&::before": {
+    display: "none",
+  },
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    background: isEnabled
+      ? "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)"
+      : alpha(SECTION_SUBTEXT_COLOR, 0.35),
+  },
+  "&:hover": {
+    boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
+    transform: "translateY(-2px)",
+  },
+});
+
+const accountAccordionSummaryStyles = (isExpanded) => ({
+  "& .MuiAccordionSummary-content": {
+    margin: 0,
+  },
+  px: 2.5,
+  py: 2,
+  backgroundColor: isExpanded ? alpha("#1f2937", 0.58) : "transparent",
+  transition: "background-color 0.2s ease",
+  "&:hover": {
+    backgroundColor: alpha("#1f2937", 0.45),
+  },
+});
+
+const accountAccordionDetailsStyles = (isExpanded) => ({
+  px: 2.5,
+  py: 2.5,
+  borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
+  backgroundColor: isExpanded ? alpha("#0f172a", 0.88) : alpha("#0f172a", 0.72),
+});
 
 function OwnerProfileContent({ accountLifecycle }) {
   const lifecycleContext = accountLifecycle || {};
@@ -1251,12 +1357,18 @@ function OwnerProfileContent({ accountLifecycle }) {
 
   return (
     <Container maxWidth="lg" sx={{ py: spacing.pagePadding }}>
-      <Stack spacing={spacing.section}>
+      <Stack spacing={0}>
         {isLifecycleReadOnly && (
           <Alert severity="info">{lifecycleReadOnlyMessage}</Alert>
         )}
-        {shouldShowForm ? (
-          <Card elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
+        <Box component="section" sx={sectionWrapperStyles}>
+          <Typography variant="overline" sx={sectionTitleStyles}>
+            {t("profile.sections.profileManagement", {
+              defaultValue: "PROFILE MANAGEMENT",
+            })}
+          </Typography>
+          {shouldShowForm ? (
+            <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
             <CardHeader
               avatar={<PersonOutlineIcon color="primary" />}
               title={
@@ -2059,7 +2171,7 @@ function OwnerProfileContent({ accountLifecycle }) {
               </CardContent>
             </Card>
           ) : (
-            <Card elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
+            <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
               <CardHeader
                 avatar={<PersonOutlineIcon color="primary" />}
                 title={t("profile.headers.view", { defaultValue: "Your profile" })}
@@ -2118,65 +2230,41 @@ function OwnerProfileContent({ accountLifecycle }) {
               </CardContent>
             </Card>
           )}
-        <Card elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
-          <CardHeader
-            avatar={<SettingsOutlinedIcon color="primary" />}
-            title={t("profile.preferences.accountSettings", {
-              defaultValue: "Account settings",
+        </Box>
+        <Box component="section" sx={sectionWrapperStyles}>
+          <Typography variant="overline" sx={sectionTitleStyles}>
+            {t("profile.sections.accountSecurity", {
+              defaultValue: "ACCOUNT & SECURITY",
             })}
-            subheader={t("profile.preferences.accountSubtitle", {
-              defaultValue:
-                "Manage language, billing, privacy, and removal settings for your profile.",
-            })}
-          />
-          <Divider />
-          <CardContent>
-            <Stack spacing={2.5}>
+          </Typography>
+          <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.account)}>
+            <CardHeader
+              avatar={<SettingsOutlinedIcon color="primary" />}
+              title={t("profile.preferences.accountSettings", {
+                defaultValue: "Account settings",
+              })}
+              subheader={t("profile.preferences.accountSubtitle", {
+                defaultValue:
+                  "Manage language, billing, privacy, and removal settings for your profile.",
+              })}
+            />
+            <Divider />
+            <CardContent>
               <Stack spacing={2.5}>
+                <Stack spacing={2.5}>
                 <Accordion
                   disableGutters
                   square={false}
                   elevation={0}
                   expanded={expandedAccountSection === "language"}
                   onChange={handleAccountSectionChange("language")}
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: (theme) =>
-                      theme.transitions.create(["box-shadow", "transform", "border"], {
-                        duration: theme.transitions.duration.short,
-                      }),
-                    "&::before": {
-                      display: "none",
-                    },
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: (theme) =>
-                        !canChangeLanguage
-                          ? lighten(theme.palette.divider, 0.4)
-                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
-                    },
-                    "&:hover": {
-                      boxShadow: 4,
-                      transform: "translateY(-2px)",
-                    },
-                  }}
+                  sx={createAccountAccordionStyles(canChangeLanguage)}
                 >
                   <AccordionSummary
                     expandIcon={
                       <ExpandMoreIcon
                         sx={{
-                          transition: (theme) =>
-                            theme.transitions.create("transform", {
-                              duration: theme.transitions.duration.shortest,
-                            }),
+                          transition: "transform 0.2s ease",
                           transform:
                             expandedAccountSection === "language"
                               ? "rotate(180deg)"
@@ -2184,25 +2272,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                         }}
                       />
                     }
-                    sx={{
-                      "& .MuiAccordionSummary-content": {
-                        margin: 0,
-                      },
-                      px: 2.5,
-                      py: 2,
-                      transition: (theme) =>
-                        theme.transitions.create("background-color", {
-                          duration: theme.transitions.duration.short,
-                        }),
-                      backgroundColor: (theme) =>
-                        expandedAccountSection === "language"
-                          ? lighten(theme.palette.background.paper, 0.04)
-                          : "transparent",
-                      "&:hover": {
-                        backgroundColor: (theme) =>
-                          lighten(theme.palette.background.paper, 0.08),
-                      },
-                    }}
+                    sx={accountAccordionSummaryStyles(
+                      expandedAccountSection === "language"
+                    )}
                   >
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Box
@@ -2227,13 +2299,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                         >
                           {t("app.language.label", { defaultValue: "Language" })}
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
-                          }}
-                        >
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
                           {t("profile.preferences.languageDescription", {
                             defaultValue: "Choose the language you prefer to use across the app.",
                           })}
@@ -2242,16 +2308,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                     </Stack>
                   </AccordionSummary>
                   <AccordionDetails
-                    sx={{
-                      px: 2.5,
-                      py: 2.5,
-                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                      background: (theme) =>
-                        lighten(
-                          theme.palette.background.paper,
-                          expandedAccountSection === "language" ? 0.06 : 0.03
-                        ),
-                    }}
+                    sx={accountAccordionDetailsStyles(
+                      expandedAccountSection === "language"
+                    )}
                   >
                     <Stack spacing={1.5} sx={{ maxWidth: 360 }}>
                       <FormControl fullWidth size="small" disabled={!canChangeLanguage}>
@@ -2286,44 +2345,13 @@ function OwnerProfileContent({ accountLifecycle }) {
                   elevation={0}
                   expanded={expandedAccountSection === "signOut"}
                   onChange={handleAccountSectionChange("signOut")}
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: (theme) =>
-                      theme.transitions.create(["box-shadow", "transform", "border"], {
-                        duration: theme.transitions.duration.short,
-                      }),
-                    "&::before": {
-                      display: "none",
-                    },
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: (theme) =>
-                        !canSignOut
-                          ? lighten(theme.palette.divider, 0.4)
-                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
-                    },
-                    "&:hover": {
-                      boxShadow: 4,
-                      transform: "translateY(-2px)",
-                    },
-                  }}
+                  sx={createAccountAccordionStyles(canSignOut)}
                 >
                   <AccordionSummary
                     expandIcon={
                       <ExpandMoreIcon
                         sx={{
-                          transition: (theme) =>
-                            theme.transitions.create("transform", {
-                              duration: theme.transitions.duration.shortest,
-                            }),
+                          transition: "transform 0.2s ease",
                           transform:
                             expandedAccountSection === "signOut"
                               ? "rotate(180deg)"
@@ -2331,25 +2359,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                         }}
                       />
                     }
-                    sx={{
-                      "& .MuiAccordionSummary-content": {
-                        margin: 0,
-                      },
-                      px: 2.5,
-                      py: 2,
-                      transition: (theme) =>
-                        theme.transitions.create("background-color", {
-                          duration: theme.transitions.duration.short,
-                        }),
-                      backgroundColor: (theme) =>
-                        expandedAccountSection === "signOut"
-                          ? lighten(theme.palette.background.paper, 0.04)
-                          : "transparent",
-                      "&:hover": {
-                        backgroundColor: (theme) =>
-                          lighten(theme.palette.background.paper, 0.08),
-                      },
-                    }}
+                    sx={accountAccordionSummaryStyles(
+                      expandedAccountSection === "signOut"
+                    )}
                   >
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Box
@@ -2374,13 +2386,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                         >
                           {t("app.signOut", { defaultValue: "Sign out" })}
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
-                          }}
-                        >
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
                           {t("profile.preferences.signOutDescription", {
                             defaultValue: "End your session on this device whenever you need to.",
                           })}
@@ -2389,16 +2395,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                     </Stack>
                   </AccordionSummary>
                   <AccordionDetails
-                    sx={{
-                      px: 2.5,
-                      py: 2.5,
-                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                      background: (theme) =>
-                        lighten(
-                          theme.palette.background.paper,
-                          expandedAccountSection === "signOut" ? 0.06 : 0.03
-                        ),
-                    }}
+                    sx={accountAccordionDetailsStyles(
+                      expandedAccountSection === "signOut"
+                    )}
                   >
                     <Stack spacing={1.5}>
                       <Typography variant="body2" color="text.secondary">
@@ -2439,44 +2438,13 @@ function OwnerProfileContent({ accountLifecycle }) {
                   elevation={0}
                   expanded={expandedAccountSection === "billing"}
                   onChange={handleAccountSectionChange("billing")}
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: (theme) =>
-                      theme.transitions.create(["box-shadow", "transform", "border"], {
-                        duration: theme.transitions.duration.short,
-                      }),
-                    "&::before": {
-                      display: "none",
-                    },
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: (theme) =>
-                        !canManagePayments
-                          ? lighten(theme.palette.divider, 0.4)
-                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
-                    },
-                    "&:hover": {
-                      boxShadow: 4,
-                      transform: "translateY(-2px)",
-                    },
-                  }}
+                  sx={createAccountAccordionStyles(canManagePayments)}
                 >
                   <AccordionSummary
                     expandIcon={
                       <ExpandMoreIcon
                         sx={{
-                          transition: (theme) =>
-                            theme.transitions.create("transform", {
-                              duration: theme.transitions.duration.shortest,
-                            }),
+                          transition: "transform 0.2s ease",
                           transform:
                             expandedAccountSection === "billing"
                               ? "rotate(180deg)"
@@ -2484,25 +2452,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                         }}
                       />
                     }
-                    sx={{
-                      "& .MuiAccordionSummary-content": {
-                        margin: 0,
-                      },
-                      px: 2.5,
-                      py: 2,
-                      transition: (theme) =>
-                        theme.transitions.create("background-color", {
-                          duration: theme.transitions.duration.short,
-                        }),
-                      backgroundColor: (theme) =>
-                        expandedAccountSection === "billing"
-                          ? lighten(theme.palette.background.paper, 0.04)
-                          : "transparent",
-                      "&:hover": {
-                        backgroundColor: (theme) =>
-                          lighten(theme.palette.background.paper, 0.08),
-                      },
-                    }}
+                    sx={accountAccordionSummaryStyles(
+                      expandedAccountSection === "billing"
+                    )}
                   >
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Box
@@ -2529,13 +2481,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                             defaultValue: "Billing & subscriptions",
                           })}
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
-                          }}
-                        >
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
                           {t("profile.preferences.billingDescription", {
                             defaultValue:
                               "Review and manage your membership plan, payment methods, and receipts.",
@@ -2545,16 +2491,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                     </Stack>
                   </AccordionSummary>
                   <AccordionDetails
-                    sx={{
-                      px: 2.5,
-                      py: 2.5,
-                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                      background: (theme) =>
-                        lighten(
-                          theme.palette.background.paper,
-                          expandedAccountSection === "billing" ? 0.06 : 0.03
-                        ),
-                    }}
+                    sx={accountAccordionDetailsStyles(
+                      expandedAccountSection === "billing"
+                    )}
                   >
                     <Stack spacing={1.5}>
                       <Typography variant="body2" color="text.secondary">
@@ -2589,44 +2528,13 @@ function OwnerProfileContent({ accountLifecycle }) {
                   elevation={0}
                   expanded={expandedAccountSection === "visibility"}
                   onChange={handleAccountSectionChange("visibility")}
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: (theme) =>
-                      theme.transitions.create(["box-shadow", "transform", "border"], {
-                        duration: theme.transitions.duration.short,
-                      }),
-                    "&::before": {
-                      display: "none",
-                    },
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: (theme) =>
-                        !canToggleVisibility
-                          ? lighten(theme.palette.divider, 0.4)
-                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
-                    },
-                    "&:hover": {
-                      boxShadow: 4,
-                      transform: "translateY(-2px)",
-                    },
-                  }}
+                  sx={createAccountAccordionStyles(canToggleVisibility)}
                 >
                   <AccordionSummary
                     expandIcon={
                       <ExpandMoreIcon
                         sx={{
-                          transition: (theme) =>
-                            theme.transitions.create("transform", {
-                              duration: theme.transitions.duration.shortest,
-                            }),
+                          transition: "transform 0.2s ease",
                           transform:
                             expandedAccountSection === "visibility"
                               ? "rotate(180deg)"
@@ -2634,25 +2542,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                         }}
                       />
                     }
-                    sx={{
-                      "& .MuiAccordionSummary-content": {
-                        margin: 0,
-                      },
-                      px: 2.5,
-                      py: 2,
-                      transition: (theme) =>
-                        theme.transitions.create("background-color", {
-                          duration: theme.transitions.duration.short,
-                        }),
-                      backgroundColor: (theme) =>
-                        expandedAccountSection === "visibility"
-                          ? lighten(theme.palette.background.paper, 0.04)
-                          : "transparent",
-                      "&:hover": {
-                        backgroundColor: (theme) =>
-                          lighten(theme.palette.background.paper, 0.08),
-                      },
-                    }}
+                    sx={accountAccordionSummaryStyles(
+                      expandedAccountSection === "visibility"
+                    )}
                   >
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Box
@@ -2679,13 +2571,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                             defaultValue: "Profile visibility",
                           })}
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
-                          }}
-                        >
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
                           {t("profile.preferences.visibilityDescription", {
                             defaultValue:
                               "Hide your profile from potential matches without deleting your information.",
@@ -2695,16 +2581,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                     </Stack>
                   </AccordionSummary>
                   <AccordionDetails
-                    sx={{
-                      px: 2.5,
-                      py: 2.5,
-                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                      background: (theme) =>
-                        lighten(
-                          theme.palette.background.paper,
-                          expandedAccountSection === "visibility" ? 0.06 : 0.03
-                        ),
-                    }}
+                    sx={accountAccordionDetailsStyles(
+                      expandedAccountSection === "visibility"
+                    )}
                   >
                     <Stack
                       spacing={2}
@@ -2770,44 +2649,13 @@ function OwnerProfileContent({ accountLifecycle }) {
                   elevation={0}
                   expanded={expandedAccountSection === "remove"}
                   onChange={handleAccountSectionChange("remove")}
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: (theme) =>
-                      theme.transitions.create(["box-shadow", "transform", "border"], {
-                        duration: theme.transitions.duration.short,
-                      }),
-                    "&::before": {
-                      display: "none",
-                    },
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      background: (theme) =>
-                        !canRemoveAccount
-                          ? lighten(theme.palette.divider, 0.4)
-                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
-                    },
-                    "&:hover": {
-                      boxShadow: 4,
-                      transform: "translateY(-2px)",
-                    },
-                  }}
+                  sx={createAccountAccordionStyles(canRemoveAccount)}
                 >
                   <AccordionSummary
                     expandIcon={
                       <ExpandMoreIcon
                         sx={{
-                          transition: (theme) =>
-                            theme.transitions.create("transform", {
-                              duration: theme.transitions.duration.shortest,
-                            }),
+                          transition: "transform 0.2s ease",
                           transform:
                             expandedAccountSection === "remove"
                               ? "rotate(180deg)"
@@ -2815,25 +2663,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                         }}
                       />
                     }
-                    sx={{
-                      "& .MuiAccordionSummary-content": {
-                        margin: 0,
-                      },
-                      px: 2.5,
-                      py: 2,
-                      transition: (theme) =>
-                        theme.transitions.create("background-color", {
-                          duration: theme.transitions.duration.short,
-                        }),
-                      backgroundColor: (theme) =>
-                        expandedAccountSection === "remove"
-                          ? lighten(theme.palette.background.paper, 0.04)
-                          : "transparent",
-                      "&:hover": {
-                        backgroundColor: (theme) =>
-                          lighten(theme.palette.background.paper, 0.08),
-                      },
-                    }}
+                    sx={accountAccordionSummaryStyles(
+                      expandedAccountSection === "remove"
+                    )}
                   >
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Box
@@ -2860,13 +2692,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                             defaultValue: "Remove account",
                           })}
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{
-                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
-                          }}
-                        >
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
                           {t("profile.preferences.removeAccountDescription", {
                             defaultValue:
                               "Permanently delete your profile, matches, and conversations.",
@@ -2876,16 +2702,9 @@ function OwnerProfileContent({ accountLifecycle }) {
                     </Stack>
                   </AccordionSummary>
                   <AccordionDetails
-                    sx={{
-                      px: 2.5,
-                      py: 2.5,
-                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                      background: (theme) =>
-                        lighten(
-                          theme.palette.background.paper,
-                          expandedAccountSection === "remove" ? 0.06 : 0.03
-                        ),
-                    }}
+                    sx={accountAccordionDetailsStyles(
+                      expandedAccountSection === "remove"
+                    )}
                   >
                     <Stack spacing={1.5}>
                       <Typography variant="body2" color="text.secondary">
@@ -2926,8 +2745,16 @@ function OwnerProfileContent({ accountLifecycle }) {
               </Stack>
             </Stack>
           </CardContent>
-        </Card>
-        <ProfileLegalInformation />
+          </Card>
+        </Box>
+        <Box component="section" sx={sectionWrapperStyles}>
+          <Typography variant="overline" sx={sectionTitleStyles}>
+            {t("profile.sections.trustSafety", {
+              defaultValue: "TRUST & SAFETY",
+            })}
+          </Typography>
+          <ProfileLegalInformation />
+        </Box>
       </Stack>
 
         <Snackbar
