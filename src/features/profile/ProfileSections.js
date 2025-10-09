@@ -4,7 +4,7 @@ import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../i18n";
 
-const sections = [
+export const profileSectionDefinitions = [
   {
     key: "verification",
     labelKey: "profile.headers.verification",
@@ -32,9 +32,11 @@ const sections = [
   },
 ];
 
-function ProfileSections({ data }) {
+function ProfileSections({ data, onEditSection, disableEditing = false }) {
   const { t } = useTranslation();
-  const availableSections = sections.filter(({ key }) => data && data[key]);
+  const availableSections = profileSectionDefinitions.filter(
+    ({ key }) => data && data[key]
+  );
   const hasProfileImage = Boolean(data && data.profile_image);
 
   if (!hasProfileImage && availableSections.length === 0) {
@@ -50,6 +52,14 @@ function ProfileSections({ data }) {
           data={data[key]}
           sectionKey={key}
           IconComponent={Icon}
+          onEdit={
+            onEditSection
+              ? () => {
+                  onEditSection(key);
+                }
+              : undefined
+          }
+          disableEdit={disableEditing}
         />
       ))}
     </Stack>
