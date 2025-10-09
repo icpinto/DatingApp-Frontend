@@ -5,9 +5,11 @@ import {
   AccordionDetails,
   Typography,
   Grid,
+  Stack,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
+import { lighten } from "@mui/material/styles";
 
 const FIELD_LABELS = {
   verification: {
@@ -88,12 +90,93 @@ const toBoolean = (value) => {
 function ProfileSection({ label, data, sectionKey }) {
   const { t } = useTranslation();
   return (
-    <Accordion defaultExpanded sx={{ width: "100%" }}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Typography variant="h6">{label}</Typography>
+    <Accordion
+      defaultExpanded
+      disableGutters
+      square={false}
+      elevation={0}
+      sx={{
+        width: "100%",
+        borderRadius: 2,
+        border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
+        position: "relative",
+        overflow: "hidden",
+        transition: (theme) =>
+          theme.transitions.create(["box-shadow", "transform", "border"], {
+            duration: theme.transitions.duration.short,
+          }),
+        "&::before": {
+          display: "none",
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 4,
+          background: "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+        },
+        "&:hover": {
+          boxShadow: 4,
+          transform: "translateY(-2px)",
+        },
+        "&.Mui-expanded": {
+          margin: 0,
+          borderColor: (theme) => lighten(theme.palette.primary.main, 0.6),
+          "& .MuiAccordionSummary-root": {
+            backgroundColor: (theme) =>
+              lighten(theme.palette.background.paper, 0.04),
+          },
+          "& .MuiAccordionDetails-root": {
+            backgroundColor: (theme) =>
+              lighten(theme.palette.background.paper, 0.06),
+          },
+        },
+      }}
+    >
+      <AccordionSummary
+        expandIcon={<ExpandMoreIcon />}
+        sx={(theme) => ({
+          "& .MuiAccordionSummary-content": {
+            margin: 0,
+          },
+          "& .MuiAccordionSummary-expandIconWrapper": {
+            transition: theme.transitions.create("transform", {
+              duration: theme.transitions.duration.shortest,
+            }),
+          },
+          "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
+            transform: "rotate(180deg)",
+          },
+          px: 2.5,
+          py: 2,
+          transition: theme.transitions.create("background-color", {
+            duration: theme.transitions.duration.short,
+          }),
+          "&:hover": {
+            backgroundColor: lighten(theme.palette.background.paper, 0.08),
+          },
+        })}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            letterSpacing: 0.2,
+          }}
+        >
+          {label}
+        </Typography>
       </AccordionSummary>
-      <AccordionDetails>
-        <Grid container spacing={1}>
+      <AccordionDetails
+        sx={{
+          px: 2.5,
+          py: 2.5,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Grid container spacing={2.5}>
           {Object.entries(data || {}).map(([field, value]) => {
             const labelKey = FIELD_LABELS[sectionKey]?.[field];
             const resolvedLabel = labelKey ? t(labelKey) : formatLabel(field);
@@ -118,9 +201,28 @@ function ProfileSection({ label, data, sectionKey }) {
 
             return (
               <Grid item xs={12} sm={6} key={field}>
-                <Typography>
-                  <strong>{resolvedLabel}:</strong> {displayValue}
-                </Typography>
+                <Stack spacing={0.5} sx={{ px: 0.5 }}>
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      fontWeight: 600,
+                      letterSpacing: 0.8,
+                      color: (theme) =>
+                        lighten(theme.palette.text.secondary, 0.2),
+                    }}
+                  >
+                    {resolvedLabel}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.primary"
+                    sx={{
+                      color: (theme) => lighten(theme.palette.text.primary, 0.02),
+                    }}
+                  >
+                    {displayValue}
+                  </Typography>
+                </Stack>
               </Grid>
             );
           })}
