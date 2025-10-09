@@ -38,9 +38,14 @@ import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
 import api from "./shared/services/api";
 import { CAPABILITIES } from "./domain/capabilities";
+import AppFooter from "./shared/components/layout/AppFooter";
 
 const MessagesPage = lazy(() => import("./features/messages/Messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
+const PrivacyPolicyPage = lazy(() => import("./features/static/PrivacyPolicy"));
+const TermsOfServicePage = lazy(() => import("./features/static/TermsOfService"));
+const PricingPage = lazy(() => import("./features/static/Pricing"));
+const HelpCenterPage = lazy(() => import("./features/static/HelpCenter"));
 
 const RouteLoader = () => (
   <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
@@ -288,7 +293,40 @@ function AppShell() {
                   </CapabilityRoute>
                 }
               />
+              <Route
+                path="/privacy-policy"
+                element={
+                  <Suspense fallback={<RouteLoader />}>
+                    <PrivacyPolicyPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/terms"
+                element={
+                  <Suspense fallback={<RouteLoader />}>
+                    <TermsOfServicePage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/pricing"
+                element={
+                  <Suspense fallback={<RouteLoader />}>
+                    <PricingPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <Suspense fallback={<RouteLoader />}>
+                    <HelpCenterPage />
+                  </Suspense>
+                }
+              />
             </Routes>
+            <AppFooter />
           </div>
         </Router>
       </AppAccessBoundary>
