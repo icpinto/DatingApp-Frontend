@@ -52,7 +52,7 @@ function ProfileSections({ data }) {
   }
 
   return (
-    <Stack spacing={2.5} sx={{ width: "100%" }}>
+    <Stack spacing={2} sx={{ width: "100%" }}>
       {availableSections.map(({ key, labelKey, Icon }) => (
         <ProfileSection
           key={key}
