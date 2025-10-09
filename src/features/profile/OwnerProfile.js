@@ -32,7 +32,6 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import InterestsIcon from "@mui/icons-material/Interests";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import BadgeIcon from "@mui/icons-material/Badge";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
@@ -1356,20 +1355,33 @@ function OwnerProfileContent({ accountLifecycle }) {
               defaultValue: "PROFILE MANAGEMENT",
             })}
           </Typography>
-          {shouldShowForm ? (
-            <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
+          <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
             <CardHeader
               avatar={<PersonIcon color="primary" />}
               title={
                 profile
-                  ? t("profile.headers.edit", { defaultValue: "Edit your profile" })
+                  ? shouldShowForm
+                    ? t("profile.headers.edit", { defaultValue: "Edit your profile" })
+                    : t("profile.headers.view", { defaultValue: "Your profile" })
                   : t("profile.headers.create", { defaultValue: "Create your profile" })
               }
-              subheader={t("profile.headers.formSubheader")}
+              subheader={
+                shouldShowForm
+                  ? t("profile.headers.formSubheader")
+                  : t("profile.headers.viewSubheader")
+              }
+              action={
+                shouldShowForm || isLifecycleReadOnly ? null : (
+                  <Button variant="contained" onClick={handleEdit} disabled={isLifecycleReadOnly}>
+                    {t("common.actions.editProfile")}
+                  </Button>
+                )
+              }
             />
-              <Divider />
+            <Divider />
+            {shouldShowForm ? (
               <CardContent>
-                <form onSubmit={handleSubmit}>
+                <Box component="form" id="owner-profile-form" onSubmit={handleSubmit}>
                   <Stack spacing={spacing.section}>
                     <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -1381,7 +1393,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                         <Stack spacing={3}>
                           <Box>
                             <Stack direction="row" spacing={1} alignItems="center">
-                              <BadgeIcon color="action" />
                               <Typography variant="subtitle1">
                                 {t("profile.verification.identityTitle")}
                               </Typography>
@@ -1444,7 +1455,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                           <Divider />
                           <Box>
                             <Stack direction="row" spacing={1} alignItems="center">
-                              <PhoneIphoneIcon color="action" />
                               <Typography variant="subtitle1">
                                 {t("profile.verification.contactTitle")}
                               </Typography>
@@ -2148,70 +2158,57 @@ function OwnerProfileContent({ accountLifecycle }) {
                         : t("profile.buttons.save")}
                     </Button>
                   </Stack>
-                  </Stack>
-                </form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
-              <CardHeader
-                avatar={<PersonIcon color="primary" />}
-                title={t("profile.headers.view", { defaultValue: "Your profile" })}
-                subheader={t("profile.headers.viewSubheader")}
-                action={
-                  <Button variant="contained" onClick={handleEdit} disabled={isLifecycleReadOnly}>
-                    {t("common.actions.editProfile")}
-                  </Button>
-                }
-              />
-              <Divider />
-              <CardContent>
-                <Stack spacing={3}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t("profile.headers.viewDescription", {
-                      defaultValue:
-                        "Review and manage the personal, lifestyle, and verification details that other members can see.",
-                    })}
-                  </Typography>
-                  {profile?.profile_image && (
-                    <Box sx={{ display: "flex", justifyContent: "center" }}>
-                      <Avatar
-                        variant="rounded"
-                        src={profile.profile_image}
-                        alt={t("profile.fields.profileImage")}
-                        sx={{
-                          width: 150,
-                          height: 150,
-                          boxShadow: 6,
-                          borderRadius: 4,
-                        }}
-                      />
-                    </Box>
-                  )}
-                  {profile ? (
-                    <>
-                      <ProfileSections data={profile} />
-                      {profile.created_at && (
-                        <Stack spacing={1.5}>
-                          <Divider flexItem sx={{ my: 0 }} />
-                          <Typography variant="caption" color="text.secondary">
-                            {t("common.messages.profileCreatedOn", {
-                              date: new Date(profile.created_at).toLocaleDateString(),
-                            })}
-                          </Typography>
-                        </Stack>
-                      )}
-                    </>
-                  ) : (
-                    <Alert severity="info">
-                      Your profile details are currently unavailable. Reactivate your account to
-                      update or recreate your profile information.
-                    </Alert>
-                  )}
                 </Stack>
-              </CardContent>
-            </Card>
+              </Box>
+            </CardContent>
+          ) : (
+            <CardContent>
+              <Stack spacing={3}>
+                <Typography variant="body2" color="text.secondary">
+                  {t("profile.headers.viewDescription", {
+                    defaultValue:
+                      "Review and manage the personal, lifestyle, and verification details that other members can see.",
+                  })}
+                </Typography>
+                {profile?.profile_image && (
+                  <Box sx={{ display: "flex", justifyContent: "center" }}>
+                    <Avatar
+                      variant="rounded"
+                      src={profile.profile_image}
+                      alt={t("profile.fields.profileImage")}
+                      sx={{
+                        width: 150,
+                        height: 150,
+                        boxShadow: 6,
+                        borderRadius: 4,
+                      }}
+                    />
+                  </Box>
+                )}
+                {profile ? (
+                  <>
+                    <ProfileSections data={profile} />
+                    {profile.created_at && (
+                      <Stack spacing={1.5}>
+                        <Divider flexItem sx={{ my: 0 }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {t("common.messages.profileCreatedOn", {
+                            date: new Date(profile.created_at).toLocaleDateString(),
+                          })}
+                        </Typography>
+                      </Stack>
+                    )}
+                  </>
+                ) : (
+                  <Alert severity="info">
+                    Your profile details are currently unavailable. Reactivate your account to
+                    update or recreate your profile information.
+                  </Alert>
+                )}
+              </Stack>
+            </CardContent>
           )}
+          </Card>
         </Box>
         <Box component="section" sx={sectionWrapperStyles}>
           <Typography variant="overline" sx={sectionTitleStyles}>
