@@ -36,6 +36,8 @@ import LanguageIcon from "@mui/icons-material/Language";
 import BadgeIcon from "@mui/icons-material/Badge";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import LogoutIcon from "@mui/icons-material/Logout";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import api from "../../shared/services/api";
 import ProfileSections from "./ProfileSections";
 import { spacing } from "../../styles";
@@ -1245,195 +1247,17 @@ function OwnerProfileContent({ accountLifecycle }) {
         {isLifecycleReadOnly && (
           <Alert severity="info">{lifecycleReadOnlyMessage}</Alert>
         )}
-        <Card elevation={3} sx={{ borderRadius: 3 }}>
-          <CardHeader
-            title={t("profile.preferences.account", {
-              defaultValue: "Account preferences",
-            })}
-            subheader={t("profile.preferences.accountSubtitle", {
-              defaultValue:
-                "Manage language, billing, privacy, and removal settings for your profile.",
-            })}
-          />
-          <Divider />
-          <CardContent>
-            <Stack spacing={spacing.section} divider={<Divider flexItem />}>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
-                  <Typography variant="subtitle1">
-                    {t("app.language.label", { defaultValue: "Language" })}
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {t("profile.preferences.languageDescription", {
-                    defaultValue: "Choose the language you prefer to use across the app.",
-                  })}
-                </Typography>
-                <FormControl
-                  fullWidth
-                  size="small"
-                  disabled={!canChangeLanguage}
-                  sx={{ maxWidth: 320 }}
-                >
-                  <InputLabel id="profile-language-select-label">
-                    {t("app.language.label")}
-                  </InputLabel>
-                  <Select
-                    labelId="profile-language-select-label"
-                    label={t("app.language.label")}
-                    value={i18n.language || "en"}
-                    onChange={handleLanguageChange}
-                  >
-                    {languageOptions.map((option) => (
-                      <MenuItem key={option.code} value={option.code}>
-                        {t(option.labelKey)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                {!canChangeLanguage && changeLanguageReason && (
-                  <Typography variant="caption" color="text.secondary">
-                    {changeLanguageReason}
-                  </Typography>
-                )}
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
-                  <Typography variant="subtitle1">
-                    {t("app.signOut", { defaultValue: "Sign out" })}
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {t("profile.preferences.signOutDescription", {
-                    defaultValue: "End your session on this device whenever you need to.",
-                  })}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<LogoutIcon />}
-                  onClick={handleProfileSignOut}
-                  disabled={signingOut || !canSignOut}
-                  sx={{ width: { xs: "100%", sm: "auto" } }}
-                >
-                  {signingOut
-                    ? t("app.signingOut", { defaultValue: "Signing out..." })
-                    : t("app.signOut", { defaultValue: "Sign out" })}
-                </Button>
-                {!canSignOut && signOutReason && (
-                  <Typography variant="caption" color="text.secondary">
-                    {signOutReason}
-                  </Typography>
-                )}
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CreditCardIcon color="primary" />
-                  <Typography variant="subtitle1">Payment details</Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  Manage your saved payment methods and review subscription history so you never miss
-                  out on potential matches.
-                </Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<CreditCardIcon />}
-                  onClick={handleManagePayments}
-                  disabled={!canManagePayments}
-                >
-                  Manage payment details
-                </Button>
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={2}
-                  alignItems={{ xs: "flex-start", sm: "center" }}
-                  justifyContent="space-between"
-                >
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-                    <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
-                    <Box>
-                      <Typography variant="subtitle1">Hide my profile</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Temporarily remove your profile from match suggestions without deleting your
-                        information.
-                      </Typography>
-                      {accountLifecycleStatus && (
-                        <Chip
-                          label={
-                            accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
-                              ? "Status: Deactivated"
-                              : "Status: Activated"
-                          }
-                          color={
-                            accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
-                              ? "warning"
-                              : "success"
-                          }
-                          size="small"
-                          sx={{ mt: 1, fontWeight: 600 }}
-                        />
-                      )}
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Switch
-                      checked={isAccountHidden}
-                      onChange={handleHideAccountToggle}
-                      disabled={
-                        accountStatusLoading ||
-                        isUpdatingAccountVisibility ||
-                        !canToggleVisibility
-                      }
-                      inputProps={{
-                        "aria-label": "Hide my profile",
-                        "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
-                      }}
-                    />
-                    {(accountStatusLoading || isUpdatingAccountVisibility) && (
-                      <CircularProgress size={18} />
-                    )}
-                  </Stack>
-                </Stack>
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <DeleteForeverIcon color="error" />
-                  <Box>
-                    <Typography variant="subtitle1">Remove account</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Permanently delete your profile, matches, and conversations.
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={handleRemoveAccount}
-                  startIcon={
-                    isRemovingAccount ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <DeleteForeverIcon />
-                    )
-                  }
-                  disabled={isRemovingAccount || !canRemoveAccount}
-                >
-                  {isRemovingAccount ? "Processing..." : "Remove my account"}
-                </Button>
-              </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
         {shouldShowForm ? (
-            <Card elevation={4} sx={{ borderRadius: 3 }}>
-              <CardHeader
-                title={profile ? t("profile.headers.edit") : t("profile.headers.create")}
-                subheader={t("profile.headers.formSubheader")}
-              />
+          <Card elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
+            <CardHeader
+              avatar={<PersonOutlineIcon color="primary" />}
+              title={
+                profile
+                  ? t("profile.headers.edit", { defaultValue: "Edit your profile" })
+                  : t("profile.headers.create", { defaultValue: "Create your profile" })
+              }
+              subheader={t("profile.headers.formSubheader")}
+            />
               <Divider />
               <CardContent>
                 <form onSubmit={handleSubmit}>
@@ -2227,9 +2051,10 @@ function OwnerProfileContent({ accountLifecycle }) {
               </CardContent>
             </Card>
           ) : (
-            <Card elevation={4} sx={{ borderRadius: 3 }}>
+            <Card elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
               <CardHeader
-                title={t("profile.headers.view")}
+                avatar={<PersonOutlineIcon color="primary" />}
+                title={t("profile.headers.view", { defaultValue: "Your profile" })}
                 subheader={t("profile.headers.viewSubheader")}
                 action={
                   <Button variant="contained" onClick={handleEdit} disabled={isLifecycleReadOnly}>
@@ -2271,8 +2096,237 @@ function OwnerProfileContent({ accountLifecycle }) {
               </CardContent>
             </Card>
           )}
-          <ProfileLegalInformation />
-        </Stack>
+        <Card elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
+          <CardHeader
+            avatar={<SettingsOutlinedIcon color="primary" />}
+            title={t("profile.preferences.accountSettings", {
+              defaultValue: "Account settings",
+            })}
+            subheader={t("profile.preferences.accountSubtitle", {
+              defaultValue:
+                "Manage language, billing, privacy, and removal settings for your profile.",
+            })}
+          />
+          <Divider />
+          <CardContent>
+            <Stack spacing={spacing.section} divider={<Divider flexItem />}>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
+                  <Typography variant="subtitle1">
+                    {t("app.language.label", { defaultValue: "Language" })}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {t("profile.preferences.languageDescription", {
+                    defaultValue: "Choose the language you prefer to use across the app.",
+                  })}
+                </Typography>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  disabled={!canChangeLanguage}
+                  sx={{ maxWidth: 320 }}
+                >
+                  <InputLabel id="profile-language-select-label">
+                    {t("app.language.label")}
+                  </InputLabel>
+                  <Select
+                    labelId="profile-language-select-label"
+                    label={t("app.language.label")}
+                    value={i18n.language || "en"}
+                    onChange={handleLanguageChange}
+                  >
+                    {languageOptions.map((option) => (
+                      <MenuItem key={option.code} value={option.code}>
+                        {t(option.labelKey)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {!canChangeLanguage && changeLanguageReason && (
+                  <Typography variant="caption" color="text.secondary">
+                    {changeLanguageReason}
+                  </Typography>
+                )}
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
+                  <Typography variant="subtitle1">
+                    {t("app.signOut", { defaultValue: "Sign out" })}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {t("profile.preferences.signOutDescription", {
+                    defaultValue: "End your session on this device whenever you need to.",
+                  })}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<LogoutIcon />}
+                  onClick={handleProfileSignOut}
+                  disabled={signingOut || !canSignOut}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
+                  {signingOut
+                    ? t("app.signingOut", { defaultValue: "Signing out..." })
+                    : t("app.signOut", { defaultValue: "Sign out" })}
+                </Button>
+                {!canSignOut && signOutReason && (
+                  <Typography variant="caption" color="text.secondary">
+                    {signOutReason}
+                  </Typography>
+                )}
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CreditCardIcon color={canManagePayments ? "primary" : "disabled"} />
+                  <Typography variant="subtitle1">
+                    {t("profile.preferences.billing", {
+                      defaultValue: "Billing & subscriptions",
+                    })}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {t("profile.preferences.billingDescription", {
+                    defaultValue:
+                      "Review and manage your membership plan, payment methods, and receipts.",
+                  })}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<CreditCardIcon />}
+                  onClick={handleManagePayments}
+                  disabled={!canManagePayments}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
+                  {t("profile.preferences.manageBilling", {
+                    defaultValue: "Manage billing",
+                  })}
+                </Button>
+                {!canManagePayments && capabilityReasons.payments && (
+                  <Typography variant="caption" color="text.secondary">
+                    {capabilityReasons.payments}
+                  </Typography>
+                )}
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
+                  <Box>
+                    <Typography variant="subtitle1">
+                      {t("profile.preferences.visibility", {
+                        defaultValue: "Profile visibility",
+                      })}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t("profile.preferences.visibilityDescription", {
+                        defaultValue:
+                          "Hide your profile from potential matches without deleting your information.",
+                      })}
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                >
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {isAccountHidden
+                        ? t("profile.preferences.visibilityHidden", {
+                            defaultValue:
+                              "Your profile is currently hidden. Matches will no longer see or contact you.",
+                          })
+                        : t("profile.preferences.visibilityVisible", {
+                            defaultValue:
+                              "Your profile is visible to the community. Hide it if you need a break.",
+                          })}
+                    </Typography>
+                    {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <CircularProgress size={14} />
+                        {t("profile.preferences.updatingVisibility", {
+                          defaultValue: "Updating visibility...",
+                        })}
+                      </Typography>
+                    )}
+                    {!canToggleVisibility && capabilityReasons.toggleVisibility && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                        {capabilityReasons.toggleVisibility}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Switch
+                      checked={isAccountHidden}
+                      onChange={handleHideAccountToggle}
+                      disabled={
+                        accountStatusLoading ||
+                        isUpdatingAccountVisibility ||
+                        !canToggleVisibility
+                      }
+                      inputProps={{
+                        "aria-label": "Hide my profile",
+                        "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
+                      }}
+                    />
+                    {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                      <CircularProgress size={18} />
+                    )}
+                  </Stack>
+                </Stack>
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DeleteForeverIcon color="error" />
+                  <Box>
+                    <Typography variant="subtitle1">
+                      {t("profile.preferences.removeAccount", {
+                        defaultValue: "Remove account",
+                      })}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t("profile.preferences.removeAccountDescription", {
+                        defaultValue:
+                          "Permanently delete your profile, matches, and conversations.",
+                      })}
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleRemoveAccount}
+                  startIcon={
+                    isRemovingAccount ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <DeleteForeverIcon />
+                    )
+                  }
+                  disabled={isRemovingAccount || !canRemoveAccount}
+                >
+                  {isRemovingAccount
+                    ? t("profile.preferences.removingAccount", { defaultValue: "Processing..." })
+                    : t("profile.preferences.removeAccountButton", {
+                        defaultValue: "Remove my account",
+                      })}
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+        <ProfileLegalInformation />
+      </Stack>
 
         <Snackbar
           open={snackbar.open}
