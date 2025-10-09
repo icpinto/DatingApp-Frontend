@@ -356,6 +356,9 @@
       "horoscope": "Horoscope",
       "languages": "Languages & Interests"
     },
+    "summary": {
+      "sectionCompletion": "{{completed}} of {{total}} fields completed"
+    },
     "fields": {
       "bio": "Bio",
       "gender": "Gender",
