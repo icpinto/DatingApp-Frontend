@@ -1,21 +1,23 @@
 import React from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Card,
   CardHeader,
   CardContent,
   Divider,
-  Link,
   Stack,
   Typography,
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { Link as RouterLink } from "react-router-dom";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import useLegalContent from "../../shared/components/layout/useLegalContent";
 import { useTranslation } from "../../i18n";
 
 function ProfileLegalInformation() {
   const { t } = useTranslation();
-  const { tagline, links, copyright } = useLegalContent();
+  const { tagline, sections, copyright } = useLegalContent();
 
   return (
     <Card elevation={3} sx={{ borderRadius: 3 }}>
@@ -33,18 +35,41 @@ function ProfileLegalInformation() {
                 "Learn more about how MatchUp protects your privacy, keeps things fair, and supports your membership.",
             })}
           </Typography>
-          <Stack spacing={1.25}>
-            {links.map((link) => (
-              <Link
-                key={link.to}
-                component={RouterLink}
-                to={link.to}
-                underline="hover"
-                color="primary"
-                sx={{ fontWeight: 600 }}
+          <Stack spacing={1.5}>
+            {sections.map((section) => (
+              <Accordion
+                key={section.id}
+                disableGutters
+                square={false}
+                elevation={0}
+                sx={{
+                  borderRadius: 2,
+                  border: (theme) => `1px solid ${theme.palette.divider}`,
+                  "&:before": {
+                    display: "none",
+                  },
+                }}
               >
-                {link.label}
-              </Link>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {section.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {section.summary}
+                    </Typography>
+                  </Stack>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={1.5}>
+                    {section.body.map((paragraph, index) => (
+                      <Typography key={index} variant="body2" color="text.secondary">
+                        {paragraph}
+                      </Typography>
+                    ))}
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
             ))}
           </Stack>
           <Divider flexItem sx={{ my: 1 }} />
