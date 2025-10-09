@@ -260,39 +260,125 @@ function MainTabs() {
   return (
     <Box sx={{ pb: isDesktop ? 0 : 7 }}>
       {isDesktop && (
-        <Paper
+        <Box
           sx={{
             position: "sticky",
             top: 0,
             left: 0,
             right: 0,
             zIndex: (muiTheme) => muiTheme.zIndex.appBar,
-            mb: 2,
+            mb: 3,
           }}
-          elevation={3}
         >
-          <Tabs
-            value={activeTab}
-            onChange={handleChange}
-            variant="fullWidth"
-            textColor="primary"
-            indicatorColor="primary"
+          <Paper
+            elevation={6}
+            sx={(theme) => ({
+              px: 2,
+              py: 1,
+              borderRadius: 3,
+              background:
+                theme.palette.mode === "light"
+                  ? `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+                  : theme.palette.background.paper,
+              color:
+                theme.palette.mode === "light"
+                  ? theme.palette.primary.contrastText
+                  : theme.palette.text.primary,
+              backdropFilter: "blur(14px)",
+              boxShadow:
+                theme.palette.mode === "light"
+                  ? "0 18px 40px rgba(194, 24, 91, 0.25)"
+                  : "0 18px 40px rgba(0, 0, 0, 0.55)",
+            })}
           >
-            {visibleTabs.map((tab) => (
-              <Tab
-                key={tab.key}
-                label={tab.label}
-                value={tab.key}
-                icon={
-                  typeof tab.icon === "function"
-                    ? tab.icon({ requestCount, unreadMessages })
-                    : tab.icon
-                }
-                iconPosition="start"
-              />
-            ))}
-          </Tabs>
-        </Paper>
+            <Tabs
+              value={activeTab}
+              onChange={handleChange}
+              variant="fullWidth"
+              textColor="inherit"
+              TabIndicatorProps={{ children: <span /> }}
+              sx={(theme) => ({
+                minHeight: 70,
+                "& .MuiTabs-flexContainer": {
+                  gap: theme.spacing(1),
+                },
+                "& .MuiTabs-indicator": {
+                  display: "flex",
+                  justifyContent: "center",
+                  backgroundColor: "transparent",
+                  "& > span": {
+                    width: "100%",
+                    borderRadius: theme.shape.borderRadius * 2,
+                    background:
+                      theme.palette.mode === "light"
+                        ? "rgba(255, 255, 255, 0.85)"
+                        : theme.palette.primary.main,
+                    boxShadow:
+                      theme.palette.mode === "light"
+                        ? "0 8px 20px rgba(0,0,0,0.18)"
+                        : "0 8px 20px rgba(0,0,0,0.4)",
+                  },
+                },
+              })}
+            >
+              {visibleTabs.map((tab) => (
+                <Tab
+                  key={tab.key}
+                  label={tab.label}
+                  value={tab.key}
+                  disableRipple
+                  icon={
+                    typeof tab.icon === "function"
+                      ? tab.icon({ requestCount, unreadMessages })
+                      : tab.icon
+                  }
+                  iconPosition="start"
+                  sx={(theme) => ({
+                    minHeight: 60,
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: theme.shape.borderRadius * 2,
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    color:
+                      theme.palette.mode === "light"
+                        ? "rgba(255, 255, 255, 0.78)"
+                        : theme.palette.text.secondary,
+                    transition: theme.transitions.create(
+                      ["background-color", "color", "transform"],
+                      {
+                        duration: theme.transitions.duration.shorter,
+                      }
+                    ),
+                    "& .MuiTab-iconWrapper": {
+                      fontSize: "1.75rem",
+                      mr: 1.5,
+                    },
+                    "&:hover": {
+                      backgroundColor:
+                        theme.palette.mode === "light"
+                          ? "rgba(255, 255, 255, 0.18)"
+                          : theme.palette.action.hover,
+                      color:
+                        theme.palette.mode === "light"
+                          ? theme.palette.common.white
+                          : theme.palette.text.primary,
+                      transform: "translateY(-2px)",
+                    },
+                    "&.Mui-selected": {
+                      color:
+                        theme.palette.mode === "light"
+                          ? theme.palette.primary.contrastText
+                          : theme.palette.primary.main,
+                    },
+                  })}
+                />
+              ))}
+            </Tabs>
+          </Paper>
+        </Box>
       )}
 
       {renderActiveTab()}
