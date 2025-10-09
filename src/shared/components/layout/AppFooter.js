@@ -1,26 +1,16 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Box, Container, Link, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import { useTranslation } from "../../../i18n";
+import useLegalContent from "./useLegalContent";
 
 function AppFooter() {
-  const { t } = useTranslation();
-  const year = new Date().getFullYear();
-
-  const links = useMemo(
-    () => [
-      { to: "/privacy-policy", label: t("app.footer.privacy", { defaultValue: "Privacy Policy" }) },
-      { to: "/terms", label: t("app.footer.terms", { defaultValue: "Terms of Service" }) },
-      { to: "/pricing", label: t("app.footer.pricing", { defaultValue: "Pricing" }) },
-      { to: "/help", label: t("app.footer.help", { defaultValue: "Help Centre" }) },
-    ],
-    [t]
-  );
+  const { tagline, links, copyright } = useLegalContent();
 
   return (
     <Box
       component="footer"
       sx={{
+        display: { xs: "none", md: "block" },
         borderTop: (theme) => `1px solid ${theme.palette.divider}`,
         mt: { xs: 6, md: 10 },
         py: { xs: 4, md: 6 },
@@ -33,9 +23,7 @@ function AppFooter() {
       <Container>
         <Stack spacing={3}>
           <Typography variant="body2" color="text.secondary">
-            {t("app.footer.tagline", {
-              defaultValue: "Guiding Sri Lankan singles with care and respect.",
-            })}
+            {tagline}
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             {links.map((link) => (
@@ -52,10 +40,7 @@ function AppFooter() {
             ))}
           </Stack>
           <Typography variant="caption" color="text.secondary">
-            {t("app.footer.copyright", {
-              defaultValue: "© {{year}} MatchUp. All rights reserved.",
-              year,
-            })}
+            {copyright}
           </Typography>
         </Stack>
       </Container>

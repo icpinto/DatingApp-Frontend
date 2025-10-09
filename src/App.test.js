@@ -3,7 +3,7 @@ import App from "./App";
 
 jest.mock("./i18n", () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    t: (key, options) => options?.defaultValue ?? key,
     i18n: { language: "en", changeLanguage: jest.fn() },
   }),
   languageOptions: [],
@@ -14,8 +14,8 @@ jest.mock("./shared/services/api", () => ({
   post: jest.fn(() => Promise.resolve({ data: {} })),
 }));
 
-test("renders Login heading", () => {
+test("renders landing page call-to-action", () => {
   render(<App />);
-  const heading = screen.getByText(/Login/i);
-  expect(heading).toBeInTheDocument();
+  const ctaButton = screen.getByText(/Join now/i);
+  expect(ctaButton).toBeInTheDocument();
 });
