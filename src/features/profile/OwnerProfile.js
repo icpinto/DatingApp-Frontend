@@ -44,6 +44,7 @@ import { useAccountLifecycle } from "../../shared/context/AccountLifecycleContex
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../shared/context/UserContext";
 import { CAPABILITIES } from "../../domain/capabilities";
+import ProfileLegalInformation from "./ProfileLegalInformation";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
   ACCOUNT_LIFECYCLE,
@@ -1966,6 +1967,7 @@ function OwnerProfileContent({ accountLifecycle }) {
               </CardContent>
             </Card>
           )}
+          <ProfileLegalInformation />
           <Card elevation={3} sx={{ borderRadius: 3 }}>
             <CardHeader
               title="Account management"
