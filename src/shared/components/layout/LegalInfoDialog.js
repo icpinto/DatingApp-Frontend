@@ -17,6 +17,7 @@ import { Link as RouterLink } from "react-router-dom";
 import useLegalContent from "./useLegalContent";
 import { useTranslation } from "../../../i18n";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
+import { alpha } from "@mui/material/styles";
 
 function LegalInfoDialog({ open, onClose }) {
   const theme = useTheme();
@@ -36,6 +37,10 @@ function LegalInfoDialog({ open, onClose }) {
   const taglineColor = isDarkMode ? theme.palette.grey[100] : theme.palette.grey[800];
   const descriptionColor = isDarkMode ? theme.palette.grey[400] : theme.palette.grey[600];
   const accentColor = isDarkMode ? "#fb7185" : "#db2777";
+  const headerBackground = isDarkMode
+    ? `linear-gradient(135deg, ${alpha("#0f172a", 0.85)} 0%, ${alpha("#1f2937", 0.9)} 100%)`
+    : `linear-gradient(135deg, ${alpha("#fce7f3", 0.85)} 0%, ${alpha("#fff7ed", 0.9)} 100%)`;
+  const headerBorderColor = alpha(accentColor, isDarkMode ? 0.6 : 0.35);
 
   return (
     <Dialog
@@ -57,28 +62,42 @@ function LegalInfoDialog({ open, onClose }) {
           sx={{
             px: { xs: 2, sm: 3 },
             pt: { xs: 2.5, sm: 3.5 },
+            pb: { xs: 2, sm: 3 },
           }}
         >
           <Box
             sx={{
-              background: "linear-gradient(90deg, #ec4899 0%, #f97316 100%)",
-              p: "2px",
+              position: "relative",
+              overflow: "hidden",
               borderRadius: 3,
+              textAlign: "center",
+              px: { xs: 3, sm: 4 },
+              py: { xs: 3.5, sm: 4.5 },
+              background: headerBackground,
+              border: `1px solid ${headerBorderColor}`,
+              boxShadow: theme.shadows[12],
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                inset: 0,
+                background: `radial-gradient(circle at top left, ${alpha(
+                  accentColor,
+                  0.2
+                )} 0%, transparent 55%)`,
+                opacity: 0.8,
+              },
+              "&::after": {
+                content: '""',
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 6,
+                background: "linear-gradient(90deg, #ec4899 0%, #f97316 100%)",
+              },
             }}
           >
-            <Box
-              sx={{
-                bgcolor:
-                  theme.palette.mode === "dark"
-                    ? theme.palette.grey[900]
-                    : theme.palette.background.paper,
-                borderRadius: 3,
-                textAlign: "center",
-                px: { xs: 3, sm: 4 },
-                py: { xs: 3, sm: 4 },
-                boxShadow: theme.shadows[8],
-              }}
-            >
+            <Box sx={{ position: "relative", zIndex: 1 }}>
               <Stack spacing={2} alignItems="center">
                 <Stack
                   direction="row"
