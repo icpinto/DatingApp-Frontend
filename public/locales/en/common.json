@@ -12,7 +12,79 @@
     "signOut": "Sign out",
     "signingOut": "Signing out...",
     "signOutSuccess": "Signed out successfully.",
-    "signOutError": "We couldn't reach the server, but your local session was cleared."
+    "signOutError": "We couldn't reach the server, but your local session was cleared.",
+    "signIn": "Sign in",
+    "joinNow": "Join now"
+  },
+  "landing": {
+    "hero": {
+      "tagline": "Sri Lanka's trusted matrimonial home",
+      "title": "Discover meaningful connections rooted in Sri Lankan culture",
+      "subtitle": "MatchUp brings together modern matchmaking intelligence with the warmth of our island heritage to help you find a partner who shares your values, dreams, and traditions.",
+      "primaryCta": "Create your profile",
+      "secondaryCta": "I already have an account",
+      "cardTitle": "Personalised introductions, trusted by thousands",
+      "cardSubtitle": "Every profile is carefully curated to celebrate the diversity of Sri Lanka—across faiths, languages, and lifestyles.",
+      "cardHighlightTitle": "Designed for Sri Lankans everywhere",
+      "cardHighlightDescription": "Whether you live in Colombo, Jaffna, Kandy, or abroad, MatchUp keeps you close to home.",
+      "cardListTitle": "What you can expect",
+      "cardList": {
+        "first": "Authentic profiles verified by our local team",
+        "second": "Smart compatibility insights tailored to your preferences",
+        "third": "Guidance from dedicated relationship advisors"
+      }
+    },
+    "features": {
+      "title": "Why MatchUp stands out for Sri Lankan singles",
+      "subtitle": "We blend technology with tradition to create a safe, vibrant, and culturally rich matchmaking journey.",
+      "matchmaking": {
+        "title": "Intelligent matchmaking",
+        "description": "Advanced compatibility scoring honours your lifestyle, faith, and family values for better matches."
+      },
+      "trust": {
+        "title": "Verified community",
+        "description": "Multi-step verification and human moderation keep our community respectful and genuine."
+      },
+      "culture": {
+        "title": "Celebrate diversity",
+        "description": "Sinhala, Tamil, Muslim, Burgher, and more—find matches that understand the nuances of your traditions."
+      },
+      "events": {
+        "title": "Guided experiences",
+        "description": "From curated introductions to family-friendly meetups, we help you take the next step confidently."
+      }
+    },
+    "stats": {
+      "members": "Sri Lankan members worldwide",
+      "success": "Couples matched in the first three months",
+      "support": "Dedicated member support"
+    },
+    "story": {
+      "overline": "Built with heart",
+      "title": "A modern way to honour timeless traditions",
+      "paragraphOne": "MatchUp was created by Sri Lankans who wanted a smarter, kinder way to meet a life partner. Our platform respects family expectations while empowering you to choose a relationship that feels right.",
+      "paragraphTwo": "With guidance available in Sinhala, Tamil, and English, and thoughtful privacy controls, you can explore connections at your own pace."
+    },
+    "testimonials": {
+      "first": {
+        "quote": "We met on MatchUp while I was in Melbourne and Tharushi was in Galle. The cultural filters helped our families connect instantly.",
+        "location": "Colombo & Galle"
+      },
+      "second": {
+        "quote": "The verification process made me feel safe and respected. Within weeks I found someone who shares my values.",
+        "location": "Dubai"
+      },
+      "third": {
+        "quote": "MatchUp felt like home—thoughtful, warm, and truly Sri Lankan.",
+        "location": "Kandy"
+      }
+    },
+    "cta": {
+      "title": "Ready to meet your perfect match?",
+      "subtitle": "Join thousands of Sri Lankans who have found meaningful relationships through MatchUp.",
+      "primary": "Start your journey",
+      "secondary": "Sign in"
+    }
   },
   "common": {
     "actions": {

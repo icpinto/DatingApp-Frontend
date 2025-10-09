@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useContext, useState } from "react";
+import React, { Suspense, lazy, useContext, useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
 import {
   AppBar,
@@ -21,6 +21,7 @@ import Brightness7Icon from "@mui/icons-material/Brightness7";
 import LogoutIcon from "@mui/icons-material/Logout";
 import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
+import LandingPage from "./features/landing/LandingPage";
 import MainTabs from "./shared/components/tabs/MainTabs";
 import Profile from "./features/profile/Profile";
 import Requests from "./features/requests/Requests";
@@ -58,6 +59,25 @@ function TopBar() {
     severity: "success",
   });
   const [signingOut, setSigningOut] = useState(false);
+  const [hasToken, setHasToken] = useState(() =>
+    Boolean(typeof window !== "undefined" && localStorage.getItem("token"))
+  );
+
+  useEffect(() => {
+    const updateTokenState = (event) => {
+      if (event?.detail && Object.prototype.hasOwnProperty.call(event.detail, "token")) {
+        setHasToken(Boolean(event.detail.token));
+      } else {
+        setHasToken(Boolean(localStorage.getItem("token")));
+      }
+    };
+
+    window.addEventListener("auth-token-changed", updateTokenState);
+
+    return () => {
+      window.removeEventListener("auth-token-changed", updateTokenState);
+    };
+  }, []);
 
   const handleLanguageChange = (event) => {
     const nextLanguage = event.target.value;
@@ -111,6 +131,7 @@ function TopBar() {
     } finally {
       localStorage.removeItem("token");
       localStorage.removeItem("user_id");
+      setHasToken(false);
       window.dispatchEvent(
         new CustomEvent("auth-token-changed", { detail: { token: null } })
       );
@@ -169,17 +190,33 @@ function TopBar() {
           >
             {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
-          <Button
-            color="inherit"
-            onClick={handleSignOut}
-            startIcon={<LogoutIcon />}
-            disabled={signingOut}
-            sx={{ ml: 1, whiteSpace: "nowrap" }}
-          >
-            {signingOut
-              ? t("app.signingOut", { defaultValue: "Signing out..." })
-              : t("app.signOut", { defaultValue: "Sign out" })}
-          </Button>
+          {hasToken ? (
+            <Button
+              color="inherit"
+              onClick={handleSignOut}
+              startIcon={<LogoutIcon />}
+              disabled={signingOut}
+              sx={{ ml: 1, whiteSpace: "nowrap" }}
+            >
+              {signingOut
+                ? t("app.signingOut", { defaultValue: "Signing out..." })
+                : t("app.signOut", { defaultValue: "Sign out" })}
+            </Button>
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 1 }}>
+              <Button color="inherit" onClick={() => navigate("/login")}>
+                {t("app.signIn", { defaultValue: "Sign in" })}
+              </Button>
+              <Button
+                color="secondary"
+                variant="contained"
+                onClick={() => navigate("/signup")}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                {t("app.joinNow", { defaultValue: "Join now" })}
+              </Button>
+            </Box>
+          )}
         </Toolbar>
       </AppBar>
       <Snackbar
@@ -204,8 +241,9 @@ function AppShell() {
           <div className="App">
             <TopBar />
             <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/" element={<Login />} />
               <Route
                 path="/home"
                 element={
