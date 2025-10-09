@@ -22,6 +22,9 @@ import {
   CardContent,
   Divider,
   Switch,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import WcIcon from "@mui/icons-material/Wc";
@@ -32,10 +35,11 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LanguageIcon from "@mui/icons-material/Language";
 import BadgeIcon from "@mui/icons-material/Badge";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
+import LogoutIcon from "@mui/icons-material/Logout";
 import api from "../../shared/services/api";
 import ProfileSections from "./ProfileSections";
 import { spacing } from "../../styles";
-import { useTranslation } from "../../i18n";
+import { useTranslation, languageOptions } from "../../i18n";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
@@ -119,6 +123,7 @@ function OwnerProfileContent({ accountLifecycle }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [accountStatusLoading, setAccountStatusLoading] = useState(true);
   const [accountLifecycleStatus, setAccountLifecycleStatus] = useState(
     sharedLifecycleStatus ?? null
@@ -127,13 +132,21 @@ function OwnerProfileContent({ accountLifecycle }) {
   const hasLoadedEnumsRef = useRef(false);
   const hasLoadedProfileRef = useRef(false);
   const userId = localStorage.getItem("user_id");
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const verificationServiceUrl =
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
-  const { groups } = useUserCapabilities();
+  const { groups, select } = useUserCapabilities();
   const ownerProfileCapabilities = groups.ownerProfile;
+  const [changeLanguageCapability, signOutCapability] = useMemo(
+    () =>
+      select([
+        CAPABILITIES.APP_CHANGE_LANGUAGE,
+        CAPABILITIES.APP_SIGN_OUT,
+      ]),
+    [select]
+  );
 
   useEffect(() => {
     hasLoadedProfileRef.current = false;
@@ -167,6 +180,10 @@ function OwnerProfileContent({ accountLifecycle }) {
   const canManagePayments = ownerProfileCapabilities.managePayments.can;
   const canToggleVisibility = ownerProfileCapabilities.toggleVisibility.can;
   const canRemoveAccount = ownerProfileCapabilities.removeAccount.can;
+  const canChangeLanguage = Boolean(changeLanguageCapability?.can);
+  const changeLanguageReason = changeLanguageCapability?.reason;
+  const canSignOut = Boolean(signOutCapability?.can);
+  const signOutReason = signOutCapability?.reason;
 
   const updateAccountLifecycleStatus = useCallback(
     (nextStatus) => {
@@ -262,6 +279,110 @@ function OwnerProfileContent({ accountLifecycle }) {
     setOtpVerifying(false);
     setContactVerificationToken(null);
   };
+
+  const handleLanguageChange = useCallback(
+    (event) => {
+      const nextLanguage = event.target.value;
+      if (!nextLanguage || nextLanguage === i18n.language) {
+        return;
+      }
+
+      if (!canChangeLanguage) {
+        if (changeLanguageReason) {
+          setSnackbar({
+            open: true,
+            messageKey: "",
+            message: changeLanguageReason,
+            severity: "info",
+          });
+        }
+        return;
+      }
+
+      i18n.changeLanguage(nextLanguage);
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: t("app.language.updated", {
+          defaultValue: "Language preference updated.",
+        }),
+        severity: "success",
+      });
+    },
+    [canChangeLanguage, changeLanguageReason, i18n, t]
+  );
+
+  const handleProfileSignOut = useCallback(async () => {
+    if (!canSignOut) {
+      if (signOutReason) {
+        setSnackbar({
+          open: true,
+          messageKey: "",
+          message: signOutReason,
+          severity: "info",
+        });
+      }
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user_id");
+      window.dispatchEvent(
+        new CustomEvent("auth-token-changed", { detail: { token: null } })
+      );
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: t("app.signOutSuccess", {
+          defaultValue: "Signed out successfully.",
+        }),
+        severity: "success",
+      });
+      navigate("/");
+      return;
+    }
+
+    setSigningOut(true);
+    try {
+      await api.post(
+        "/signout",
+        {},
+        {
+          headers: {
+            Authorization: `${token}`,
+          },
+        }
+      );
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: t("app.signOutSuccess", {
+          defaultValue: "Signed out successfully.",
+        }),
+        severity: "success",
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: t("app.signOutError", {
+          defaultValue:
+            "We couldn't reach the server, but your local session was cleared.",
+        }),
+        severity: "warning",
+      });
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user_id");
+      window.dispatchEvent(
+        new CustomEvent("auth-token-changed", { detail: { token: null } })
+      );
+      setSigningOut(false);
+      navigate("/");
+    }
+  }, [canSignOut, navigate, signOutReason, t]);
 
   useEffect(() => {
     const shouldSkipFetch =
@@ -1124,6 +1245,91 @@ function OwnerProfileContent({ accountLifecycle }) {
         {isLifecycleReadOnly && (
           <Alert severity="info">{lifecycleReadOnlyMessage}</Alert>
         )}
+        <Card elevation={3} sx={{ borderRadius: 3 }}>
+          <CardHeader
+            title={t("profile.preferences.account", {
+              defaultValue: "Account preferences",
+            })}
+            subheader={t("profile.preferences.accountSubtitle", {
+              defaultValue: "Manage language settings and sign out securely.",
+            })}
+          />
+          <Divider />
+          <CardContent>
+            <Stack spacing={3} divider={<Divider flexItem sx={{ display: { xs: "none", sm: "block" } }} />}>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
+                  <Typography variant="subtitle1">
+                    {t("app.language.label", { defaultValue: "Language" })}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {t("profile.preferences.languageDescription", {
+                    defaultValue: "Choose the language you prefer to use across the app.",
+                  })}
+                </Typography>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  disabled={!canChangeLanguage}
+                  sx={{ maxWidth: 320 }}
+                >
+                  <InputLabel id="profile-language-select-label">
+                    {t("app.language.label")}
+                  </InputLabel>
+                  <Select
+                    labelId="profile-language-select-label"
+                    label={t("app.language.label")}
+                    value={i18n.language || "en"}
+                    onChange={handleLanguageChange}
+                  >
+                    {languageOptions.map((option) => (
+                      <MenuItem key={option.code} value={option.code}>
+                        {t(option.labelKey)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {!canChangeLanguage && changeLanguageReason && (
+                  <Typography variant="caption" color="text.secondary">
+                    {changeLanguageReason}
+                  </Typography>
+                )}
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
+                  <Typography variant="subtitle1">
+                    {t("app.signOut", { defaultValue: "Sign out" })}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  {t("profile.preferences.signOutDescription", {
+                    defaultValue: "End your session on this device whenever you need to.",
+                  })}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<LogoutIcon />}
+                  onClick={handleProfileSignOut}
+                  disabled={signingOut || !canSignOut}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
+                  {signingOut
+                    ? t("app.signingOut", { defaultValue: "Signing out..." })
+                    : t("app.signOut", { defaultValue: "Sign out" })}
+                </Button>
+                {!canSignOut && signOutReason && (
+                  <Typography variant="caption" color="text.secondary">
+                    {signOutReason}
+                  </Typography>
+                )}
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
         {shouldShowForm ? (
             <Card elevation={4} sx={{ borderRadius: 3 }}>
               <CardHeader
