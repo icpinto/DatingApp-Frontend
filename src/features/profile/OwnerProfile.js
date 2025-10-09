@@ -116,33 +116,6 @@ const createSectionCardStyles = (background) => ({
   },
 });
 
-const createAccountAccordionStyles = (isEnabled) => ({
-  borderRadius: 2,
-  border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-  position: "relative",
-  overflow: "hidden",
-  backgroundColor: alpha("#0f172a", 0.55),
-  transition: "transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease",
-  "&::before": {
-    display: "none",
-  },
-  "&::after": {
-    content: '""',
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    background: isEnabled
-      ? "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)"
-      : alpha(SECTION_SUBTEXT_COLOR, 0.35),
-  },
-  "&:hover": {
-    boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
-    transform: "translateY(-2px)",
-  },
-});
-
 const createAccountActionStyles = (isEnabled, variant = "default") => {
   const accent =
     variant === "danger"
@@ -175,27 +148,6 @@ const createAccountActionStyles = (isEnabled, variant = "default") => {
     },
   };
 };
-
-const accountAccordionSummaryStyles = (isExpanded) => ({
-  "& .MuiAccordionSummary-content": {
-    margin: 0,
-  },
-  px: 2.5,
-  py: 2,
-  backgroundColor: isExpanded ? alpha("#1f2937", 0.58) : "transparent",
-  transition: "background-color 0.2s ease",
-  "&:hover": {
-    backgroundColor: alpha("#1f2937", 0.45),
-  },
-});
-
-const accountAccordionDetailsStyles = (isExpanded) => ({
-  px: 2.5,
-  py: 2.5,
-  borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
-  backgroundColor: isExpanded ? alpha("#0f172a", 0.88) : alpha("#0f172a", 0.72),
-});
-
 function OwnerProfileContent({ accountLifecycle }) {
   const lifecycleContext = accountLifecycle || {};
   const { status: sharedLifecycleStatus, setStatus: setSharedLifecycleStatus } =
@@ -270,7 +222,6 @@ function OwnerProfileContent({ accountLifecycle }) {
     sharedLifecycleStatus ?? null
   );
   const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
-  const [expandedAccountSection, setExpandedAccountSection] = useState(null);
   const hasLoadedEnumsRef = useRef(false);
   const hasLoadedProfileRef = useRef(false);
   const userId = localStorage.getItem("user_id");
@@ -289,13 +240,6 @@ function OwnerProfileContent({ accountLifecycle }) {
       ]),
     [select]
   );
-  const handleAccountSectionChange = useCallback(
-    (sectionId) => (_event, isExpanded) => {
-      setExpandedAccountSection(isExpanded ? sectionId : null);
-    },
-    []
-  );
-
   useEffect(() => {
     hasLoadedProfileRef.current = false;
   }, [userId]);
@@ -2478,30 +2422,8 @@ function OwnerProfileContent({ accountLifecycle }) {
                   </Stack>
                 </Box>
 
-                <Accordion
-                  disableGutters
-                  square={false}
-                  elevation={0}
-                  expanded={expandedAccountSection === "visibility"}
-                  onChange={handleAccountSectionChange("visibility")}
-                  sx={createAccountAccordionStyles(canToggleVisibility)}
-                >
-                  <AccordionSummary
-                    expandIcon={
-                      <ExpandMoreIcon
-                        sx={{
-                          transition: "transform 0.2s ease",
-                          transform:
-                            expandedAccountSection === "visibility"
-                              ? "rotate(180deg)"
-                              : "rotate(0deg)",
-                        }}
-                      />
-                    }
-                    sx={accountAccordionSummaryStyles(
-                      expandedAccountSection === "visibility"
-                    )}
-                  >
+                <Box sx={createAccountActionStyles(canToggleVisibility)}>
+                  <Stack spacing={2}>
                     <Stack direction="row" spacing={2} alignItems="flex-start">
                       <Box
                         component="span"
@@ -2535,12 +2457,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                         </Typography>
                       </Stack>
                     </Stack>
-                  </AccordionSummary>
-                  <AccordionDetails
-                    sx={accountAccordionDetailsStyles(
-                      expandedAccountSection === "visibility"
-                    )}
-                  >
                     <Stack
                       spacing={2}
                       direction={{ xs: "column", sm: "row" }}
@@ -2596,8 +2512,8 @@ function OwnerProfileContent({ accountLifecycle }) {
                         )}
                       </Stack>
                     </Stack>
-                  </AccordionDetails>
-                </Accordion>
+                  </Stack>
+                </Box>
 
                 <Box sx={createAccountActionStyles(canRemoveAccount, "danger")}>
                   <Stack spacing={1.5}>

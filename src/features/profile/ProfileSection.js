@@ -7,6 +7,7 @@ import {
   Grid,
   Stack,
   Box,
+  LinearProgress,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
@@ -122,6 +123,8 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
     const value = rawData[field];
     return count + (isValueFilled(value, field) ? 1 : 0);
   }, 0);
+  const completionPercentage =
+    totalFields > 0 ? Math.round((filledCount / totalFields) * 100) : 0;
 
   return (
     <Accordion
@@ -132,6 +135,7 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
         width: "100%",
         borderRadius: 2,
         border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.4)}`,
+        borderLeft: "3px solid transparent",
         backgroundColor: (theme) => lighten(theme.palette.background.paper, 0.02),
         "&::before": {
           display: "none",
@@ -139,6 +143,7 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
         "&.Mui-expanded": {
           margin: 0,
           borderColor: (theme) => lighten(theme.palette.primary.main, 0.7),
+          borderLeftColor: (theme) => theme.palette.primary.light,
           boxShadow: (theme) => theme.shadows[2],
         },
       }}
@@ -197,16 +202,35 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
             {label}
           </Typography>
           {totalFields > 0 && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontWeight: 500 }}
+            <Stack
+              spacing={0.75}
+              sx={{ minWidth: { xs: "100%", sm: 160 }, flexShrink: 0 }}
             >
-              {t("profile.summary.sectionCompletion", {
-                completed: filledCount,
-                total: totalFields,
-              })}
-            </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontWeight: 500 }}
+              >
+                {t("profile.summary.sectionCompletion", {
+                  completed: filledCount,
+                  total: totalFields,
+                })}
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={completionPercentage}
+                sx={{
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.primary.light, 0.2),
+                  "& .MuiLinearProgress-bar": {
+                    borderRadius: 3,
+                    backgroundColor: (theme) => theme.palette.primary.main,
+                  },
+                }}
+              />
+            </Stack>
           )}
         </Stack>
       </AccordionSummary>

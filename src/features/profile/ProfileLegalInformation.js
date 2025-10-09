@@ -103,21 +103,16 @@ function ProfileLegalInformation() {
                 sx={{
                   borderRadius: 2,
                   border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-                  position: "relative",
-                  overflow: "hidden",
+                  borderLeft: "3px solid transparent",
                   backgroundColor: alpha("#0f172a", 0.55),
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  transition:
+                    "transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease",
                   "&::before": {
                     display: "none",
                   },
-                  "&::after": {
-                    content: '""',
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 4,
-                    background: "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+                  "&.Mui-expanded": {
+                    boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
+                    borderLeftColor: (theme) => theme.palette.primary.light,
                   },
                   "&:hover": {
                     boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
