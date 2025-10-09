@@ -14,7 +14,11 @@ import {
   CircularProgress,
   Paper,
   Badge,
+  Tabs,
+  Tab,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import HomeIcon from "@mui/icons-material/Home";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ChatIcon from "@mui/icons-material/Chat";
@@ -104,6 +108,8 @@ function MainTabs() {
   const { select } = useUserCapabilities();
   const [requestCount, setRequestCount] = useState(0);
   const { hydrateConversations, totalUnreadCount } = useWebSocket();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const unreadMessages = useMemo(
     () => (typeof totalUnreadCount === "number" ? totalUnreadCount : 0),
     [totalUnreadCount]
@@ -252,28 +258,66 @@ function MainTabs() {
   };
 
   return (
-    <Box sx={{ pb: 7 }}>
+    <Box sx={{ pb: isDesktop ? 0 : 7 }}>
+      {isDesktop && (
+        <Paper
+          sx={{
+            position: "sticky",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: (muiTheme) => muiTheme.zIndex.appBar,
+            mb: 2,
+          }}
+          elevation={3}
+        >
+          <Tabs
+            value={activeTab}
+            onChange={handleChange}
+            variant="fullWidth"
+            textColor="primary"
+            indicatorColor="primary"
+          >
+            {visibleTabs.map((tab) => (
+              <Tab
+                key={tab.key}
+                label={tab.label}
+                value={tab.key}
+                icon={
+                  typeof tab.icon === "function"
+                    ? tab.icon({ requestCount, unreadMessages })
+                    : tab.icon
+                }
+                iconPosition="start"
+              />
+            ))}
+          </Tabs>
+        </Paper>
+      )}
+
       {renderActiveTab()}
 
-      <Paper
-        sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
-        elevation={3}
-      >
-        <BottomNavigation value={activeTab} onChange={handleChange} showLabels>
-          {visibleTabs.map((tab) => (
-            <BottomNavigationAction
-              key={tab.key}
-              label={tab.label}
-              value={tab.key}
-              icon={
-                typeof tab.icon === "function"
-                  ? tab.icon({ requestCount, unreadMessages })
-                  : tab.icon
-              }
-            />
-          ))}
-        </BottomNavigation>
-      </Paper>
+      {!isDesktop && (
+        <Paper
+          sx={{ position: "fixed", bottom: 0, left: 0, right: 0 }}
+          elevation={3}
+        >
+          <BottomNavigation value={activeTab} onChange={handleChange} showLabels>
+            {visibleTabs.map((tab) => (
+              <BottomNavigationAction
+                key={tab.key}
+                label={tab.label}
+                value={tab.key}
+                icon={
+                  typeof tab.icon === "function"
+                    ? tab.icon({ requestCount, unreadMessages })
+                    : tab.icon
+                }
+              />
+            ))}
+          </BottomNavigation>
+        </Paper>
+      )}
     </Box>
   );
 }
