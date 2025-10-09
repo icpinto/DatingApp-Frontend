@@ -336,6 +336,12 @@
     }
   },
   "profile": {
+    "preferences": {
+      "account": "Account preferences",
+      "accountSubtitle": "Manage language settings and sign out securely.",
+      "languageDescription": "Choose the language you prefer to use across the app.",
+      "signOutDescription": "End your session on this device whenever you need to."
+    },
     "headers": {
       "create": "Create Profile",
       "edit": "Edit Profile",
