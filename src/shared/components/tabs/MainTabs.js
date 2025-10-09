@@ -1,6 +1,7 @@
 import React, {
   Suspense,
   lazy,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -38,6 +39,7 @@ import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import useCapabilityQuery from "../../hooks/useCapabilityQuery";
 import { isNetworkError } from "../../../utils/http";
+import { useTopBarNavigation } from "../../context/TopBarNavigationContext";
 
 const LazyMatchInsights = lazy(() =>
   import("../../../features/home/insights/MatchInsights")
@@ -110,6 +112,7 @@ function MainTabs() {
   const { hydrateConversations, totalUnreadCount } = useWebSocket();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
+  const { setNavigation, clearNavigation } = useTopBarNavigation();
   const unreadMessages = useMemo(
     () => (typeof totalUnreadCount === "number" ? totalUnreadCount : 0),
     [totalUnreadCount]
@@ -235,9 +238,111 @@ function MainTabs() {
     hydrateConversations,
   ]);
 
-  const handleChange = (event, newValue) => {
+  const handleChange = useCallback((event, newValue) => {
     setActiveTab(newValue);
-  };
+  }, []);
+
+  const desktopNavigation = useMemo(() => {
+    if (!isDesktop || !visibleTabs.length) {
+      return null;
+    }
+
+    return (
+      <Tabs
+        value={activeTab}
+        onChange={handleChange}
+        variant="scrollable"
+        allowScrollButtonsMobile
+        textColor="inherit"
+        TabIndicatorProps={{ children: <span /> }}
+        sx={{
+          flexGrow: 1,
+          minHeight: 0,
+          "& .MuiTabs-flexContainer": {
+            gap: theme.spacing(1),
+          },
+          "& .MuiTabs-indicator": {
+            display: "flex",
+            justifyContent: "center",
+            backgroundColor: "transparent",
+            height: "100%",
+            "& > span": {
+              width: "100%",
+              borderRadius: theme.shape.borderRadius * 2,
+              backgroundColor:
+                theme.palette.mode === "light"
+                  ? "rgba(255, 255, 255, 0.24)"
+                  : theme.palette.action.selected,
+            },
+          },
+        }}
+      >
+        {visibleTabs.map((tab) => (
+          <Tab
+            key={tab.key}
+            label={tab.label}
+            value={tab.key}
+            disableRipple
+            icon={
+              typeof tab.icon === "function"
+                ? tab.icon({ requestCount, unreadMessages })
+                : tab.icon
+            }
+            iconPosition="start"
+            sx={{
+              minHeight: 0,
+              px: 2.5,
+              py: 1.5,
+              borderRadius: theme.shape.borderRadius * 2,
+              alignItems: "center",
+              justifyContent: "flex-start",
+              textTransform: "none",
+              fontWeight: 600,
+              color:
+                theme.palette.mode === "light"
+                  ? "rgba(255, 255, 255, 0.78)"
+                  : theme.palette.text.secondary,
+              transition: theme.transitions.create(
+                ["background-color", "color", "transform"],
+                {
+                  duration: theme.transitions.duration.shorter,
+                }
+              ),
+              "& .MuiTab-iconWrapper": {
+                fontSize: "1.5rem",
+                marginRight: theme.spacing(1),
+              },
+              "&:hover": {
+                backgroundColor:
+                  theme.palette.mode === "light"
+                    ? "rgba(255, 255, 255, 0.18)"
+                    : theme.palette.action.hover,
+                color:
+                  theme.palette.mode === "light"
+                    ? theme.palette.common.white
+                    : theme.palette.text.primary,
+                transform: "translateY(-2px)",
+              },
+              "&.Mui-selected": {
+                color:
+                  theme.palette.mode === "light"
+                    ? theme.palette.common.white
+                    : theme.palette.primary.main,
+              },
+            }}
+          />
+        ))}
+      </Tabs>
+    );
+  }, [
+    activeTab,
+    handleChange,
+    isDesktop,
+    requestCount,
+    theme,
+    unreadMessages,
+    visibleTabs,
+  ]);
 
   const activeTabConfig = visibleTabs.find((tab) => tab.key === activeTab);
   const renderActiveTab = () => {
@@ -257,130 +362,21 @@ function MainTabs() {
     });
   };
 
+  useEffect(() => {
+    if (!desktopNavigation) {
+      clearNavigation();
+      return;
+    }
+
+    setNavigation(desktopNavigation);
+
+    return () => {
+      clearNavigation();
+    };
+  }, [clearNavigation, desktopNavigation, setNavigation]);
+
   return (
     <Box sx={{ pb: isDesktop ? 0 : 7 }}>
-      {isDesktop && (
-        <Box
-          sx={{
-            position: "sticky",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: (muiTheme) => muiTheme.zIndex.appBar,
-            mb: 3,
-          }}
-        >
-          <Paper
-            elevation={6}
-            sx={(theme) => ({
-              px: 2,
-              py: 1,
-              borderRadius: 3,
-              background:
-                theme.palette.mode === "light"
-                  ? `linear-gradient(120deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
-                  : theme.palette.background.paper,
-              color:
-                theme.palette.mode === "light"
-                  ? theme.palette.primary.contrastText
-                  : theme.palette.text.primary,
-              backdropFilter: "blur(14px)",
-              boxShadow:
-                theme.palette.mode === "light"
-                  ? "0 18px 40px rgba(194, 24, 91, 0.25)"
-                  : "0 18px 40px rgba(0, 0, 0, 0.55)",
-            })}
-          >
-            <Tabs
-              value={activeTab}
-              onChange={handleChange}
-              variant="fullWidth"
-              textColor="inherit"
-              TabIndicatorProps={{ children: <span /> }}
-              sx={(theme) => ({
-                minHeight: 70,
-                "& .MuiTabs-flexContainer": {
-                  gap: theme.spacing(1),
-                },
-                "& .MuiTabs-indicator": {
-                  display: "flex",
-                  justifyContent: "center",
-                  backgroundColor: "transparent",
-                  "& > span": {
-                    width: "100%",
-                    borderRadius: theme.shape.borderRadius * 2,
-                    background:
-                      theme.palette.mode === "light"
-                        ? "rgba(255, 255, 255, 0.85)"
-                        : theme.palette.primary.main,
-                    boxShadow:
-                      theme.palette.mode === "light"
-                        ? "0 8px 20px rgba(0,0,0,0.18)"
-                        : "0 8px 20px rgba(0,0,0,0.4)",
-                  },
-                },
-              })}
-            >
-              {visibleTabs.map((tab) => (
-                <Tab
-                  key={tab.key}
-                  label={tab.label}
-                  value={tab.key}
-                  disableRipple
-                  icon={
-                    typeof tab.icon === "function"
-                      ? tab.icon({ requestCount, unreadMessages })
-                      : tab.icon
-                  }
-                  iconPosition="start"
-                  sx={(theme) => ({
-                    minHeight: 60,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: theme.shape.borderRadius * 2,
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    color:
-                      theme.palette.mode === "light"
-                        ? "rgba(255, 255, 255, 0.78)"
-                        : theme.palette.text.secondary,
-                    transition: theme.transitions.create(
-                      ["background-color", "color", "transform"],
-                      {
-                        duration: theme.transitions.duration.shorter,
-                      }
-                    ),
-                    "& .MuiTab-iconWrapper": {
-                      fontSize: "1.75rem",
-                      mr: 1.5,
-                    },
-                    "&:hover": {
-                      backgroundColor:
-                        theme.palette.mode === "light"
-                          ? "rgba(255, 255, 255, 0.18)"
-                          : theme.palette.action.hover,
-                      color:
-                        theme.palette.mode === "light"
-                          ? theme.palette.common.white
-                          : theme.palette.text.primary,
-                      transform: "translateY(-2px)",
-                    },
-                    "&.Mui-selected": {
-                      color:
-                        theme.palette.mode === "light"
-                          ? theme.palette.primary.contrastText
-                          : theme.palette.primary.main,
-                    },
-                  })}
-                />
-              ))}
-            </Tabs>
-          </Paper>
-        </Box>
-      )}
-
       {renderActiveTab()}
 
       {!isDesktop && (

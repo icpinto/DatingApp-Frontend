@@ -95,12 +95,42 @@ function useLegalContent() {
     defaultValue: "Guiding Sri Lankan singles with care and respect.",
   });
 
+  const links = useMemo(
+    () => [
+      {
+        to: "/privacy-policy",
+        label: t("app.footer.links.privacy", {
+          defaultValue: "Privacy",
+        }),
+      },
+      {
+        to: "/terms",
+        label: t("app.footer.links.terms", {
+          defaultValue: "Terms",
+        }),
+      },
+      {
+        to: "/pricing",
+        label: t("app.footer.links.pricing", {
+          defaultValue: "Pricing",
+        }),
+      },
+      {
+        to: "/help",
+        label: t("app.footer.links.support", {
+          defaultValue: "Help Center",
+        }),
+      },
+    ],
+    [t]
+  );
+
   const copyright = t("app.footer.copyright", {
     defaultValue: "© {{year}} MatchUp. All rights reserved.",
     year,
   });
 
-  return { sections, tagline, copyright };
+  return { sections, tagline, links, copyright };
 }
 
 export default useLegalContent;

@@ -14,6 +14,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -37,6 +38,10 @@ import logo from "./logo.svg";
 import { useTranslation } from "./i18n";
 import { CAPABILITIES } from "./domain/capabilities";
 import AppFooter from "./shared/components/layout/AppFooter";
+import {
+  TopBarNavigationProvider,
+  useTopBarNavigation,
+} from "./shared/context/TopBarNavigationContext";
 
 const MessagesPage = lazy(() => import("./features/messages/Messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
@@ -149,6 +154,8 @@ function TopBar() {
   const theme = useTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { navigation } = useTopBarNavigation();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [hasToken, setHasToken] = useState(() =>
     Boolean(typeof window !== "undefined" && localStorage.getItem("token"))
   );
@@ -177,34 +184,75 @@ function TopBar() {
         enableColorOnDark
         elevation={theme.palette.mode === "light" ? 2 : 4}
       >
-        <Toolbar>
-          <Box component="img" src={logo} alt={t("app.alt")} sx={{ height: 40, mr: 2 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-            {t("app.name")}
-          </Typography>
-          <IconButton
-            aria-label={t("app.themeToggle")}
-            onClick={colorMode.toggleColorMode}
-            color="inherit"
-            sx={{ ml: 1 }}
+        <Toolbar
+          sx={{
+            gap: { xs: 1, md: 2 },
+            flexWrap: { xs: "wrap", md: "nowrap" },
+            alignItems: "center",
+            minHeight: { md: 96 },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              flexShrink: 0,
+            }}
           >
-            {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
-          {!hasToken && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 1 }}>
-              <Button color="inherit" onClick={() => navigate("/login")}>
-                {t("app.signIn", { defaultValue: "Sign in" })}
-              </Button>
-              <Button
-                color="secondary"
-                variant="contained"
-                onClick={() => navigate("/signup")}
-                sx={{ whiteSpace: "nowrap" }}
-              >
-                {t("app.joinNow", { defaultValue: "Join now" })}
-              </Button>
+            <Box
+              component="img"
+              src={logo}
+              alt={t("app.alt")}
+              sx={{ height: 40 }}
+            />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {t("app.name")}
+            </Typography>
+          </Box>
+          {isDesktop && navigation && (
+            <Box
+              sx={{
+                flexGrow: 1,
+                display: "flex",
+                justifyContent: "center",
+                px: 2,
+              }}
+            >
+              {navigation}
             </Box>
           )}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              ml: { xs: "auto", md: navigation ? 0 : "auto" },
+            }}
+          >
+            <IconButton
+              aria-label={t("app.themeToggle")}
+              onClick={colorMode.toggleColorMode}
+              color="inherit"
+            >
+              {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+            {!hasToken && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Button color="inherit" onClick={() => navigate("/login")}>
+                  {t("app.signIn", { defaultValue: "Sign in" })}
+                </Button>
+                <Button
+                  color="secondary"
+                  variant="contained"
+                  onClick={() => navigate("/signup")}
+                  sx={{ whiteSpace: "nowrap" }}
+                >
+                  {t("app.joinNow", { defaultValue: "Join now" })}
+                </Button>
+              </Box>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
     </>
@@ -216,7 +264,9 @@ function AppShell() {
     <WebSocketProvider>
       <AppAccessBoundary>
         <Router>
-          <AppLayout />
+          <TopBarNavigationProvider>
+            <AppLayout />
+          </TopBarNavigationProvider>
         </Router>
       </AppAccessBoundary>
     </WebSocketProvider>
