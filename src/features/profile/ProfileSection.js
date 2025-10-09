@@ -6,10 +6,12 @@ import {
   Typography,
   Grid,
   Stack,
+  Box,
+  LinearProgress,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
-import { lighten } from "@mui/material/styles";
+import { alpha, lighten } from "@mui/material/styles";
 
 const FIELD_LABELS = {
   verification: {
@@ -87,11 +89,44 @@ const toBoolean = (value) => {
   return null;
 };
 
-function ProfileSection({ label, data, sectionKey }) {
+const isValueFilled = (value, field) => {
+  if (BOOLEAN_FIELDS.has(field)) {
+    const booleanValue = toBoolean(value);
+    return booleanValue !== null;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  return value !== null && value !== undefined;
+};
+
+function ProfileSection({ label, data, sectionKey, IconComponent }) {
   const { t } = useTranslation();
+  const sectionLabels = FIELD_LABELS[sectionKey] || {};
+  const rawData =
+    data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  const fieldKeys = Array.from(
+    new Set([
+      ...Object.keys(sectionLabels),
+      ...Object.keys(rawData),
+    ])
+  );
+
+  const totalFields = fieldKeys.length;
+  const filledCount = fieldKeys.reduce((count, field) => {
+    const value = rawData[field];
+    return count + (isValueFilled(value, field) ? 1 : 0);
+  }, 0);
+  const completion = totalFields > 0 ? Math.round((filledCount / totalFields) * 100) : 0;
+
   return (
     <Accordion
-      defaultExpanded
       disableGutters
       square={false}
       elevation={0}
@@ -159,15 +194,72 @@ function ProfileSection({ label, data, sectionKey }) {
           },
         })}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            letterSpacing: 0.2,
-          }}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={{ xs: 1.5, sm: 2 }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          justifyContent="space-between"
+          sx={{ width: "100%" }}
         >
-          {label}
-        </Typography>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            {IconComponent && (
+              <Box
+                sx={(theme) => ({
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: alpha(theme.palette.primary.main, 0.12),
+                  color: theme.palette.primary.main,
+                })}
+              >
+                <IconComponent fontSize="small" />
+              </Box>
+            )}
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                letterSpacing: 0.2,
+              }}
+            >
+              {label}
+            </Typography>
+          </Stack>
+          {totalFields > 0 && (
+            <Stack
+              spacing={0.75}
+              sx={{ minWidth: { sm: 180 }, width: { xs: "100%", sm: "auto" } }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600, textTransform: "uppercase" }}
+              >
+                {t("profile.summary.sectionCompletion", {
+                  completed: filledCount,
+                  total: totalFields,
+                })}
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={completion}
+                sx={(theme) => ({
+                  height: 6,
+                  borderRadius: 999,
+                  backgroundColor: alpha(theme.palette.primary.light, 0.2),
+                  "& .MuiLinearProgress-bar": {
+                    borderRadius: 999,
+                    backgroundImage:
+                      "linear-gradient(90deg, #FF4F87 0%, #F73D7A 100%)",
+                  },
+                })}
+              />
+            </Stack>
+          )}
+        </Stack>
       </AccordionSummary>
       <AccordionDetails
         sx={{
@@ -177,48 +269,85 @@ function ProfileSection({ label, data, sectionKey }) {
         }}
       >
         <Grid container spacing={2.5}>
-          {Object.entries(data || {}).map(([field, value]) => {
-            const labelKey = FIELD_LABELS[sectionKey]?.[field];
+          {fieldKeys.map((field) => {
+            const labelKey = sectionLabels[field];
             const resolvedLabel = labelKey ? t(labelKey) : formatLabel(field);
-            let displayValue = Array.isArray(value) ? value.join(", ") : value;
+            const rawValue = rawData[field];
+            let isFilled = isValueFilled(rawValue, field);
+            let displayValue = Array.isArray(rawValue)
+              ? rawValue.join(", ")
+              : rawValue;
 
             if (BOOLEAN_FIELDS.has(field)) {
-              const booleanValue = toBoolean(displayValue);
+              const booleanValue = toBoolean(rawValue);
               if (booleanValue !== null) {
                 displayValue = booleanValue
                   ? t("profile.options.boolean.yes")
                   : t("profile.options.boolean.no");
+                isFilled = true;
               }
             }
 
             if (sectionKey === "verification" && STATUS_FIELDS.has(field)) {
-              displayValue = t(STATUS_LABEL_MAP[displayValue] || STATUS_LABEL_MAP.not_verified);
+              if (rawValue) {
+                isFilled = true;
+              }
+              displayValue = t(STATUS_LABEL_MAP[rawValue] || STATUS_LABEL_MAP.not_verified);
             }
 
-            if (displayValue === undefined || displayValue === null || displayValue === "") {
+            if (!isFilled) {
               displayValue = t("common.placeholders.notAvailable");
             }
 
             return (
               <Grid item xs={12} sm={6} key={field}>
-                <Stack spacing={0.5} sx={{ px: 0.5 }}>
+                <Stack
+                  spacing={0.75}
+                  sx={(theme) => ({
+                    px: 1.5,
+                    py: 1.25,
+                    borderRadius: 2,
+                    border: `1px solid ${
+                      isFilled
+                        ? alpha(theme.palette.success.main, 0.35)
+                        : alpha(theme.palette.warning.main, 0.4)
+                    }`,
+                    borderLeftWidth: 4,
+                    borderLeftColor: isFilled
+                      ? theme.palette.success.main
+                      : theme.palette.warning.main,
+                    backgroundColor: isFilled
+                      ? alpha(theme.palette.success.main, 0.08)
+                      : alpha(theme.palette.warning.main, 0.08),
+                    transition: theme.transitions.create(["box-shadow", "transform"], {
+                      duration: theme.transitions.duration.shorter,
+                    }),
+                    "&:hover": {
+                      boxShadow: 6,
+                      transform: "translateY(-2px)",
+                    },
+                  })}
+                >
                   <Typography
                     variant="overline"
-                    sx={{
-                      fontWeight: 600,
+                    sx={(theme) => ({
+                      fontWeight: 700,
                       letterSpacing: 0.8,
-                      color: (theme) =>
-                        lighten(theme.palette.text.secondary, 0.2),
-                    }}
+                      color: isFilled
+                        ? lighten(theme.palette.text.secondary, 0.2)
+                        : theme.palette.text.secondary,
+                    })}
                   >
                     {resolvedLabel}
                   </Typography>
                   <Typography
                     variant="body2"
-                    color="text.primary"
-                    sx={{
-                      color: (theme) => lighten(theme.palette.text.primary, 0.02),
-                    }}
+                    sx={(theme) => ({
+                      color: isFilled
+                        ? lighten(theme.palette.text.primary, 0.02)
+                        : theme.palette.text.secondary,
+                      fontStyle: isFilled ? "normal" : "italic",
+                    })}
                   >
                     {displayValue}
                   </Typography>

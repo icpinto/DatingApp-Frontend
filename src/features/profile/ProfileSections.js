@@ -1,15 +1,45 @@
 import React from "react";
 import { Stack, Typography } from "@mui/material";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
+import FamilyRestroomOutlinedIcon from "@mui/icons-material/FamilyRestroomOutlined";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../i18n";
 
 const sections = [
-  { key: "verification", labelKey: "profile.headers.verification" },
-  { key: "personal", labelKey: "profile.headers.personal" },
-  { key: "residency", labelKey: "profile.headers.residency" },
-  { key: "education", labelKey: "profile.headers.education" },
-  { key: "family", labelKey: "profile.headers.family" },
-  { key: "horoscope", labelKey: "profile.headers.horoscope" },
+  {
+    key: "verification",
+    labelKey: "profile.headers.verification",
+    Icon: VerifiedUserIcon,
+  },
+  {
+    key: "personal",
+    labelKey: "profile.headers.personal",
+    Icon: PersonOutlineIcon,
+  },
+  {
+    key: "residency",
+    labelKey: "profile.headers.residency",
+    Icon: PublicOutlinedIcon,
+  },
+  {
+    key: "education",
+    labelKey: "profile.headers.education",
+    Icon: SchoolOutlinedIcon,
+  },
+  {
+    key: "family",
+    labelKey: "profile.headers.family",
+    Icon: FamilyRestroomOutlinedIcon,
+  },
+  {
+    key: "horoscope",
+    labelKey: "profile.headers.horoscope",
+    Icon: AutoAwesomeOutlinedIcon,
+  },
 ];
 
 function ProfileSections({ data }) {
@@ -23,12 +53,13 @@ function ProfileSections({ data }) {
 
   return (
     <Stack spacing={2.5} sx={{ width: "100%" }}>
-      {availableSections.map(({ key, labelKey }) => (
+      {availableSections.map(({ key, labelKey, Icon }) => (
         <ProfileSection
           key={key}
           label={t(labelKey)}
           data={data[key]}
           sectionKey={key}
+          IconComponent={Icon}
         />
       ))}
     </Stack>
