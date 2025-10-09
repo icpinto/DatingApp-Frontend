@@ -12,7 +12,132 @@
     "signOut": "පිටවන්න",
     "signingOut": "පිටවෙමින්...",
     "signOutSuccess": "සාර්ථකව පිටවීය.",
-    "signOutError": "සේවාදායකය වෙත පිවිසීමට නොහැකි වුවද ඔබගේ ප්‍රාදේශීය සැසිය ඉවත් කරන ලදී."
+    "signOutError": "සේවාදායකය වෙත පිවිසීමට නොහැකි වුවද ඔබගේ ප්‍රාදේශීය සැසිය ඉවත් කරන ලදී.",
+    "footer": {
+      "tagline": "Guiding Sri Lankan singles with care and respect.",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "pricing": "Pricing",
+      "help": "Help Centre",
+      "copyright": "© {{year}} MatchUp. All rights reserved."
+    }
+  },
+  "static": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "We are committed to safeguarding your personal data and being transparent about how your information is used across MatchUp.",
+      "collection": {
+        "heading": "Information we collect",
+        "profile": "Account details you share such as your name, contact information, preferences, and any profile photos or descriptions you upload.",
+        "usage": "Usage data that helps us improve the experience, including how you navigate the product, device information, and crash diagnostics.",
+        "interactions": "Messages and connection requests you send to other members, which are stored securely so that you can revisit your conversations."
+      },
+      "usage": {
+        "heading": "How we use your information",
+        "matching": "To suggest compatible introductions, highlight nearby members, and tailor discovery filters that are relevant to you.",
+        "safety": "To maintain a trusted community by verifying profiles, preventing fraud, and responding to reports of unsafe behaviour.",
+        "communication": "To send essential account notifications and helpful tips about getting the most out of MatchUp. You can adjust your communication preferences at any time."
+      },
+      "sharing": {
+        "heading": "When we share data",
+        "partners": "We may partner with vetted service providers for secure hosting, analytics, or payment processing. They are bound by strict confidentiality agreements.",
+        "legal": "We will disclose information if required to do so by law or to protect the rights, property, or safety of our members, employees, or the public.",
+        "control": "We never sell your personal information. You remain in control of what you share on your profile and can request deletion of your data at any time."
+      },
+      "choices": {
+        "heading": "Your choices and rights",
+        "update": "Update your profile details, notification preferences, and visibility controls directly from your account settings.",
+        "export": "Contact us if you would like a copy of the information we store about you or if you wish to deactivate or delete your account.",
+        "support": "Have questions? Reach our support team at support@matchup.lk and we will respond within two business days."
+      }
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "description": "These Terms outline what you can expect from MatchUp and the standards we ask every member to follow.",
+      "account": {
+        "heading": "Creating and maintaining your account",
+        "eligibility": "You must be at least 18 years old and legally permitted to enter into a relationship to join MatchUp. You are responsible for maintaining the accuracy of the information you provide.",
+        "security": "Please keep your login credentials confidential. Notify us immediately if you suspect any unauthorised access to your account."
+      },
+      "conduct": {
+        "heading": "Community conduct and expectations",
+        "respect": "Treat other members with respect and kindness. Harassment, discrimination, or sharing explicit content is strictly prohibited.",
+        "authenticity": "You agree to represent yourself honestly. Profiles that impersonate others, contain misleading details, or promote commercial services may be removed.",
+        "safety": "Report concerning behaviour directly within the app or by emailing safety@matchup.lk. We review all reports promptly."
+      },
+      "payments": {
+        "heading": "Memberships and payments",
+        "billing": "Paid upgrades renew automatically at the end of each billing cycle unless you cancel before the renewal date. Pricing details are available on our Membership Plans page.",
+        "refunds": "We do not offer refunds for partially used subscription periods except where required by law. You can manage your plan anytime from account settings."
+      },
+      "termination": {
+        "heading": "Suspension or termination",
+        "breach": "We may suspend or terminate accounts that violate these Terms, harm other members, or compromise the safety of the community.",
+        "choice": "You may deactivate or delete your account whenever you choose. Removing your account will limit access to your chat history and other saved information."
+      },
+      "contact": {
+        "heading": "Questions about these Terms",
+        "support": "If you have any questions, reach us at hello@matchup.lk and we will be happy to help."
+      }
+    },
+    "pricing": {
+      "title": "Membership Pricing",
+      "description": "Choose the level of support that fits your journey. You can upgrade or downgrade at any time.",
+      "free": {
+        "name": "Community",
+        "price": "Free",
+        "description": "Create a profile, browse members, and send limited connection requests each month.",
+        "features": {
+          "profile": "Complete profile builder with cultural preferences",
+          "requests": "Send up to 5 introduction requests per month",
+          "security": "Community verification and safety resources"
+        }
+      },
+      "premium": {
+        "name": "Premium",
+        "price": "LKR 4,900 / month",
+        "description": "Ideal for members who want more visibility and unlimited introductions.",
+        "features": {
+          "unlimited": "Unlimited introduction requests and message replies",
+          "priority": "Priority placement in match recommendations",
+          "insights": "Detailed compatibility insights and profile analytics"
+        }
+      },
+      "elite": {
+        "name": "Elite Concierge",
+        "price": "Starting at LKR 24,900 / month",
+        "description": "A dedicated relationship advisor for families seeking a guided matchmaking experience.",
+        "features": {
+          "advisor": "Personal advisor who curates introductions and coordinates meetings",
+          "family": "Family consultations to align expectations and preferences",
+          "events": "Invitations to private community gatherings and cultural events"
+        }
+      },
+      "faq": {
+        "heading": "Frequently asked questions",
+        "billing": "Plans renew automatically, and you can switch or cancel anytime from your account. We will send a reminder before each renewal.",
+        "support": "Need help choosing the right plan? Email premium@matchup.lk and our advisors will guide you."
+      }
+    },
+    "help": {
+      "title": "Help Centre",
+      "description": "Find answers to common questions and learn how to get the most out of your MatchUp experience.",
+      "gettingStarted": {
+        "heading": "Getting started",
+        "profile": "Complete your profile with clear photos, a warm introduction, and details about your background. Profiles with more detail receive significantly better responses.",
+        "discovery": "Use filters such as language, location, and lifestyle preferences to discover members who align with your goals."
+      },
+      "safety": {
+        "heading": "Staying safe",
+        "tips": "Keep conversations on MatchUp until you feel comfortable sharing personal contact details. Arrange first meetings in public places and let someone you trust know your plans.",
+        "report": "If you encounter inappropriate behaviour, report it directly from the member profile or email safety@matchup.lk. Our team investigates every report."
+      },
+      "support": {
+        "heading": "Need more support?",
+        "channels": "Visit our Support Centre within the app for quick answers, or email support@matchup.lk for personalised assistance.",
+        "hours": "We respond to emails Monday to Friday, 9:00 AM – 6:00 PM Sri Lanka Standard Time."
+      }
+    }
   },
   "common": {
     "actions": {
