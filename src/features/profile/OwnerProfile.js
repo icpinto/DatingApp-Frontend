@@ -56,6 +56,7 @@ import {
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
 } from "../../domain/accountLifecycle";
+import { lighten } from "@mui/material/styles";
 
 function OwnerProfileContent({ accountLifecycle }) {
   const lifecycleContext = accountLifecycle || {};
@@ -131,6 +132,7 @@ function OwnerProfileContent({ accountLifecycle }) {
     sharedLifecycleStatus ?? null
   );
   const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
+  const [expandedAccountSection, setExpandedAccountSection] = useState(null);
   const hasLoadedEnumsRef = useRef(false);
   const hasLoadedProfileRef = useRef(false);
   const userId = localStorage.getItem("user_id");
@@ -148,6 +150,12 @@ function OwnerProfileContent({ accountLifecycle }) {
         CAPABILITIES.APP_SIGN_OUT,
       ]),
     [select]
+  );
+  const handleAccountSectionChange = useCallback(
+    (sectionId) => (_event, isExpanded) => {
+      setExpandedAccountSection(isExpanded ? sectionId : null);
+    },
+    []
   );
 
   useEffect(() => {
@@ -2109,218 +2117,798 @@ function OwnerProfileContent({ accountLifecycle }) {
           />
           <Divider />
           <CardContent>
-            <Stack spacing={spacing.section} divider={<Divider flexItem />}>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
-                  <Typography variant="subtitle1">
-                    {t("app.language.label", { defaultValue: "Language" })}
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {t("profile.preferences.languageDescription", {
-                    defaultValue: "Choose the language you prefer to use across the app.",
-                  })}
-                </Typography>
-                <FormControl
-                  fullWidth
-                  size="small"
-                  disabled={!canChangeLanguage}
-                  sx={{ maxWidth: 320 }}
+            <Stack spacing={2.5}>
+              <Stack spacing={2.5}>
+                <Accordion
+                  disableGutters
+                  square={false}
+                  elevation={0}
+                  expanded={expandedAccountSection === "language"}
+                  onChange={handleAccountSectionChange("language")}
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: (theme) =>
+                      theme.transitions.create(["box-shadow", "transform", "border"], {
+                        duration: theme.transitions.duration.short,
+                      }),
+                    "&::before": {
+                      display: "none",
+                    },
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: (theme) =>
+                        !canChangeLanguage
+                          ? lighten(theme.palette.divider, 0.4)
+                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+                    },
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                    },
+                  }}
                 >
-                  <InputLabel id="profile-language-select-label">
-                    {t("app.language.label")}
-                  </InputLabel>
-                  <Select
-                    labelId="profile-language-select-label"
-                    label={t("app.language.label")}
-                    value={i18n.language || "en"}
-                    onChange={handleLanguageChange}
+                  <AccordionSummary
+                    expandIcon={
+                      <ExpandMoreIcon
+                        sx={{
+                          transition: (theme) =>
+                            theme.transitions.create("transform", {
+                              duration: theme.transitions.duration.shortest,
+                            }),
+                          transform:
+                            expandedAccountSection === "language"
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                      px: 2.5,
+                      py: 2,
+                      transition: (theme) =>
+                        theme.transitions.create("background-color", {
+                          duration: theme.transitions.duration.short,
+                        }),
+                      backgroundColor: (theme) =>
+                        expandedAccountSection === "language"
+                          ? lighten(theme.palette.background.paper, 0.04)
+                          : "transparent",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                          lighten(theme.palette.background.paper, 0.08),
+                      },
+                    }}
                   >
-                    {languageOptions.map((option) => (
-                      <MenuItem key={option.code} value={option.code}>
-                        {t(option.labelKey)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                {!canChangeLanguage && changeLanguageReason && (
-                  <Typography variant="caption" color="text.secondary">
-                    {changeLanguageReason}
-                  </Typography>
-                )}
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
-                  <Typography variant="subtitle1">
-                    {t("app.signOut", { defaultValue: "Sign out" })}
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {t("profile.preferences.signOutDescription", {
-                    defaultValue: "End your session on this device whenever you need to.",
-                  })}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<LogoutIcon />}
-                  onClick={handleProfileSignOut}
-                  disabled={signingOut || !canSignOut}
-                  sx={{ width: { xs: "100%", sm: "auto" } }}
-                >
-                  {signingOut
-                    ? t("app.signingOut", { defaultValue: "Signing out..." })
-                    : t("app.signOut", { defaultValue: "Sign out" })}
-                </Button>
-                {!canSignOut && signOutReason && (
-                  <Typography variant="caption" color="text.secondary">
-                    {signOutReason}
-                  </Typography>
-                )}
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CreditCardIcon color={canManagePayments ? "primary" : "disabled"} />
-                  <Typography variant="subtitle1">
-                    {t("profile.preferences.billing", {
-                      defaultValue: "Billing & subscriptions",
-                    })}
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  {t("profile.preferences.billingDescription", {
-                    defaultValue:
-                      "Review and manage your membership plan, payment methods, and receipts.",
-                  })}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  startIcon={<CreditCardIcon />}
-                  onClick={handleManagePayments}
-                  disabled={!canManagePayments}
-                  sx={{ width: { xs: "100%", sm: "auto" } }}
-                >
-                  {t("profile.preferences.manageBilling", {
-                    defaultValue: "Manage billing",
-                  })}
-                </Button>
-                {!canManagePayments && capabilityReasons.payments && (
-                  <Typography variant="caption" color="text.secondary">
-                    {capabilityReasons.payments}
-                  </Typography>
-                )}
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
-                  <Box>
-                    <Typography variant="subtitle1">
-                      {t("profile.preferences.visibility", {
-                        defaultValue: "Profile visibility",
-                      })}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("profile.preferences.visibilityDescription", {
-                        defaultValue:
-                          "Hide your profile from potential matches without deleting your information.",
-                      })}
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Stack
-                  direction={{ xs: "column", sm: "row" }}
-                  spacing={2}
-                  alignItems={{ xs: "flex-start", sm: "center" }}
-                >
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {isAccountHidden
-                        ? t("profile.preferences.visibilityHidden", {
-                            defaultValue:
-                              "Your profile is currently hidden. Matches will no longer see or contact you.",
-                          })
-                        : t("profile.preferences.visibilityVisible", {
-                            defaultValue:
-                              "Your profile is visible to the community. Hide it if you need a break.",
-                          })}
-                    </Typography>
-                    {(accountStatusLoading || isUpdatingAccountVisibility) && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 0.5,
+                        }}
                       >
-                        <CircularProgress size={14} />
-                        {t("profile.preferences.updatingVisibility", {
-                          defaultValue: "Updating visibility...",
+                        <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
+                      </Box>
+                      <Stack spacing={0.75}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
+                          }}
+                        >
+                          {t("app.language.label", { defaultValue: "Language" })}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
+                          }}
+                        >
+                          {t("profile.preferences.languageDescription", {
+                            defaultValue: "Choose the language you prefer to use across the app.",
+                          })}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      px: 2.5,
+                      py: 2.5,
+                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                      background: (theme) =>
+                        lighten(
+                          theme.palette.background.paper,
+                          expandedAccountSection === "language" ? 0.06 : 0.03
+                        ),
+                    }}
+                  >
+                    <Stack spacing={1.5} sx={{ maxWidth: 360 }}>
+                      <FormControl fullWidth size="small" disabled={!canChangeLanguage}>
+                        <InputLabel id="profile-language-select-label">
+                          {t("app.language.label")}
+                        </InputLabel>
+                        <Select
+                          labelId="profile-language-select-label"
+                          label={t("app.language.label")}
+                          value={i18n.language || "en"}
+                          onChange={handleLanguageChange}
+                        >
+                          {languageOptions.map((option) => (
+                            <MenuItem key={option.code} value={option.code}>
+                              {t(option.labelKey)}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      {!canChangeLanguage && changeLanguageReason && (
+                        <Typography variant="caption" color="text.secondary">
+                          {changeLanguageReason}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion
+                  disableGutters
+                  square={false}
+                  elevation={0}
+                  expanded={expandedAccountSection === "signOut"}
+                  onChange={handleAccountSectionChange("signOut")}
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: (theme) =>
+                      theme.transitions.create(["box-shadow", "transform", "border"], {
+                        duration: theme.transitions.duration.short,
+                      }),
+                    "&::before": {
+                      display: "none",
+                    },
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: (theme) =>
+                        !canSignOut
+                          ? lighten(theme.palette.divider, 0.4)
+                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+                    },
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={
+                      <ExpandMoreIcon
+                        sx={{
+                          transition: (theme) =>
+                            theme.transitions.create("transform", {
+                              duration: theme.transitions.duration.shortest,
+                            }),
+                          transform:
+                            expandedAccountSection === "signOut"
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                      px: 2.5,
+                      py: 2,
+                      transition: (theme) =>
+                        theme.transitions.create("background-color", {
+                          duration: theme.transitions.duration.short,
+                        }),
+                      backgroundColor: (theme) =>
+                        expandedAccountSection === "signOut"
+                          ? lighten(theme.palette.background.paper, 0.04)
+                          : "transparent",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                          lighten(theme.palette.background.paper, 0.08),
+                      },
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 0.5,
+                        }}
+                      >
+                        <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
+                      </Box>
+                      <Stack spacing={0.75}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
+                          }}
+                        >
+                          {t("app.signOut", { defaultValue: "Sign out" })}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
+                          }}
+                        >
+                          {t("profile.preferences.signOutDescription", {
+                            defaultValue: "End your session on this device whenever you need to.",
+                          })}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      px: 2.5,
+                      py: 2.5,
+                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                      background: (theme) =>
+                        lighten(
+                          theme.palette.background.paper,
+                          expandedAccountSection === "signOut" ? 0.06 : 0.03
+                        ),
+                    }}
+                  >
+                    <Stack spacing={1.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("profile.preferences.signOutReminder", {
+                          defaultValue: "Signing out keeps your account secure on shared devices.",
                         })}
                       </Typography>
-                    )}
-                    {!canToggleVisibility && capabilityReasons.toggleVisibility && (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-                        {capabilityReasons.toggleVisibility}
-                      </Typography>
-                    )}
-                  </Box>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Switch
-                      checked={isAccountHidden}
-                      onChange={handleHideAccountToggle}
-                      disabled={
-                        accountStatusLoading ||
-                        isUpdatingAccountVisibility ||
-                        !canToggleVisibility
-                      }
-                      inputProps={{
-                        "aria-label": "Hide my profile",
-                        "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
-                      }}
-                    />
-                    {(accountStatusLoading || isUpdatingAccountVisibility) && (
-                      <CircularProgress size={18} />
-                    )}
-                  </Stack>
-                </Stack>
-              </Stack>
-              <Stack spacing={1.5}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <DeleteForeverIcon color="error" />
-                  <Box>
-                    <Typography variant="subtitle1">
-                      {t("profile.preferences.removeAccount", {
-                        defaultValue: "Remove account",
-                      })}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("profile.preferences.removeAccountDescription", {
-                        defaultValue:
-                          "Permanently delete your profile, matches, and conversations.",
-                      })}
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={handleRemoveAccount}
-                  startIcon={
-                    isRemovingAccount ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <DeleteForeverIcon />
-                    )
-                  }
-                  disabled={isRemovingAccount || !canRemoveAccount}
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={
+                          signingOut ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <LogoutIcon />
+                          )
+                        }
+                        onClick={handleProfileSignOut}
+                        disabled={signingOut || !canSignOut}
+                        sx={{ width: { xs: "100%", sm: "auto" } }}
+                      >
+                        {signingOut
+                          ? t("app.signingOut", { defaultValue: "Signing out..." })
+                          : t("app.signOut", { defaultValue: "Sign out" })}
+                      </Button>
+                      {!canSignOut && signOutReason && (
+                        <Typography variant="caption" color="text.secondary">
+                          {signOutReason}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion
+                  disableGutters
+                  square={false}
+                  elevation={0}
+                  expanded={expandedAccountSection === "billing"}
+                  onChange={handleAccountSectionChange("billing")}
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: (theme) =>
+                      theme.transitions.create(["box-shadow", "transform", "border"], {
+                        duration: theme.transitions.duration.short,
+                      }),
+                    "&::before": {
+                      display: "none",
+                    },
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: (theme) =>
+                        !canManagePayments
+                          ? lighten(theme.palette.divider, 0.4)
+                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+                    },
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                    },
+                  }}
                 >
-                  {isRemovingAccount
-                    ? t("profile.preferences.removingAccount", { defaultValue: "Processing..." })
-                    : t("profile.preferences.removeAccountButton", {
-                        defaultValue: "Remove my account",
-                      })}
-                </Button>
+                  <AccordionSummary
+                    expandIcon={
+                      <ExpandMoreIcon
+                        sx={{
+                          transition: (theme) =>
+                            theme.transitions.create("transform", {
+                              duration: theme.transitions.duration.shortest,
+                            }),
+                          transform:
+                            expandedAccountSection === "billing"
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                      px: 2.5,
+                      py: 2,
+                      transition: (theme) =>
+                        theme.transitions.create("background-color", {
+                          duration: theme.transitions.duration.short,
+                        }),
+                      backgroundColor: (theme) =>
+                        expandedAccountSection === "billing"
+                          ? lighten(theme.palette.background.paper, 0.04)
+                          : "transparent",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                          lighten(theme.palette.background.paper, 0.08),
+                      },
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 0.5,
+                        }}
+                      >
+                        <CreditCardIcon color={canManagePayments ? "primary" : "disabled"} />
+                      </Box>
+                      <Stack spacing={0.75}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
+                          }}
+                        >
+                          {t("profile.preferences.billing", {
+                            defaultValue: "Billing & subscriptions",
+                          })}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
+                          }}
+                        >
+                          {t("profile.preferences.billingDescription", {
+                            defaultValue:
+                              "Review and manage your membership plan, payment methods, and receipts.",
+                          })}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      px: 2.5,
+                      py: 2.5,
+                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                      background: (theme) =>
+                        lighten(
+                          theme.palette.background.paper,
+                          expandedAccountSection === "billing" ? 0.06 : 0.03
+                        ),
+                    }}
+                  >
+                    <Stack spacing={1.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("profile.preferences.billingReminder", {
+                          defaultValue: "Access your invoices and update payment preferences in one place.",
+                        })}
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<CreditCardIcon />}
+                        onClick={handleManagePayments}
+                        disabled={!canManagePayments}
+                        sx={{ width: { xs: "100%", sm: "auto" } }}
+                      >
+                        {t("profile.preferences.manageBilling", {
+                          defaultValue: "Manage billing",
+                        })}
+                      </Button>
+                      {!canManagePayments && capabilityReasons.payments && (
+                        <Typography variant="caption" color="text.secondary">
+                          {capabilityReasons.payments}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion
+                  disableGutters
+                  square={false}
+                  elevation={0}
+                  expanded={expandedAccountSection === "visibility"}
+                  onChange={handleAccountSectionChange("visibility")}
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: (theme) =>
+                      theme.transitions.create(["box-shadow", "transform", "border"], {
+                        duration: theme.transitions.duration.short,
+                      }),
+                    "&::before": {
+                      display: "none",
+                    },
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: (theme) =>
+                        !canToggleVisibility
+                          ? lighten(theme.palette.divider, 0.4)
+                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+                    },
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={
+                      <ExpandMoreIcon
+                        sx={{
+                          transition: (theme) =>
+                            theme.transitions.create("transform", {
+                              duration: theme.transitions.duration.shortest,
+                            }),
+                          transform:
+                            expandedAccountSection === "visibility"
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                      px: 2.5,
+                      py: 2,
+                      transition: (theme) =>
+                        theme.transitions.create("background-color", {
+                          duration: theme.transitions.duration.short,
+                        }),
+                      backgroundColor: (theme) =>
+                        expandedAccountSection === "visibility"
+                          ? lighten(theme.palette.background.paper, 0.04)
+                          : "transparent",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                          lighten(theme.palette.background.paper, 0.08),
+                      },
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 0.5,
+                        }}
+                      >
+                        <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
+                      </Box>
+                      <Stack spacing={0.75}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
+                          }}
+                        >
+                          {t("profile.preferences.visibility", {
+                            defaultValue: "Profile visibility",
+                          })}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
+                          }}
+                        >
+                          {t("profile.preferences.visibilityDescription", {
+                            defaultValue:
+                              "Hide your profile from potential matches without deleting your information.",
+                          })}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      px: 2.5,
+                      py: 2.5,
+                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                      background: (theme) =>
+                        lighten(
+                          theme.palette.background.paper,
+                          expandedAccountSection === "visibility" ? 0.06 : 0.03
+                        ),
+                    }}
+                  >
+                    <Stack
+                      spacing={2}
+                      direction={{ xs: "column", sm: "row" }}
+                      alignItems={{ xs: "flex-start", sm: "center" }}
+                      justifyContent="space-between"
+                    >
+                      <Stack spacing={1} sx={{ flex: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {isAccountHidden
+                            ? t("profile.preferences.visibilityHidden", {
+                                defaultValue:
+                                  "Your profile is currently hidden. Matches will no longer see or contact you.",
+                              })
+                            : t("profile.preferences.visibilityVisible", {
+                                defaultValue:
+                                  "Your profile is visible to the community. Hide it if you need a break.",
+                              })}
+                        </Typography>
+                        {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          >
+                            <CircularProgress size={14} />
+                            {t("profile.preferences.updatingVisibility", {
+                              defaultValue: "Updating visibility...",
+                            })}
+                          </Typography>
+                        )}
+                        {!canToggleVisibility && capabilityReasons.toggleVisibility && (
+                          <Typography variant="caption" color="text.secondary">
+                            {capabilityReasons.toggleVisibility}
+                          </Typography>
+                        )}
+                      </Stack>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Switch
+                          checked={isAccountHidden}
+                          onChange={handleHideAccountToggle}
+                          disabled={
+                            accountStatusLoading ||
+                            isUpdatingAccountVisibility ||
+                            !canToggleVisibility
+                          }
+                          inputProps={{
+                            "aria-label": "Hide my profile",
+                            "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
+                          }}
+                        />
+                        {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                          <CircularProgress size={18} />
+                        )}
+                      </Stack>
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+
+                <Accordion
+                  disableGutters
+                  square={false}
+                  elevation={0}
+                  expanded={expandedAccountSection === "remove"}
+                  onChange={handleAccountSectionChange("remove")}
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: (theme) =>
+                      theme.transitions.create(["box-shadow", "transform", "border"], {
+                        duration: theme.transitions.duration.short,
+                      }),
+                    "&::before": {
+                      display: "none",
+                    },
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: (theme) =>
+                        !canRemoveAccount
+                          ? lighten(theme.palette.divider, 0.4)
+                          : "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
+                    },
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                    },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={
+                      <ExpandMoreIcon
+                        sx={{
+                          transition: (theme) =>
+                            theme.transitions.create("transform", {
+                              duration: theme.transitions.duration.shortest,
+                            }),
+                          transform:
+                            expandedAccountSection === "remove"
+                              ? "rotate(180deg)"
+                              : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                      px: 2.5,
+                      py: 2,
+                      transition: (theme) =>
+                        theme.transitions.create("background-color", {
+                          duration: theme.transitions.duration.short,
+                        }),
+                      backgroundColor: (theme) =>
+                        expandedAccountSection === "remove"
+                          ? lighten(theme.palette.background.paper, 0.04)
+                          : "transparent",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                          lighten(theme.palette.background.paper, 0.08),
+                      },
+                    }}
+                  >
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 0.5,
+                        }}
+                      >
+                        <DeleteForeverIcon color="error" />
+                      </Box>
+                      <Stack spacing={0.75}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
+                          }}
+                        >
+                          {t("profile.preferences.removeAccount", {
+                            defaultValue: "Remove account",
+                          })}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            color: (theme) => lighten(theme.palette.text.secondary, 0.1),
+                          }}
+                        >
+                          {t("profile.preferences.removeAccountDescription", {
+                            defaultValue:
+                              "Permanently delete your profile, matches, and conversations.",
+                          })}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      px: 2.5,
+                      py: 2.5,
+                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                      background: (theme) =>
+                        lighten(
+                          theme.palette.background.paper,
+                          expandedAccountSection === "remove" ? 0.06 : 0.03
+                        ),
+                    }}
+                  >
+                    <Stack spacing={1.5}>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("profile.preferences.removeAccountWarning", {
+                          defaultValue:
+                            "This action cannot be undone. Your conversations, matches, and profile will be permanently deleted.",
+                        })}
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={handleRemoveAccount}
+                        startIcon={
+                          isRemovingAccount ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <DeleteForeverIcon />
+                          )
+                        }
+                        disabled={isRemovingAccount || !canRemoveAccount}
+                      >
+                        {isRemovingAccount
+                          ? t("profile.preferences.removingAccount", {
+                              defaultValue: "Processing...",
+                            })
+                          : t("profile.preferences.removeAccountButton", {
+                              defaultValue: "Remove my account",
+                            })}
+                      </Button>
+                      {!canRemoveAccount && capabilityReasons.removeAccount && (
+                        <Typography variant="caption" color="text.secondary">
+                          {capabilityReasons.removeAccount}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
               </Stack>
             </Stack>
           </CardContent>
