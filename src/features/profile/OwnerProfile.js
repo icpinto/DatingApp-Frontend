@@ -2072,14 +2072,25 @@ function OwnerProfileContent({ accountLifecycle }) {
               />
               <Divider />
               <CardContent>
-                <Stack spacing={spacing.section}>
+                <Stack spacing={3}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t("profile.headers.viewDescription", {
+                      defaultValue:
+                        "Review and manage the personal, lifestyle, and verification details that other members can see.",
+                    })}
+                  </Typography>
                   {profile?.profile_image && (
                     <Box sx={{ display: "flex", justifyContent: "center" }}>
                       <Avatar
                         variant="rounded"
                         src={profile.profile_image}
                         alt={t("profile.fields.profileImage")}
-                        sx={{ width: 150, height: 150 }}
+                        sx={{
+                          width: 150,
+                          height: 150,
+                          boxShadow: 6,
+                          borderRadius: 4,
+                        }}
                       />
                     </Box>
                   )}
@@ -2087,11 +2098,14 @@ function OwnerProfileContent({ accountLifecycle }) {
                     <>
                       <ProfileSections data={profile} />
                       {profile.created_at && (
-                        <Typography variant="caption" color="text.secondary">
-                          {t("common.messages.profileCreatedOn", {
-                            date: new Date(profile.created_at).toLocaleDateString(),
-                          })}
-                        </Typography>
+                        <Stack spacing={1.5}>
+                          <Divider flexItem sx={{ my: 0 }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {t("common.messages.profileCreatedOn", {
+                              date: new Date(profile.created_at).toLocaleDateString(),
+                            })}
+                          </Typography>
+                        </Stack>
                       )}
                     </>
                   ) : (
