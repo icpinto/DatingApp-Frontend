@@ -13,6 +13,10 @@ import {
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import PrivacyTipOutlinedIcon from "@mui/icons-material/PrivacyTipOutlined";
+import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
+import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined";
+import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
 import { lighten } from "@mui/material/styles";
 import useLegalContent from "../../shared/components/layout/useLegalContent";
 import { useTranslation } from "../../i18n";
@@ -27,10 +31,15 @@ function ProfileLegalInformation() {
   };
 
   const sectionIcons = {
-    privacy: "🔒",
-    terms: "⚖️",
-    pricing: "💎",
-    support: "🛟",
+    privacy: PrivacyTipOutlinedIcon,
+    terms: GavelOutlinedIcon,
+    pricing: DiamondOutlinedIcon,
+    support: SupportAgentOutlinedIcon,
+  };
+
+  const renderSectionIcon = (sectionId) => {
+    const IconComponent = sectionIcons[sectionId] ?? InfoOutlinedIcon;
+    return <IconComponent color="primary" sx={{ fontSize: 28 }} />;
   };
 
   return (
@@ -123,12 +132,13 @@ function ProfileLegalInformation() {
                       component="span"
                       aria-hidden
                       sx={{
-                        fontSize: 24,
-                        lineHeight: 1,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         pt: 0.5,
                       }}
                     >
-                      {sectionIcons[section.id] ?? "ℹ️"}
+                      {renderSectionIcon(section.id)}
                     </Box>
                     <Stack spacing={0.75}>
                       <Typography
