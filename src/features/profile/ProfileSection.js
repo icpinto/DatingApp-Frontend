@@ -7,7 +7,6 @@ import {
   Grid,
   Stack,
   Box,
-  LinearProgress,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
@@ -123,7 +122,6 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
     const value = rawData[field];
     return count + (isValueFilled(value, field) ? 1 : 0);
   }, 0);
-  const completion = totalFields > 0 ? Math.round((filledCount / totalFields) * 100) : 0;
 
   return (
     <Accordion
@@ -133,40 +131,15 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
       sx={{
         width: "100%",
         borderRadius: 2,
-        border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
-        position: "relative",
-        overflow: "hidden",
-        transition: (theme) =>
-          theme.transitions.create(["box-shadow", "transform", "border"], {
-            duration: theme.transitions.duration.short,
-          }),
+        border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.4)}`,
+        backgroundColor: (theme) => lighten(theme.palette.background.paper, 0.02),
         "&::before": {
           display: "none",
         },
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 4,
-          background: "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)",
-        },
-        "&:hover": {
-          boxShadow: 4,
-          transform: "translateY(-2px)",
-        },
         "&.Mui-expanded": {
           margin: 0,
-          borderColor: (theme) => lighten(theme.palette.primary.main, 0.6),
-          "& .MuiAccordionSummary-root": {
-            backgroundColor: (theme) =>
-              lighten(theme.palette.background.paper, 0.04),
-          },
-          "& .MuiAccordionDetails-root": {
-            backgroundColor: (theme) =>
-              lighten(theme.palette.background.paper, 0.06),
-          },
+          borderColor: (theme) => lighten(theme.palette.primary.main, 0.7),
+          boxShadow: (theme) => theme.shadows[2],
         },
       }}
     >
@@ -186,78 +159,54 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
           },
           px: 2.5,
           py: 2,
-          transition: theme.transitions.create("background-color", {
-            duration: theme.transitions.duration.short,
-          }),
-          "&:hover": {
-            backgroundColor: lighten(theme.palette.background.paper, 0.08),
-          },
+          gap: 2,
+          backgroundColor: "transparent",
         })}
       >
+        {IconComponent && (
+          <Box
+            sx={(theme) => ({
+              width: 40,
+              height: 40,
+              borderRadius: 1.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              color: theme.palette.primary.main,
+              flexShrink: 0,
+            })}
+          >
+            <IconComponent fontSize="small" />
+          </Box>
+        )}
         <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={{ xs: 1.5, sm: 2 }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
+          direction="row"
+          alignItems="center"
           justifyContent="space-between"
           sx={{ width: "100%" }}
+          spacing={2}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            {IconComponent && (
-              <Box
-                sx={(theme) => ({
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: alpha(theme.palette.primary.main, 0.12),
-                  color: theme.palette.primary.main,
-                })}
-              >
-                <IconComponent fontSize="small" />
-              </Box>
-            )}
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                letterSpacing: 0.2,
-              }}
-            >
-              {label}
-            </Typography>
-          </Stack>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 600,
+              letterSpacing: 0.2,
+            }}
+          >
+            {label}
+          </Typography>
           {totalFields > 0 && (
-            <Stack
-              spacing={0.75}
-              sx={{ minWidth: { sm: 180 }, width: { xs: "100%", sm: "auto" } }}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 600, textTransform: "uppercase" }}
-              >
-                {t("profile.summary.sectionCompletion", {
-                  completed: filledCount,
-                  total: totalFields,
-                })}
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={completion}
-                sx={(theme) => ({
-                  height: 6,
-                  borderRadius: 999,
-                  backgroundColor: alpha(theme.palette.primary.light, 0.2),
-                  "& .MuiLinearProgress-bar": {
-                    borderRadius: 999,
-                    backgroundImage:
-                      "linear-gradient(90deg, #FF4F87 0%, #F73D7A 100%)",
-                  },
-                })}
-              />
-            </Stack>
+              {t("profile.summary.sectionCompletion", {
+                completed: filledCount,
+                total: totalFields,
+              })}
+            </Typography>
           )}
         </Stack>
       </AccordionSummary>
@@ -265,10 +214,10 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
         sx={{
           px: 2.5,
           py: 2.5,
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+          borderTop: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
         }}
       >
-        <Grid container spacing={2.5}>
+        <Grid container spacing={2}>
           {fieldKeys.map((field) => {
             const labelKey = sectionLabels[field];
             const resolvedLabel = labelKey ? t(labelKey) : formatLabel(field);
@@ -302,52 +251,26 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
             return (
               <Grid item xs={12} sm={6} key={field}>
                 <Stack
-                  spacing={0.75}
+                  spacing={0.5}
                   sx={(theme) => ({
-                    px: 1.5,
-                    py: 1.25,
-                    borderRadius: 2,
-                    border: `1px solid ${
-                      isFilled
-                        ? alpha(theme.palette.success.main, 0.35)
-                        : alpha(theme.palette.warning.main, 0.4)
-                    }`,
-                    borderLeftWidth: 4,
-                    borderLeftColor: isFilled
-                      ? theme.palette.success.main
-                      : theme.palette.warning.main,
-                    backgroundColor: isFilled
-                      ? alpha(theme.palette.success.main, 0.08)
-                      : alpha(theme.palette.warning.main, 0.08),
-                    transition: theme.transitions.create(["box-shadow", "transform"], {
-                      duration: theme.transitions.duration.shorter,
-                    }),
-                    "&:hover": {
-                      boxShadow: 6,
-                      transform: "translateY(-2px)",
-                    },
+                    px: 1.75,
+                    py: 1.5,
+                    borderRadius: 1.5,
+                    border: `1px solid ${lighten(theme.palette.divider, 0.2)}`,
+                    backgroundColor: lighten(theme.palette.background.paper, 0.04),
                   })}
                 >
                   <Typography
-                    variant="overline"
-                    sx={(theme) => ({
-                      fontWeight: 700,
-                      letterSpacing: 0.8,
-                      color: isFilled
-                        ? lighten(theme.palette.text.secondary, 0.2)
-                        : theme.palette.text.secondary,
-                    })}
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600, letterSpacing: 0.4 }}
                   >
                     {resolvedLabel}
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={(theme) => ({
-                      color: isFilled
-                        ? lighten(theme.palette.text.primary, 0.02)
-                        : theme.palette.text.secondary,
-                      fontStyle: isFilled ? "normal" : "italic",
-                    })}
+                    color={isFilled ? "text.primary" : "text.secondary"}
+                    sx={{ fontStyle: isFilled ? "normal" : "italic" }}
                   >
                     {displayValue}
                   </Typography>
