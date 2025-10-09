@@ -22,6 +22,9 @@ import {
   CardContent,
   Divider,
   Switch,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import WcIcon from "@mui/icons-material/Wc";
@@ -35,10 +38,11 @@ import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import api from "../../shared/services/api";
 import ProfileSections from "./ProfileSections";
 import { spacing } from "../../styles";
-import { useTranslation } from "../../i18n";
+import { useTranslation, languageOptions } from "../../i18n";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
 import { useAccountLifecycle } from "../../shared/context/AccountLifecycleContext";
 import Guard from "./Guard";
@@ -50,6 +54,7 @@ import {
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
 } from "../../domain/accountLifecycle";
+import { signOutUser } from "../../shared/services/authService";
 
 function OwnerProfileContent({ accountLifecycle }) {
   const lifecycleContext = accountLifecycle || {};
@@ -124,16 +129,21 @@ function OwnerProfileContent({ accountLifecycle }) {
     sharedLifecycleStatus ?? null
   );
   const [isUpdatingAccountVisibility, setIsUpdatingAccountVisibility] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const hasLoadedEnumsRef = useRef(false);
   const hasLoadedProfileRef = useRef(false);
   const userId = localStorage.getItem("user_id");
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const verificationServiceUrl =
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
-  const { groups } = useUserCapabilities();
+  const { groups, hasCapability, getReason } = useUserCapabilities();
   const ownerProfileCapabilities = groups.ownerProfile;
+  const canChangeLanguage = hasCapability(CAPABILITIES.APP_CHANGE_LANGUAGE);
+  const changeLanguageReason = getReason(CAPABILITIES.APP_CHANGE_LANGUAGE);
+  const canSignOut = hasCapability(CAPABILITIES.APP_SIGN_OUT);
+  const signOutReason = getReason(CAPABILITIES.APP_SIGN_OUT);
 
   useEffect(() => {
     hasLoadedProfileRef.current = false;
@@ -684,6 +694,66 @@ function OwnerProfileContent({ accountLifecycle }) {
     if (newLanguage.trim()) {
       setFormData((prev) => ({ ...prev, languages: [...prev.languages, newLanguage.trim()] }));
       setNewLanguage("");
+    }
+  };
+
+  const handleProfileLanguageChange = (event) => {
+    const nextLanguage = event.target.value;
+
+    if (!canChangeLanguage) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message:
+          changeLanguageReason ||
+          t("profile.messages.languageChangeUnavailable", {
+            defaultValue: "Changing the app language is currently unavailable.",
+          }),
+        severity: "info",
+      });
+      return;
+    }
+
+    if (!nextLanguage || nextLanguage === i18n.language) {
+      return;
+    }
+
+    i18n.changeLanguage(nextLanguage);
+    setSnackbar({
+      open: true,
+      messageKey: "",
+      message: t("profile.messages.languageUpdated", {
+        defaultValue: "App language updated.",
+      }),
+      severity: "success",
+    });
+  };
+
+  const handleProfileSignOut = async () => {
+    if (signingOut) {
+      return;
+    }
+
+    if (!canSignOut) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message:
+          signOutReason ||
+          t("profile.messages.signOutUnavailable", {
+            defaultValue: "Signing out is currently unavailable.",
+          }),
+        severity: "info",
+      });
+      return;
+    }
+
+    setSigningOut(true);
+    try {
+      await signOutUser();
+    } finally {
+      setSigningOut(false);
+      navigate("/");
     }
   };
 
@@ -1995,6 +2065,48 @@ function OwnerProfileContent({ accountLifecycle }) {
                   </Button>
                 </Stack>
                 <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LanguageIcon color="primary" />
+                    <Box>
+                      <Typography variant="subtitle1">
+                        {t("profile.account.languageTitle", { defaultValue: "App language" })}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("profile.account.languageDescription", {
+                          defaultValue: "Choose the language used across the app interface.",
+                        })}
+                      </Typography>
+                      {!canChangeLanguage && changeLanguageReason && (
+                        <Typography variant="caption" color="text.secondary">
+                          {changeLanguageReason}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Stack>
+                  <FormControl
+                    size="small"
+                    sx={{ maxWidth: 260 }}
+                    disabled={!canChangeLanguage}
+                  >
+                    <InputLabel id="profile-language-select-label">
+                      {t("app.language.label")}
+                    </InputLabel>
+                    <Select
+                      labelId="profile-language-select-label"
+                      id="profile-language-select"
+                      label={t("app.language.label")}
+                      value={i18n.language || "en"}
+                      onChange={handleProfileLanguageChange}
+                    >
+                      {languageOptions.map((option) => (
+                        <MenuItem key={option.code} value={option.code}>
+                          {t(option.labelKey)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
+                <Stack spacing={1.5}>
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
                     spacing={2}
@@ -2046,6 +2158,44 @@ function OwnerProfileContent({ accountLifecycle }) {
                       )}
                     </Stack>
                   </Stack>
+                </Stack>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LogoutIcon color="primary" />
+                    <Box>
+                      <Typography variant="subtitle1">
+                        {t("profile.account.signOutTitle", { defaultValue: "Sign out" })}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("profile.account.signOutDescription", {
+                          defaultValue:
+                            "Sign out to secure your account or switch to a different profile.",
+                        })}
+                      </Typography>
+                      {!canSignOut && signOutReason && (
+                        <Typography variant="caption" color="text.secondary">
+                          {signOutReason}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Stack>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleProfileSignOut}
+                    startIcon={
+                      signingOut ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <LogoutIcon />
+                      )
+                    }
+                    disabled={signingOut || !canSignOut}
+                  >
+                    {signingOut
+                      ? t("app.signingOut", { defaultValue: "Signing out..." })
+                      : t("app.signOut", { defaultValue: "Sign out" })}
+                  </Button>
                 </Stack>
                 <Stack spacing={1.5}>
                   <Stack direction="row" spacing={1} alignItems="center">

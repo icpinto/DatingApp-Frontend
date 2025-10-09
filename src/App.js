@@ -42,7 +42,7 @@ import { ColorModeContext } from "./shared/context/ThemeContext";
 import { UserProvider } from "./shared/context/UserContext";
 import logo from "./logo.svg";
 import { useTranslation, languageOptions } from "./i18n";
-import api from "./shared/services/api";
+import { signOutUser } from "./shared/services/authService";
 import { CAPABILITIES } from "./domain/capabilities";
 import AppFooter from "./shared/components/layout/AppFooter";
 
@@ -183,6 +183,44 @@ function TopBar() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleSignOutFeedback = (event) => {
+      const status = event?.detail?.status;
+      if (status === "success") {
+        setSnackbar({
+          open: true,
+          message: t("app.signOutSuccess", {
+            defaultValue: "Signed out successfully.",
+          }),
+          severity: "success",
+        });
+      } else if (status === "error") {
+        setSnackbar({
+          open: true,
+          message: t("app.signOutError", {
+            defaultValue:
+              "We couldn't reach the server, but your local session was cleared.",
+          }),
+          severity: "warning",
+        });
+      } else if (status === "no_token") {
+        setSnackbar({
+          open: true,
+          message: t("app.noActiveSession", {
+            defaultValue: "No active session was found.",
+          }),
+          severity: "info",
+        });
+      }
+    };
+
+    window.addEventListener("app-sign-out-feedback", handleSignOutFeedback);
+
+    return () => {
+      window.removeEventListener("app-sign-out-feedback", handleSignOutFeedback);
+    };
+  }, [t]);
+
   const handleLanguageChange = (event) => {
     const nextLanguage = event.target.value;
     if (nextLanguage && nextLanguage !== i18n.language) {
@@ -195,50 +233,11 @@ function TopBar() {
   };
 
   const handleSignOut = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      localStorage.removeItem("user_id");
-      window.dispatchEvent(
-        new CustomEvent("auth-token-changed", { detail: { token: null } })
-      );
-      navigate("/");
-      return;
-    }
-
     setSigningOut(true);
     try {
-      await api.post(
-        "/signout",
-        {},
-        {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }
-      );
-      setSnackbar({
-        open: true,
-        message: t("app.signOutSuccess", {
-          defaultValue: "Signed out successfully.",
-        }),
-        severity: "success",
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: t("app.signOutError", {
-          defaultValue:
-            "We couldn't reach the server, but your local session was cleared.",
-        }),
-        severity: "warning",
-      });
+      await signOutUser();
     } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user_id");
       setHasToken(false);
-      window.dispatchEvent(
-        new CustomEvent("auth-token-changed", { detail: { token: null } })
-      );
       setSigningOut(false);
       navigate("/");
     }
