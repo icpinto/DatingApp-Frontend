@@ -1,5 +1,11 @@
 import React, { Suspense, lazy, useContext, useEffect, useState } from "react";
-import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import {
   AppBar,
   Toolbar,
@@ -52,6 +58,99 @@ const RouteLoader = () => (
     <CircularProgress size={32} thickness={5} />
   </Box>
 );
+
+function AppLayout() {
+  const location = useLocation();
+  const showFooter = location.pathname === "/";
+
+  return (
+    <div className="App">
+      <TopBar />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/home"
+          element={
+            <CapabilityRoute capability={CAPABILITIES.NAV_ACCESS_HOME}>
+              <MainTabs />
+            </CapabilityRoute>
+          }
+        />
+        <Route
+          path="/profile/:userId"
+          element={
+            <CapabilityRoute capability={CAPABILITIES.PROFILE_VIEW_MEMBER}>
+              <Profile />
+            </CapabilityRoute>
+          }
+        />
+        <Route
+          path="/requests"
+          element={
+            <CapabilityRoute capability={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
+              <Requests />
+            </CapabilityRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <CapabilityRoute capability={CAPABILITIES.MESSAGING_VIEW_INBOX}>
+              <Suspense fallback={<RouteLoader />}>
+                <MessagesPage />
+              </Suspense>
+            </CapabilityRoute>
+          }
+        />
+        <Route
+          path="/payment"
+          element={
+            <CapabilityRoute capability={CAPABILITIES.BILLING_VIEW_PAYMENT}>
+              <Suspense fallback={<RouteLoader />}>
+                <PaymentPage />
+              </Suspense>
+            </CapabilityRoute>
+          }
+        />
+        <Route
+          path="/privacy-policy"
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <PrivacyPolicyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <TermsOfServicePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <PricingPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/help"
+          element={
+            <Suspense fallback={<RouteLoader />}>
+              <HelpCenterPage />
+            </Suspense>
+          }
+        />
+      </Routes>
+      {showFooter && <AppFooter />}
+    </div>
+  );
+}
 
 function TopBar() {
   const colorMode = useContext(ColorModeContext);
@@ -243,91 +342,7 @@ function AppShell() {
     <WebSocketProvider>
       <AppAccessBoundary>
         <Router>
-          <div className="App">
-            <TopBar />
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route
-                path="/home"
-                element={
-                  <CapabilityRoute capability={CAPABILITIES.NAV_ACCESS_HOME}>
-                    <MainTabs />
-                  </CapabilityRoute>
-                }
-              />
-              <Route
-                path="/profile/:userId"
-                element={
-                  <CapabilityRoute capability={CAPABILITIES.PROFILE_VIEW_MEMBER}>
-                    <Profile />
-                  </CapabilityRoute>
-                }
-              />
-              <Route
-                path="/requests"
-                element={
-                  <CapabilityRoute capability={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
-                    <Requests />
-                  </CapabilityRoute>
-                }
-              />
-              <Route
-                path="/messages"
-                element={
-                  <CapabilityRoute capability={CAPABILITIES.MESSAGING_VIEW_INBOX}>
-                    <Suspense fallback={<RouteLoader />}>
-                      <MessagesPage />
-                    </Suspense>
-                  </CapabilityRoute>
-                }
-              />
-              <Route
-                path="/payment"
-                element={
-                  <CapabilityRoute capability={CAPABILITIES.BILLING_VIEW_PAYMENT}>
-                    <Suspense fallback={<RouteLoader />}>
-                      <PaymentPage />
-                    </Suspense>
-                  </CapabilityRoute>
-                }
-              />
-              <Route
-                path="/privacy-policy"
-                element={
-                  <Suspense fallback={<RouteLoader />}>
-                    <PrivacyPolicyPage />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="/terms"
-                element={
-                  <Suspense fallback={<RouteLoader />}>
-                    <TermsOfServicePage />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="/pricing"
-                element={
-                  <Suspense fallback={<RouteLoader />}>
-                    <PricingPage />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="/help"
-                element={
-                  <Suspense fallback={<RouteLoader />}>
-                    <HelpCenterPage />
-                  </Suspense>
-                }
-              />
-            </Routes>
-            <AppFooter />
-          </div>
+          <AppLayout />
         </Router>
       </AppAccessBoundary>
     </WebSocketProvider>
