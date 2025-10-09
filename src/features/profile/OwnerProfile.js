@@ -277,6 +277,19 @@ function OwnerProfileContent({ accountLifecycle }) {
   const canSignOut = Boolean(signOutCapability?.can);
   const signOutReason = signOutCapability?.reason;
 
+  const visibilityStatusText =
+    accountStatusLoading || isUpdatingAccountVisibility
+      ? ""
+      : isAccountHidden
+      ? t("profile.preferences.visibilityHidden", {
+          defaultValue:
+            "Your profile is currently hidden. Matches will no longer see or contact you.",
+        })
+      : t("profile.preferences.visibilityVisible", {
+          defaultValue:
+            "Your profile is visible to the community. Hide it if you need a break.",
+        });
+
   const updateAccountLifecycleStatus = useCallback(
     (nextStatus) => {
       setAccountLifecycleStatus(nextStatus);
@@ -2311,11 +2324,15 @@ function OwnerProfileContent({ accountLifecycle }) {
                           >
                             {t("app.signOut", { defaultValue: "Sign out" })}
                           </Typography>
-                          <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                            {t("profile.preferences.signOutDescription", {
-                              defaultValue: "End your session on this device whenever you need to.",
-                            })}
-                          </Typography>
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
+                          {t("profile.preferences.signOutDescription", {
+                            defaultValue: "End your session on this device whenever you need to.",
+                          })}
+                          {" "}
+                          {t("profile.preferences.signOutReminder", {
+                            defaultValue: "Signing out keeps your account secure on shared devices.",
+                          })}
+                        </Typography>
                         </Stack>
                       </Stack>
                       <Button
@@ -2337,11 +2354,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                           : t("app.signOut", { defaultValue: "Sign out" })}
                       </Button>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("profile.preferences.signOutReminder", {
-                        defaultValue: "Signing out keeps your account secure on shared devices.",
-                      })}
-                    </Typography>
                     {!canSignOut && signOutReason && (
                       <Typography variant="caption" color="text.secondary">
                         {signOutReason}
@@ -2393,6 +2405,11 @@ function OwnerProfileContent({ accountLifecycle }) {
                               defaultValue:
                                 "Review and manage your membership plan, payment methods, and receipts.",
                             })}
+                            {" "}
+                            {t("profile.preferences.billingReminder", {
+                              defaultValue:
+                                "Access your invoices and update payment preferences in one place.",
+                            })}
                           </Typography>
                         </Stack>
                       </Stack>
@@ -2409,11 +2426,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                         })}
                       </Button>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("profile.preferences.billingReminder", {
-                        defaultValue: "Access your invoices and update payment preferences in one place.",
-                      })}
-                    </Typography>
                     {!canManagePayments && capabilityReasons.payments && (
                       <Typography variant="caption" color="text.secondary">
                         {capabilityReasons.payments}
@@ -2454,6 +2466,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                             defaultValue:
                               "Hide your profile from potential matches without deleting your information.",
                           })}
+                          {visibilityStatusText && ` ${visibilityStatusText}`}
                         </Typography>
                       </Stack>
                     </Stack>
@@ -2464,17 +2477,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                       justifyContent="space-between"
                     >
                       <Stack spacing={1} sx={{ flex: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {isAccountHidden
-                            ? t("profile.preferences.visibilityHidden", {
-                                defaultValue:
-                                  "Your profile is currently hidden. Matches will no longer see or contact you.",
-                              })
-                            : t("profile.preferences.visibilityVisible", {
-                                defaultValue:
-                                  "Your profile is visible to the community. Hide it if you need a break.",
-                              })}
-                        </Typography>
                         {(accountStatusLoading || isUpdatingAccountVisibility) && (
                           <Typography
                             variant="caption"
@@ -2558,6 +2560,11 @@ function OwnerProfileContent({ accountLifecycle }) {
                               defaultValue:
                                 "Permanently delete your profile, matches, and conversations.",
                             })}
+                            {" "}
+                            {t("profile.preferences.removeAccountWarning", {
+                              defaultValue:
+                                "This action cannot be undone. Your conversations, matches, and profile will be permanently deleted.",
+                            })}
                           </Typography>
                         </Stack>
                       </Stack>
@@ -2584,12 +2591,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                             })}
                       </Button>
                     </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("profile.preferences.removeAccountWarning", {
-                        defaultValue:
-                          "This action cannot be undone. Your conversations, matches, and profile will be permanently deleted.",
-                      })}
-                    </Typography>
                     {!canRemoveAccount && capabilityReasons.removeAccount && (
                       <Typography variant="caption" color="text.secondary">
                         {capabilityReasons.removeAccount}
