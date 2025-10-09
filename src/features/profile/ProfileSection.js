@@ -8,6 +8,7 @@ import {
   Stack,
   Box,
   LinearProgress,
+  Button,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
@@ -106,7 +107,14 @@ const isValueFilled = (value, field) => {
   return value !== null && value !== undefined;
 };
 
-function ProfileSection({ label, data, sectionKey, IconComponent }) {
+function ProfileSection({
+  label,
+  data,
+  sectionKey,
+  IconComponent,
+  onEdit,
+  disableEdit = false,
+}) {
   const { t } = useTranslation();
   const sectionLabels = FIELD_LABELS[sectionKey] || {};
   const rawData =
@@ -186,8 +194,8 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
           </Box>
         )}
         <Stack
-          direction="row"
-          alignItems="center"
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "flex-start", sm: "center" }}
           justifyContent="space-between"
           sx={{ width: "100%" }}
           spacing={2}
@@ -201,37 +209,57 @@ function ProfileSection({ label, data, sectionKey, IconComponent }) {
           >
             {label}
           </Typography>
-          {totalFields > 0 && (
-            <Stack
-              spacing={0.75}
-              sx={{ minWidth: { xs: "100%", sm: 160 }, flexShrink: 0 }}
-            >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ fontWeight: 500 }}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            spacing={1.5}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
+          >
+            {totalFields > 0 && (
+              <Stack
+                spacing={0.75}
+                sx={{ minWidth: { xs: "100%", sm: 160 }, flexShrink: 0 }}
               >
-                {t("profile.summary.sectionCompletion", {
-                  completed: filledCount,
-                  total: totalFields,
-                })}
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={completionPercentage}
-                sx={{
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: (theme) =>
-                    alpha(theme.palette.primary.light, 0.2),
-                  "& .MuiLinearProgress-bar": {
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontWeight: 500 }}
+                >
+                  {t("profile.summary.sectionCompletion", {
+                    completed: filledCount,
+                    total: totalFields,
+                  })}
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={completionPercentage}
+                  sx={{
+                    height: 6,
                     borderRadius: 3,
-                    backgroundColor: (theme) => theme.palette.primary.main,
-                  },
+                    backgroundColor: (theme) =>
+                      alpha(theme.palette.primary.light, 0.2),
+                    "& .MuiLinearProgress-bar": {
+                      borderRadius: 3,
+                      backgroundColor: (theme) => theme.palette.primary.main,
+                    },
+                  }}
+                />
+              </Stack>
+            )}
+            {onEdit && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit();
                 }}
-              />
-            </Stack>
-          )}
+                disabled={disableEdit}
+              >
+                {t("profile.buttons.editSection", { defaultValue: "Edit" })}
+              </Button>
+            )}
+          </Stack>
         </Stack>
       </AccordionSummary>
       <AccordionDetails

@@ -345,6 +345,7 @@
     "headers": {
       "create": "Create Profile",
       "edit": "Edit Profile",
+      "editSection": "Edit {{section}}",
       "view": "Your Profile",
       "formSubheader": "Keep your information up to date so matches can learn more about you",
       "viewSubheader": "Review the details other members can see",
@@ -432,7 +433,8 @@
       "saving": "Saving...",
       "submitIdentity": "Submit Identity",
       "sendOtp": "Send OTP",
-      "verifyOtp": "Verify OTP"
+      "verifyOtp": "Verify OTP",
+      "editSection": "Edit"
     },
     "messages": {
       "saved": "Profile saved",

@@ -37,7 +37,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import api from "../../shared/services/api";
-import ProfileSections from "./ProfileSections";
+import ProfileSections, { profileSectionDefinitions } from "./ProfileSections";
 import { spacing } from "../../styles";
 import { useTranslation, languageOptions } from "../../i18n";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
@@ -212,7 +212,7 @@ function OwnerProfileContent({ accountLifecycle }) {
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingSection, setEditingSection] = useState(null);
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -1078,7 +1078,7 @@ function OwnerProfileContent({ accountLifecycle }) {
         created_at: updated.created_at,
         ...formatted,
       });
-      setIsEditing(false);
+      setEditingSection(null);
       setSnackbar({
         open: true,
         messageKey: "profile.messages.saved",
@@ -1098,7 +1098,7 @@ function OwnerProfileContent({ accountLifecycle }) {
     }
   };
 
-  const handleEdit = () => {
+  const handleEditSection = (sectionKey) => {
     if (isLifecycleReadOnly) {
       setSnackbar({
         open: true,
@@ -1108,13 +1108,22 @@ function OwnerProfileContent({ accountLifecycle }) {
       });
       return;
     }
+    if (!canSaveProfile) {
+      setSnackbar({
+        open: true,
+        messageKey: "",
+        message: capabilityReasons.save || lifecycleReadOnlyMessage,
+        severity: "info",
+      });
+      return;
+    }
     if (rawProfile) populateFormData(rawProfile);
-    setIsEditing(true);
+    setEditingSection(sectionKey);
   };
 
   const handleCancelEdit = () => {
     if (rawProfile) populateFormData(rawProfile);
-    setIsEditing(false);
+    setEditingSection(null);
   };
 
   const handleManagePayments = () => {
@@ -1321,11 +1330,31 @@ function OwnerProfileContent({ accountLifecycle }) {
   const identityChipColor = statusColorMap[identityStatus] || "default";
   const contactChipColor = statusColorMap[contactStatus] || "default";
   const verificationSatisfied = identityVerified || contactVerified;
+  const isEditing = editingSection !== null;
   const shouldShowForm = (!profile || isEditing) && !isLifecycleReadOnly;
+
+  const sectionLabelMap = useMemo(() => {
+    return profileSectionDefinitions.reduce((acc, { key, labelKey }) => {
+      acc[key] = labelKey;
+      return acc;
+    }, {});
+  }, []);
+
+  const activeFormSection = profile ? editingSection : "all";
+  const isSectionActive = useCallback(
+    (sectionKey) =>
+      !profile || activeFormSection === "all" || activeFormSection === sectionKey,
+    [activeFormSection, profile]
+  );
+
+  const editingSectionLabel =
+    editingSection && sectionLabelMap[editingSection]
+      ? t(sectionLabelMap[editingSection])
+      : "";
 
   useEffect(() => {
     if (isLifecycleReadOnly) {
-      setIsEditing(false);
+      setEditingSection(null);
     }
 
     if (
@@ -1361,7 +1390,14 @@ function OwnerProfileContent({ accountLifecycle }) {
               title={
                 profile
                   ? shouldShowForm
-                    ? t("profile.headers.edit", { defaultValue: "Edit your profile" })
+                    ? editingSection
+                      ? t("profile.headers.editSection", {
+                          defaultValue: "Edit {{section}}",
+                          section: editingSectionLabel,
+                        })
+                      : t("profile.headers.edit", {
+                          defaultValue: "Edit your profile",
+                        })
                     : t("profile.headers.view", { defaultValue: "Your profile" })
                   : t("profile.headers.create", { defaultValue: "Create your profile" })
               }
@@ -1370,20 +1406,15 @@ function OwnerProfileContent({ accountLifecycle }) {
                   ? t("profile.headers.formSubheader")
                   : t("profile.headers.viewSubheader")
               }
-              action={
-                shouldShowForm || isLifecycleReadOnly ? null : (
-                  <Button variant="contained" onClick={handleEdit} disabled={isLifecycleReadOnly}>
-                    {t("common.actions.editProfile")}
-                  </Button>
-                )
-              }
+              action={null}
             />
             <Divider />
             {shouldShowForm ? (
               <CardContent>
                 <Box component="form" id="owner-profile-form" onSubmit={handleSubmit}>
                   <Stack spacing={spacing.section}>
-                    <Accordion defaultExpanded>
+                    {isSectionActive("verification") && (
+                      <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography variant="h6">
                           {t("profile.headers.verification")}
@@ -1556,13 +1587,15 @@ function OwnerProfileContent({ accountLifecycle }) {
                           )}
                         </Stack>
                       </AccordionDetails>
-                    </Accordion>
-                    <Accordion defaultExpanded>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">{t("profile.headers.personal")}</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Grid container spacing={2}>
+                      </Accordion>
+                    )}
+                    {isSectionActive("personal") && (
+                      <Accordion defaultExpanded>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography variant="h6">{t("profile.headers.personal")}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <TextField
                             label={t("profile.fields.bio")}
@@ -1836,92 +1869,96 @@ function OwnerProfileContent({ accountLifecycle }) {
                           </Box>
                         </Grid>
                       </Grid>
-                    </AccordionDetails>
-                  </Accordion>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
 
-                  <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">{t("profile.headers.residency")}</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <TextField
-                            label={t("profile.fields.location")}
-                            name="location"
-                            value={formData.location}
-                            onChange={handleChange}
-                            fullWidth
-                            required
-                            error={Boolean(errors.location)}
-                            helperText={
-                              errors.location
-                                ? t(errors.location)
-                                : t("profile.helpers.location")
-                            }
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <LocationOnIcon />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            label={t("profile.fields.countryCode")}
-                            name="country_code"
-                            value={formData.country_code}
-                            onChange={handleChange}
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            label={t("profile.fields.province")}
-                            name="province"
-                            value={formData.province}
-                            onChange={handleChange}
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            label={t("profile.fields.district")}
-                            name="district"
-                            value={formData.district}
-                            onChange={handleChange}
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            label={t("profile.fields.city")}
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            label={t("profile.fields.postalCode")}
-                            name="postal_code"
-                            value={formData.postal_code}
-                            onChange={handleChange}
-                            fullWidth
-                          />
-                        </Grid>
-                      </Grid>
-                    </AccordionDetails>
-                  </Accordion>
+                    {isSectionActive("residency") && (
+                      <Accordion defaultExpanded>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography variant="h6">{t("profile.headers.residency")}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                              <TextField
+                                label={t("profile.fields.location")}
+                                name="location"
+                                value={formData.location}
+                                onChange={handleChange}
+                                fullWidth
+                                required
+                                error={Boolean(errors.location)}
+                                helperText={
+                                  errors.location
+                                    ? t(errors.location)
+                                    : t("profile.helpers.location")
+                                }
+                                InputProps={{
+                                  startAdornment: (
+                                    <InputAdornment position="start">
+                                      <LocationOnIcon />
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label={t("profile.fields.countryCode")}
+                                name="country_code"
+                                value={formData.country_code}
+                                onChange={handleChange}
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label={t("profile.fields.province")}
+                                name="province"
+                                value={formData.province}
+                                onChange={handleChange}
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label={t("profile.fields.district")}
+                                name="district"
+                                value={formData.district}
+                                onChange={handleChange}
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label={t("profile.fields.city")}
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                label={t("profile.fields.postalCode")}
+                                name="postal_code"
+                                value={formData.postal_code}
+                                onChange={handleChange}
+                                fullWidth
+                              />
+                            </Grid>
+                          </Grid>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
 
-                  <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">{t("profile.headers.education")}</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
+                    {isSectionActive("education") && (
+                      <Accordion defaultExpanded>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography variant="h6">{t("profile.headers.education")}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
                       <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
@@ -1982,16 +2019,18 @@ function OwnerProfileContent({ accountLifecycle }) {
                             fullWidth
                           />
                         </Grid>
-                      </Grid>
-                    </AccordionDetails>
-                  </Accordion>
+                          </Grid>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
 
-                  <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">{t("profile.headers.family")}</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Grid container spacing={2}>
+                    {isSectionActive("family") && (
+                      <Accordion defaultExpanded>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography variant="h6">{t("profile.headers.family")}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
                             label={t("profile.fields.fatherOccupation")}
@@ -2029,16 +2068,18 @@ function OwnerProfileContent({ accountLifecycle }) {
                             fullWidth
                           />
                         </Grid>
-                      </Grid>
-                    </AccordionDetails>
-                  </Accordion>
+                          </Grid>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
 
-                  <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="h6">{t("profile.headers.horoscope")}</Typography>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Grid container spacing={2}>
+                    {isSectionActive("horoscope") && (
+                      <Accordion defaultExpanded>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography variant="h6">{t("profile.headers.horoscope")}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
                           <TextField
                             label={t("profile.fields.horoscopeAvailable")}
@@ -2126,9 +2167,10 @@ function OwnerProfileContent({ accountLifecycle }) {
                             InputLabelProps={{ shrink: true }}
                           />
                         </Grid>
-                      </Grid>
-                    </AccordionDetails>
-                  </Accordion>
+                          </Grid>
+                        </AccordionDetails>
+                      </Accordion>
+                    )}
 
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
@@ -2187,7 +2229,13 @@ function OwnerProfileContent({ accountLifecycle }) {
                 )}
                 {profile ? (
                   <>
-                    <ProfileSections data={profile} />
+                    <ProfileSections
+                      data={profile}
+                      onEditSection={handleEditSection}
+                      disableEditing={
+                        isLifecycleReadOnly || !canSaveProfile || saving || isEditing
+                      }
+                    />
                     {profile.created_at && (
                       <Stack spacing={1.5}>
                         <Divider flexItem sx={{ my: 0 }} />
