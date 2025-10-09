@@ -12,19 +12,12 @@ import {
   Typography,
   IconButton,
   Box,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Button,
-  Snackbar,
-  Alert,
   CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
-import LogoutIcon from "@mui/icons-material/Logout";
 import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
@@ -41,8 +34,7 @@ import {
 import { ColorModeContext } from "./shared/context/ThemeContext";
 import { UserProvider } from "./shared/context/UserContext";
 import logo from "./logo.svg";
-import { useTranslation, languageOptions } from "./i18n";
-import api from "./shared/services/api";
+import { useTranslation } from "./i18n";
 import { CAPABILITIES } from "./domain/capabilities";
 import AppFooter from "./shared/components/layout/AppFooter";
 
@@ -155,14 +147,8 @@ function AppLayout() {
 function TopBar() {
   const colorMode = useContext(ColorModeContext);
   const theme = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-  const [signingOut, setSigningOut] = useState(false);
   const [hasToken, setHasToken] = useState(() =>
     Boolean(typeof window !== "undefined" && localStorage.getItem("token"))
   );
@@ -183,67 +169,6 @@ function TopBar() {
     };
   }, []);
 
-  const handleLanguageChange = (event) => {
-    const nextLanguage = event.target.value;
-    if (nextLanguage && nextLanguage !== i18n.language) {
-      i18n.changeLanguage(nextLanguage);
-    }
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar((previous) => ({ ...previous, open: false }));
-  };
-
-  const handleSignOut = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      localStorage.removeItem("user_id");
-      window.dispatchEvent(
-        new CustomEvent("auth-token-changed", { detail: { token: null } })
-      );
-      navigate("/");
-      return;
-    }
-
-    setSigningOut(true);
-    try {
-      await api.post(
-        "/signout",
-        {},
-        {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }
-      );
-      setSnackbar({
-        open: true,
-        message: t("app.signOutSuccess", {
-          defaultValue: "Signed out successfully.",
-        }),
-        severity: "success",
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: t("app.signOutError", {
-          defaultValue:
-            "We couldn't reach the server, but your local session was cleared.",
-        }),
-        severity: "warning",
-      });
-    } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user_id");
-      setHasToken(false);
-      window.dispatchEvent(
-        new CustomEvent("auth-token-changed", { detail: { token: null } })
-      );
-      setSigningOut(false);
-      navigate("/");
-    }
-  };
-
   return (
     <>
       <AppBar
@@ -257,35 +182,6 @@ function TopBar() {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
             {t("app.name")}
           </Typography>
-          <FormControl
-            variant="standard"
-            sx={{
-              minWidth: 120,
-              mr: 1,
-              "& .MuiInputBase-root": { color: "inherit" },
-              "& .MuiInputLabel-root": { color: "inherit" },
-              "& .MuiInput-underline:before": {
-                borderBottomColor: "rgba(255,255,255,0.5)",
-              },
-              "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
-                borderBottomColor: "white",
-              },
-            }}
-          >
-            <InputLabel>{t("app.language.label")}</InputLabel>
-            <Select
-              value={i18n.language || "en"}
-              onChange={handleLanguageChange}
-              label={t("app.language.label")}
-              aria-label={t("app.language.label")}
-            >
-              {languageOptions.map((option) => (
-                <MenuItem key={option.code} value={option.code}>
-                  {t(option.labelKey)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
           <IconButton
             aria-label={t("app.themeToggle")}
             onClick={colorMode.toggleColorMode}
@@ -294,19 +190,7 @@ function TopBar() {
           >
             {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
-          {hasToken ? (
-            <Button
-              color="inherit"
-              onClick={handleSignOut}
-              startIcon={<LogoutIcon />}
-              disabled={signingOut}
-              sx={{ ml: 1, whiteSpace: "nowrap" }}
-            >
-              {signingOut
-                ? t("app.signingOut", { defaultValue: "Signing out..." })
-                : t("app.signOut", { defaultValue: "Sign out" })}
-            </Button>
-          ) : (
+          {!hasToken && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 1 }}>
               <Button color="inherit" onClick={() => navigate("/login")}>
                 {t("app.signIn", { defaultValue: "Sign in" })}
@@ -323,16 +207,6 @@ function TopBar() {
           )}
         </Toolbar>
       </AppBar>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </>
   );
 }
