@@ -1251,12 +1251,13 @@ function OwnerProfileContent({ accountLifecycle }) {
               defaultValue: "Account preferences",
             })}
             subheader={t("profile.preferences.accountSubtitle", {
-              defaultValue: "Manage language settings and sign out securely.",
+              defaultValue:
+                "Manage language, billing, privacy, and removal settings for your profile.",
             })}
           />
           <Divider />
           <CardContent>
-            <Stack spacing={3} divider={<Divider flexItem sx={{ display: { xs: "none", sm: "block" } }} />}>
+            <Stack spacing={spacing.section} divider={<Divider flexItem />}>
               <Stack spacing={1.5}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
@@ -1326,6 +1327,103 @@ function OwnerProfileContent({ accountLifecycle }) {
                     {signOutReason}
                   </Typography>
                 )}
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CreditCardIcon color="primary" />
+                  <Typography variant="subtitle1">Payment details</Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Manage your saved payment methods and review subscription history so you never miss
+                  out on potential matches.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<CreditCardIcon />}
+                  onClick={handleManagePayments}
+                  disabled={!canManagePayments}
+                >
+                  Manage payment details
+                </Button>
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
+                    <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
+                    <Box>
+                      <Typography variant="subtitle1">Hide my profile</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Temporarily remove your profile from match suggestions without deleting your
+                        information.
+                      </Typography>
+                      {accountLifecycleStatus && (
+                        <Chip
+                          label={
+                            accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
+                              ? "Status: Deactivated"
+                              : "Status: Activated"
+                          }
+                          color={
+                            accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
+                              ? "warning"
+                              : "success"
+                          }
+                          size="small"
+                          sx={{ mt: 1, fontWeight: 600 }}
+                        />
+                      )}
+                    </Box>
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Switch
+                      checked={isAccountHidden}
+                      onChange={handleHideAccountToggle}
+                      disabled={
+                        accountStatusLoading ||
+                        isUpdatingAccountVisibility ||
+                        !canToggleVisibility
+                      }
+                      inputProps={{
+                        "aria-label": "Hide my profile",
+                        "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
+                      }}
+                    />
+                    {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                      <CircularProgress size={18} />
+                    )}
+                  </Stack>
+                </Stack>
+              </Stack>
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <DeleteForeverIcon color="error" />
+                  <Box>
+                    <Typography variant="subtitle1">Remove account</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Permanently delete your profile, matches, and conversations.
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleRemoveAccount}
+                  startIcon={
+                    isRemovingAccount ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <DeleteForeverIcon />
+                    )
+                  }
+                  disabled={isRemovingAccount || !canRemoveAccount}
+                >
+                  {isRemovingAccount ? "Processing..." : "Remove my account"}
+                </Button>
               </Stack>
             </Stack>
           </CardContent>
@@ -2174,114 +2272,6 @@ function OwnerProfileContent({ accountLifecycle }) {
             </Card>
           )}
           <ProfileLegalInformation />
-          <Card elevation={3} sx={{ borderRadius: 3 }}>
-            <CardHeader
-              title="Account management"
-              subheader="Control billing, privacy, and removal settings for your profile"
-            />
-            <Divider />
-            <CardContent>
-              <Stack spacing={spacing.section} divider={<Divider flexItem />}>
-                <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <CreditCardIcon color="primary" />
-                    <Typography variant="subtitle1">Payment details</Typography>
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage your saved payment methods and review subscription history so you never miss
-                    out on potential matches.
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<CreditCardIcon />}
-                    onClick={handleManagePayments}
-                    disabled={!canManagePayments}
-                  >
-                    Manage payment details
-                  </Button>
-                </Stack>
-                <Stack spacing={1.5}>
-                  <Stack
-                    direction={{ xs: "column", sm: "row" }}
-                    spacing={2}
-                    alignItems={{ xs: "flex-start", sm: "center" }}
-                    justifyContent="space-between"
-                  >
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-                      <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
-                      <Box>
-                        <Typography variant="subtitle1">Hide my profile</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Temporarily remove your profile from match suggestions without deleting your
-                          information.
-                        </Typography>
-                        {accountLifecycleStatus && (
-                          <Chip
-                            label={
-                              accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
-                                ? "Status: Deactivated"
-                                : "Status: Activated"
-                            }
-                            color={
-                              accountLifecycleStatus === ACCOUNT_LIFECYCLE.DEACTIVATED
-                                ? "warning"
-                                : "success"
-                            }
-                            size="small"
-                            sx={{ mt: 1, fontWeight: 600 }}
-                          />
-                        )}
-                      </Box>
-                    </Stack>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Switch
-                        checked={isAccountHidden}
-                        onChange={handleHideAccountToggle}
-                        disabled={
-                          accountStatusLoading ||
-                          isUpdatingAccountVisibility ||
-                          !canToggleVisibility
-                        }
-                        inputProps={{
-                          "aria-label": "Hide my profile",
-                          "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
-                        }}
-                      />
-                      {(accountStatusLoading || isUpdatingAccountVisibility) && (
-                        <CircularProgress size={18} />
-                      )}
-                    </Stack>
-                  </Stack>
-                </Stack>
-                <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <DeleteForeverIcon color="error" />
-                    <Box>
-                      <Typography variant="subtitle1">Remove account</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Permanently delete your profile, matches, and conversations.
-                      </Typography>
-                    </Box>
-                  </Stack>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={handleRemoveAccount}
-                    startIcon={
-                      isRemovingAccount ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <DeleteForeverIcon />
-                      )
-                    }
-                    disabled={isRemovingAccount || !canRemoveAccount}
-                  >
-                    {isRemovingAccount ? "Processing..." : "Remove my account"}
-                  </Button>
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
         </Stack>
 
         <Snackbar
