@@ -32,12 +32,11 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import InterestsIcon from "@mui/icons-material/Interests";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import LanguageIcon from "@mui/icons-material/Language";
 import BadgeIcon from "@mui/icons-material/Badge";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import LogoutIcon from "@mui/icons-material/Logout";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import PersonIcon from "@mui/icons-material/Person";
+import SettingsIcon from "@mui/icons-material/Settings";
 import api from "../../shared/services/api";
 import ProfileSections from "./ProfileSections";
 import { spacing } from "../../styles";
@@ -1403,7 +1402,7 @@ function OwnerProfileContent({ accountLifecycle }) {
           {shouldShowForm ? (
             <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
             <CardHeader
-              avatar={<PersonOutlineIcon color="primary" />}
+              avatar={<PersonIcon color="primary" />}
               title={
                 profile
                   ? t("profile.headers.edit", { defaultValue: "Edit your profile" })
@@ -1804,13 +1803,6 @@ function OwnerProfileContent({ accountLifecycle }) {
                             onChange={(e) => setNewLanguage(e.target.value)}
                             fullWidth
                             onKeyPress={(e) => e.key === 'Enter' && e.preventDefault()}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <LanguageIcon />
-                                </InputAdornment>
-                              ),
-                            }}
                           />
                           <Button
                             variant="contained"
@@ -2206,7 +2198,7 @@ function OwnerProfileContent({ accountLifecycle }) {
           ) : (
             <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
               <CardHeader
-                avatar={<PersonOutlineIcon color="primary" />}
+                avatar={<PersonIcon color="primary" />}
                 title={t("profile.headers.view", { defaultValue: "Your profile" })}
                 subheader={t("profile.headers.viewSubheader")}
                 action={
@@ -2272,7 +2264,7 @@ function OwnerProfileContent({ accountLifecycle }) {
           </Typography>
           <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.account)}>
             <CardHeader
-              avatar={<SettingsOutlinedIcon color="primary" />}
+              avatar={<SettingsIcon color="primary" />}
               title={t("profile.preferences.accountSettings", {
                 defaultValue: "Account settings",
               })}
@@ -2293,40 +2285,21 @@ function OwnerProfileContent({ accountLifecycle }) {
                       alignItems={{ xs: "flex-start", sm: "center" }}
                       justifyContent="space-between"
                     >
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="flex-start"
-                        sx={{ flex: 1, minWidth: 0 }}
-                      >
-                        <Box
-                          component="span"
-                          aria-hidden
+                      <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="h6"
                           sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            pt: 0.5,
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
                           }}
                         >
-                          <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
-                        </Box>
-                        <Stack spacing={0.75} sx={{ flex: 1 }}>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 600,
-                              letterSpacing: 0.2,
-                            }}
-                          >
-                            {t("app.language.label", { defaultValue: "Language" })}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                            {t("profile.preferences.languageDescription", {
-                              defaultValue: "Choose the language you prefer to use across the app.",
-                            })}
-                          </Typography>
-                        </Stack>
+                          {t("app.language.label", { defaultValue: "Language" })}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
+                          {t("profile.preferences.languageDescription", {
+                            defaultValue: "Choose the language you prefer to use across the app.",
+                          })}
+                        </Typography>
                       </Stack>
                       <FormControl
                         size="small"
