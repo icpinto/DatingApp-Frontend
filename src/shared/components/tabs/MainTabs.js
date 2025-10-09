@@ -20,7 +20,6 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Home from "../../../features/home/Home";
 import Requests from "../../../features/requests/Requests";
 import OwnerProfile from "../../../features/profile/OwnerProfile";
@@ -35,8 +34,6 @@ import { useUserCapabilities } from "../../context/UserContext";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import useCapabilityQuery from "../../hooks/useCapabilityQuery";
 import { isNetworkError } from "../../../utils/http";
-import { useTranslation } from "../../../i18n";
-import LegalInfoDialog from "../layout/LegalInfoDialog";
 
 const LazyMatchInsights = lazy(() =>
   import("../../../features/home/insights/MatchInsights")
@@ -104,7 +101,6 @@ const buildTabDefinitions = ({ requestCount, unreadMessages, setRequestCount }) 
 ];
 
 function MainTabs() {
-  const { t } = useTranslation();
   const { select } = useUserCapabilities();
   const [requestCount, setRequestCount] = useState(0);
   const { hydrateConversations, totalUnreadCount } = useWebSocket();
@@ -121,7 +117,6 @@ function MainTabs() {
     return tabs.filter((tab, index) => selection[index]?.can);
   }, [select, tabs]);
   const [activeTab, setActiveTab] = useState(() => visibleTabs[0]?.key ?? null);
-  const [legalDialogOpen, setLegalDialogOpen] = useState(false);
   const canViewMatchesTab = useMemo(
     () => visibleTabs.some((tab) => tab.key === "matches"),
     [visibleTabs]
@@ -235,10 +230,6 @@ function MainTabs() {
   ]);
 
   const handleChange = (event, newValue) => {
-    if (newValue === "__legal__") {
-      setLegalDialogOpen(true);
-      return;
-    }
     setActiveTab(newValue);
   };
 
@@ -281,18 +272,8 @@ function MainTabs() {
               }
             />
           ))}
-          <BottomNavigationAction
-            label={t("app.navigation.legalInfo", { defaultValue: "Info" })}
-            value="__legal__"
-            icon={<InfoOutlinedIcon />}
-            sx={{ display: { md: "none" } }}
-          />
         </BottomNavigation>
       </Paper>
-      <LegalInfoDialog
-        open={legalDialogOpen}
-        onClose={() => setLegalDialogOpen(false)}
-      />
     </Box>
   );
 }
