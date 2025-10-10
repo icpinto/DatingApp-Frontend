@@ -184,6 +184,19 @@ const extractMessageId = (message = {}) =>
     )
   );
 
+const extractMessageSenderId = (message = {}) =>
+  toNumberOrUndefined(
+    pickFirst(
+      message.sender_id,
+      message.senderId,
+      message.senderID,
+      message.user_id,
+      message.userId,
+      message.author_id,
+      message.authorId
+    )
+  );
+
 const extractMessageBody = (message = {}) =>
   pickFirst(
     message.body,
