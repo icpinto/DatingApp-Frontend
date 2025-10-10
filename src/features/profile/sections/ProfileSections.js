@@ -1,7 +1,7 @@
 import React from "react";
 import { Stack, Typography } from "@mui/material";
 import ProfileSection from "./ProfileSection";
-import { useTranslation } from "../../i18n";
+import { useTranslation } from "../../../i18n";
 
 const SECTION_SURFACES = ["#181c25", "#1d212c"];
 
