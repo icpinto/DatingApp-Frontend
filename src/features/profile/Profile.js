@@ -1,40 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  Alert,
-  Avatar,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  Container,
-  Divider,
-  Grid,
-  Skeleton,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import {
-  ArrowBack,
-  Forum,
-  InfoOutlined,
-  PersonOff,
-  Verified as VerifiedIcon,
-  ErrorOutline,
-} from "@mui/icons-material";
+import { Alert, Button, Chip, Container, Stack, Typography } from "@mui/material";
+import { ArrowBack, PersonOff, Verified as VerifiedIcon, ErrorOutline } from "@mui/icons-material";
 import api from "../../shared/services/api";
 import { spacing } from "../../styles";
-import ProfileSections from "./ProfileSections";
 import { useTranslation } from "../../i18n";
 import { formatProfileData } from "./profileUtils";
 import { CAPABILITIES } from "../../domain/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../shared/context/UserContext";
 import { isAbortError } from "../../utils/http";
-
-const MODERN_FONT_STACK = '"Inter","Rubik","Roboto","Helvetica","Arial",sans-serif';
+import {
+  ProfileDetailsCard,
+  ProfileOverviewCard,
+  ProfileRequestCard,
+  ProfileSkeleton,
+} from "./components";
 
 const calculateAge = (dateString) => {
   if (!dateString) {
@@ -240,6 +221,12 @@ function ProfileContent() {
     }
   };
 
+  const handleRequestMessageChange = useCallback((event) => {
+    setRequestMessage(event.target.value);
+    setRequestMessageError("");
+    setFeedback(null);
+  }, []);
+
   const age = useMemo(
     () => calculateAge(profile?.personal?.date_of_birth),
     [profile]
@@ -298,325 +285,58 @@ function ProfileContent() {
     >
       <Container sx={{ p: spacing.pagePadding }}>
         <Stack spacing={spacing.section}>
-        <Button
-          onClick={handleNavigateBack}
-          startIcon={<ArrowBack />}
-          variant="text"
-          sx={{ alignSelf: "flex-start" }}
-        >
-          {t("profile.viewer.back")}
-        </Button>
+          <Button
+            onClick={handleNavigateBack}
+            startIcon={<ArrowBack />}
+            variant="text"
+            sx={{ alignSelf: "flex-start" }}
+          >
+            {t("profile.viewer.back")}
+          </Button>
 
-        {loading ? (
-          <Stack spacing={spacing.section}>
-            <Card>
-              <CardHeader
-                avatar={<Skeleton variant="circular" width={72} height={72} />}
-                title={<Skeleton width="40%" />}
-                subheader={<Skeleton width="60%" />}
+          {loading ? (
+            <ProfileSkeleton />
+          ) : profile ? (
+            <Stack spacing={spacing.section}>
+              <ProfileOverviewCard
+                profile={profile}
+                displayName={displayName}
+                locationText={locationText}
+                age={age}
+                identityChip={identityChip}
+                contactChip={contactChip}
+                languages={languages}
+                interests={interests}
+                t={t}
               />
-              <CardContent>
-                <Stack spacing={1.5}>
-                  <Skeleton width="100%" height={24} />
-                  <Skeleton width="80%" height={20} />
-                  <Skeleton width="90%" height={20} />
-                </Stack>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader
-                avatar={<Skeleton variant="circular" width={40} height={40} />}
-                title={<Skeleton width="30%" />}
-              />
-              <CardContent>
-                <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
-              </CardContent>
-            </Card>
-          </Stack>
-        ) : profile ? (
-          <Stack spacing={spacing.section}>
-            <Card elevation={3} sx={{ borderRadius: 3 }}>
-              <CardHeader
-                avatar={
-                  <Avatar
-                    src={profile.profile_image}
-                    alt={displayName}
-                    sx={{ width: 72, height: 72, fontSize: 32 }}
-                  >
-                    {displayName.charAt(0).toUpperCase()}
-                  </Avatar>
-                }
-                title={displayName}
-                subheader={locationText}
-                titleTypographyProps={{
-                  sx: {
-                    fontWeight: 600,
-                    fontFamily: MODERN_FONT_STACK,
-                    fontSize: { xs: "1.5rem", sm: "1.75rem" },
-                    lineHeight: 1.2,
-                  },
-                }}
-                subheaderTypographyProps={{
-                  sx: {
-                    fontSize: "0.875rem",
-                    color: "#aaa",
-                    fontFamily: MODERN_FONT_STACK,
-                    fontWeight: 400,
-                    letterSpacing: 0.15,
-                  },
-                }}
-              />
-              <Divider />
-              <CardContent>
-                <Stack spacing={spacing.section}>
-                  <Typography
-                    variant="body1"
-                    color="text.primary"
-                    sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.6 }}
-                  >
-                    {profile.personal.bio || t("common.placeholders.noBio")}
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                      <Typography
-                        variant="overline"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: MODERN_FONT_STACK,
-                          fontWeight: 600,
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        {t("home.labels.age")}
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.5 }}
-                      >
-                        {age !== null
-                          ? t("profile.viewer.ageYears", { count: age })
-                          : t("common.placeholders.notAvailable")}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Typography
-                        variant="overline"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: MODERN_FONT_STACK,
-                          fontWeight: 600,
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        {t("home.labels.location")}
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.5 }}
-                      >
-                        {locationText}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Typography
-                        variant="overline"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: MODERN_FONT_STACK,
-                          fontWeight: 600,
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        {t("profile.fields.civilStatus")}
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.5 }}
-                      >
-                        {profile.personal.civil_status ||
-                          t("common.placeholders.notAvailable")}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                  <Guard can={CAPABILITIES.PROFILE_VIEW_BADGES}>
-                    {({ isAllowed }) =>
-                      isAllowed && (
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          flexWrap="wrap"
-                          useFlexGap
-                        >
-                          {identityChip}
-                          {contactChip}
-                        </Stack>
-                      )
-                    }
-                  </Guard>
-                  {languages.length > 0 && (
-                    <Stack spacing={1}>
-                      <Typography
-                        variant="overline"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: MODERN_FONT_STACK,
-                          fontWeight: 600,
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        {t("profile.viewer.languagesLabel")}
-                      </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {languages.map((language) => (
-                          <Chip
-                            key={`language-${language}`}
-                            label={language}
-                            variant="outlined"
-                          />
-                        ))}
-                      </Stack>
-                    </Stack>
-                  )}
-                  {interests.length > 0 && (
-                    <Stack spacing={1}>
-                      <Typography
-                        variant="overline"
-                        color="text.secondary"
-                        sx={{
-                          fontFamily: MODERN_FONT_STACK,
-                          fontWeight: 600,
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        {t("profile.viewer.interestsLabel")}
-                      </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {interests.map((interest) => (
-                          <Chip
-                            key={`interest-${interest}`}
-                            label={interest}
-                            color="secondary"
-                            variant="outlined"
-                          />
-                        ))}
-                      </Stack>
-                    </Stack>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
 
-            <Card elevation={2} sx={{ borderRadius: 3 }}>
-              <CardHeader
-                avatar={
-                  <Avatar sx={{ bgcolor: "primary.main" }}>
-                    <InfoOutlined />
-                  </Avatar>
-                }
-                title={t("profile.viewer.detailsTitle")}
+              <ProfileDetailsCard
+                profile={profile}
+                viewSectionsReason={viewSectionsReason}
+                t={t}
               />
-              <Divider />
-              <CardContent>
-                <Guard
-                  can={CAPABILITIES.PROFILE_VIEW_SECTIONS}
-                  fallback={
-                    <Alert severity="info">
-                      {viewSectionsReason || t("profile.viewer.noProfile")}
-                    </Alert>
-                  }
-                >
-                  <ProfileSections data={profile} />
-                </Guard>
-              </CardContent>
-            </Card>
 
-            <Card elevation={2} sx={{ borderRadius: 3 }}>
-              <CardHeader
-                avatar={
-                  <Avatar sx={{ bgcolor: "secondary.main" }}>
-                    <Forum />
-                  </Avatar>
-                }
-                title={t("profile.viewer.requestCard.title", { name: displayName })}
-                subheader={t("profile.viewer.requestCard.description")}
+              <ProfileRequestCard
+                displayName={displayName}
+                requestMessage={requestMessage}
+                requestMessageError={requestMessageError}
+                requestStatus={requestStatus}
+                sendingRequest={sendingRequest}
+                sendRequestReason={sendRequestReason}
+                feedback={feedback}
+                onRequestMessageChange={handleRequestMessageChange}
+                onSendRequest={handleSendRequest}
+                t={t}
               />
-              <Divider />
-              <CardContent>
-                <Guard can={CAPABILITIES.PROFILE_SEND_REQUEST}>
-                  {({ isAllowed }) => {
-                    const helperText = requestMessageError
-                      ? t(requestMessageError)
-                      : isAllowed
-                      ? t("home.helpers.requestMessage")
-                      : sendRequestReason ||
-                        "Activate your profile to send a connection request.";
-
-                    const isRequestDisabled =
-                      requestStatus || sendingRequest || !isAllowed;
-
-                    return (
-                      <Stack spacing={spacing.section}>
-                        <TextField
-                          fullWidth
-                          multiline
-                          minRows={2}
-                          label={t("home.labels.requestMessage")}
-                          value={requestMessage}
-                          onChange={(event) => {
-                            setRequestMessage(event.target.value);
-                            setRequestMessageError("");
-                            setFeedback(null);
-                          }}
-                          helperText={helperText}
-                          error={Boolean(requestMessageError)}
-                          disabled={requestStatus || !isAllowed}
-                        />
-                        <Stack
-                          direction={{ xs: "column", sm: "row" }}
-                          spacing={2}
-                        >
-                          <Button
-                            variant="contained"
-                            onClick={() => {
-                              if (!isAllowed) {
-                                return;
-                              }
-                              handleSendRequest();
-                            }}
-                            disabled={isRequestDisabled}
-                          >
-                            {requestStatus
-                              ? t("home.labels.requestSent")
-                              : t("home.labels.sendRequest")}
-                          </Button>
-                        </Stack>
-                        {!isAllowed && sendRequestReason && (
-                          <Alert severity="info">{sendRequestReason}</Alert>
-                        )}
-                        {feedback?.key && (
-                          <Alert
-                            severity={
-                              feedback.type === "error" ? "error" : "success"
-                            }
-                          >
-                            {t(feedback.key)}
-                          </Alert>
-                        )}
-                      </Stack>
-                    );
-                  }}
-                </Guard>
-              </CardContent>
-            </Card>
-          </Stack>
-        ) : (
-          <Stack spacing={spacing.section} alignItems="center">
-            <PersonOff fontSize="large" color="disabled" />
-            <Typography>
-              {loadError ? t(loadError) : t("profile.viewer.noProfile")}
-            </Typography>
-          </Stack>
-        )}
+            </Stack>
+          ) : (
+            <Stack spacing={spacing.section} alignItems="center">
+              <PersonOff fontSize="large" color="disabled" />
+              <Typography>
+                {loadError ? t(loadError) : t("profile.viewer.noProfile")}
+              </Typography>
+            </Stack>
+          )}
 
           {loadError && profile && (
             <Alert severity="error">{t(loadError)}</Alert>
