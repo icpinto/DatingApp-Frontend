@@ -1,41 +1,64 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Avatar,
-  Typography,
   Button,
-  TextField,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Slider,
-  Grid,
   Card,
   CardContent,
   CardHeader,
-  Divider,
-  Snackbar,
-  Alert,
   CircularProgress,
+  Divider,
+  FormControlLabel,
+  Grid,
   InputAdornment,
+  Radio,
+  RadioGroup,
   Skeleton,
+  Slider,
+  Snackbar,
   Stack,
+  TextField,
+  Typography,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import { spacing } from "../../../styles";
-import questionnaireService from "../../../shared/services/questionnaireService";
+import { spacing } from "@/styles";
+import Guard from "@/shared/components/Guard";
+import { CAPABILITIES } from "@/domain/capabilities";
+import { useAccountLifecycle } from "@/shared/context/AccountLifecycleContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "@/domain/accountLifecycle";
+import { useUserCapabilities } from "@/shared/context/UserContext";
+import { useQuestionnaire } from "../hooks/useMatchInsights";
 import QuestionCategorySelector from "./QuestionCategorySelector";
-import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
-import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../../domain/accountLifecycle";
-import Guard from "./Guard";
-import { CAPABILITIES } from "../../../domain/capabilities";
-import { useUserCapabilities } from "../../../shared/context/UserContext";
 
-function QuestionsComponent({
-  isLocked = false,
-  lockReason = "",
-  accountLifecycle,
-}) {
+function buildAnswerPayload({ answer, questionType, options }) {
+  const formatAnswer = (value) => {
+    if (questionType === "multiple_choice") {
+      const selectedOption = options.find((option) => option.key === value);
+      if (selectedOption) {
+        return selectedOption.value;
+      }
+    }
+    return value;
+  };
+
+  const selectedOption =
+    questionType === "scale" || questionType === "open_text"
+      ? answer?.toString() ?? ""
+      : answer || "";
+
+  const additionalValue = formatAnswer(answer);
+
+  return {
+    selected_option: selectedOption,
+    additionalProp1:
+      additionalValue !== undefined && additionalValue !== null
+        ? { value: additionalValue }
+        : {},
+  };
+}
+
+function QuestionnaireCard({ isLocked = false, lockReason = "" }) {
   const [question, setQuestion] = useState(null);
   const [meAnswer, setMeAnswer] = useState("");
   const [idealAnswer, setIdealAnswer] = useState("");
@@ -46,22 +69,22 @@ function QuestionsComponent({
     message: "",
     severity: "success",
   });
-
-  const userId = localStorage.getItem("user_id") || "";
+  const { getQuestionnaire, saveQuestionnaire } = useQuestionnaire();
+  const accountLifecycle = useAccountLifecycle();
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
   const { groups } = useUserCapabilities();
   const insightCapabilities = groups.insights;
-  const questionnaireDisabled = useMemo(
-    () => !lifecycleLoading && isDeactivated,
-    [isDeactivated, lifecycleLoading]
-  );
   const answerCapability = insightCapabilities.answerQuestionnaire;
   const viewQuestionnaireCapability = insightCapabilities.viewQuestionnaire;
   const canAnswerQuestionnaire = answerCapability.can;
   const capabilityLockReason = canAnswerQuestionnaire
     ? undefined
     : answerCapability.reason;
+  const questionnaireDisabled = useMemo(
+    () => !lifecycleLoading && isDeactivated,
+    [isDeactivated, lifecycleLoading]
+  );
   const isCapabilityLocked = !canAnswerQuestionnaire;
   const effectiveLock = questionnaireDisabled || isLocked || isCapabilityLocked;
   const combinedLockReason = questionnaireDisabled
@@ -76,26 +99,23 @@ function QuestionsComponent({
 
     setLoading(true);
     try {
-      const params = { user_id: userId };
-      if (selectedCategory !== "All") {
-        params.category = selectedCategory;
-      }
-      const res = await questionnaireService.get("/chat/next", {
-        params,
-      });
-      setQuestion(res.data || null);
-    } catch (err) {
-      console.error("Error fetching question:", err);
+      const data = await getQuestionnaire({ category: selectedCategory });
+      setQuestion(data || null);
+    } catch (error) {
+      console.error("Error fetching question:", error);
       setQuestion(null);
-      setSnackbar({ open: true, message: "Failed to load question", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Failed to load question",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
-  }, [effectiveLock, selectedCategory, userId]);
+  }, [effectiveLock, getQuestionnaire, selectedCategory]);
 
   useEffect(() => {
     fetchQuestion();
-    // Payment logic disabled for now
   }, [fetchQuestion]);
 
   useEffect(() => {
@@ -105,62 +125,57 @@ function QuestionsComponent({
     }
   }, [effectiveLock]);
 
-  const submitAnswer = async () => {
+  const questionType = question ? question.type : null;
+  const questionText = question ? question.question : "";
+  const options = question && Array.isArray(question.options) ? question.options : [];
+
+  const submitAnswer = useCallback(async () => {
     if (!question || effectiveLock) return;
-    const formatAnswer = (answer) => {
-      if (questionType === "multiple_choice") {
-        const selectedOption = options.find((option) => option.key === answer);
-        if (selectedOption) {
-          return selectedOption.value;
-        }
-      }
-      return answer;
-    };
 
-    const buildAnswerPayload = (answer) => {
-      const selectedOption =
-        questionType === "scale" || questionType === "open_text"
-          ? answer?.toString() ?? ""
-          : answer || "";
-
-      const additionalValue = formatAnswer(answer);
-
-      return {
-        selected_option: selectedOption,
-        additionalProp1:
-          additionalValue !== undefined && additionalValue !== null
-            ? { value: additionalValue }
-            : {},
-      };
-    };
     try {
-      await questionnaireService.post("/chat/answer", {
-        user_id: userId,
+      await saveQuestionnaire({
         question_instance_id: question.question_instance_id,
         answer: {
-          myself: buildAnswerPayload(meAnswer),
-          ideal_partner: buildAnswerPayload(idealAnswer),
+          myself: buildAnswerPayload({
+            answer: meAnswer,
+            questionType,
+            options,
+          }),
+          ideal_partner: buildAnswerPayload({
+            answer: idealAnswer,
+            questionType,
+            options,
+          }),
         },
       });
-      setSnackbar({ open: true, message: "Answer submitted", severity: "success" });
-    } catch (err) {
-      console.error("Error submitting answer:", err);
-      setSnackbar({ open: true, message: "Failed to submit answer", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Answer submitted",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error submitting answer:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to submit answer",
+        severity: "error",
+      });
+      throw error;
     }
-  };
+  }, [effectiveLock, idealAnswer, meAnswer, options, question, questionType, saveQuestionnaire]);
 
   const handleNext = async () => {
     if (effectiveLock) return;
 
-    await submitAnswer();
+    try {
+      await submitAnswer();
+    } catch (error) {
+      // submission error already handled via snackbar
+    }
     setMeAnswer("");
     setIdealAnswer("");
     await fetchQuestion();
   };
-
-  const questionType = question ? question.type : null;
-  const questionText = question ? question.question : "";
-  const options = question && Array.isArray(question.options) ? question.options : [];
 
   const viewFallback = useCallback(
     () => (
@@ -200,8 +215,7 @@ function QuestionsComponent({
               <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
             ) : effectiveLock ? (
               <Typography color="text.secondary">
-                {combinedLockReason ||
-                  "Core preferences are required to continue."}
+                {combinedLockReason || "Core preferences are required to continue."}
               </Typography>
             ) : loading ? (
               <Stack spacing={spacing.section}>
@@ -220,11 +234,7 @@ function QuestionsComponent({
                   <Grid item xs={12} md={6}>
                     <Card
                       variant="outlined"
-                      sx={{
-                        borderRadius: 2,
-                        height: "100%",
-                        display: "flex",
-                      }}
+                      sx={{ borderRadius: 2, height: "100%", display: "flex" }}
                     >
                       <CardContent sx={{ width: "100%" }}>
                         <Stack spacing={1.5}>
@@ -238,7 +248,7 @@ function QuestionsComponent({
                           {questionType === "multiple_choice" && (
                             <RadioGroup
                               value={meAnswer}
-                              onChange={(e) => setMeAnswer(e.target.value)}
+                              onChange={(event) => setMeAnswer(event.target.value)}
                             >
                               {options.map((option) => (
                                 <FormControlLabel
@@ -254,7 +264,7 @@ function QuestionsComponent({
                           {questionType === "scale" && (
                             <Slider
                               value={typeof meAnswer === "number" ? meAnswer : 5}
-                              onChange={(e, newValue) => setMeAnswer(newValue)}
+                              onChange={(_, value) => setMeAnswer(value)}
                               step={1}
                               marks
                               min={1}
@@ -269,7 +279,7 @@ function QuestionsComponent({
                               multiline
                               rows={4}
                               value={meAnswer}
-                              onChange={(e) => setMeAnswer(e.target.value)}
+                              onChange={(event) => setMeAnswer(event.target.value)}
                               placeholder="Type your answer..."
                               InputProps={{
                                 startAdornment: (
@@ -288,11 +298,7 @@ function QuestionsComponent({
                   <Grid item xs={12} md={6}>
                     <Card
                       variant="outlined"
-                      sx={{
-                        borderRadius: 2,
-                        height: "100%",
-                        display: "flex",
-                      }}
+                      sx={{ borderRadius: 2, height: "100%", display: "flex" }}
                     >
                       <CardContent sx={{ width: "100%" }}>
                         <Stack spacing={1.5}>
@@ -306,7 +312,7 @@ function QuestionsComponent({
                           {questionType === "multiple_choice" && (
                             <RadioGroup
                               value={idealAnswer}
-                              onChange={(e) => setIdealAnswer(e.target.value)}
+                              onChange={(event) => setIdealAnswer(event.target.value)}
                             >
                               {options.map((option) => (
                                 <FormControlLabel
@@ -322,7 +328,7 @@ function QuestionsComponent({
                           {questionType === "scale" && (
                             <Slider
                               value={typeof idealAnswer === "number" ? idealAnswer : 5}
-                              onChange={(e, newValue) => setIdealAnswer(newValue)}
+                              onChange={(_, value) => setIdealAnswer(value)}
                               step={1}
                               marks
                               min={1}
@@ -337,7 +343,7 @@ function QuestionsComponent({
                               multiline
                               rows={4}
                               value={idealAnswer}
-                              onChange={(e) => setIdealAnswer(e.target.value)}
+                              onChange={(event) => setIdealAnswer(event.target.value)}
                               placeholder="Type your answer..."
                               InputProps={{
                                 startAdornment: (
@@ -385,22 +391,11 @@ function QuestionsComponent({
           severity={snackbar.severity}
           sx={{ width: "100%" }}
         >
-        {snackbar.message}
-      </Alert>
-    </Snackbar>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Guard>
   );
 }
 
-function Questions(props) {
-  const accountLifecycle = useAccountLifecycle();
-
-  return (
-    <QuestionsComponent
-      {...props}
-      accountLifecycle={accountLifecycle}
-    />
-  );
-}
-
-export default Questions;
+export default QuestionnaireCard;

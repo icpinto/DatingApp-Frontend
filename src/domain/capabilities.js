@@ -236,15 +236,15 @@ export const COMPONENT_CAPABILITIES = {
     CAPABILITIES.MESSAGING_BLOCK_USER,
     CAPABILITIES.MESSAGING_OPEN_CONVERSATION,
   ],
-  "features/home/insights/MatchInsights": [
+  "features/match-insights/pages/MatchInsights.page": [
     CAPABILITIES.INSIGHTS_VIEW_DASHBOARD,
     CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE,
   ],
-  "features/home/insights/CorePreferencesForm": [
+  "features/match-insights/ui/CorePreferencesCard": [
     CAPABILITIES.INSIGHTS_EDIT_CORE_PREFERENCES,
     CAPABILITIES.INSIGHTS_SAVE_CORE_PREFERENCES,
   ],
-  "features/home/questions/Questions": [
+  "features/match-insights/ui/QuestionnaireCard": [
     CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE,
     CAPABILITIES.INSIGHTS_ANSWER_QUESTIONNAIRE,
     CAPABILITIES.INSIGHTS_SELECT_CATEGORY,
