@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import StaticPageLayout from "./StaticPageLayout";
-import { useTranslation } from "../../../i18n";
+import { useTranslation } from "../../i18n";
 
 function PrivacyPolicy() {
   const { t } = useTranslation();
