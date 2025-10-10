@@ -2678,8 +2678,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                   </Stack>
                 </Box>
               </Stack>
-            </Stack>
-          </CardContent>
+            </CardContent>
           </Card>
         </Box>
         <Box component="section" sx={sectionWrapperStyles}>
