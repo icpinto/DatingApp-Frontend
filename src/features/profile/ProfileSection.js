@@ -9,6 +9,7 @@ import {
   Box,
   LinearProgress,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
@@ -118,6 +119,7 @@ function ProfileSection({
   IconComponent,
   onEdit,
   disableEdit = false,
+  surfaceColor,
 }) {
   const { t } = useTranslation();
   const sectionLabels = FIELD_LABELS[sectionKey] || {};
@@ -143,6 +145,10 @@ function ProfileSection({
     total: totalFields,
   });
 
+  const resolvedSurface = surfaceColor || lighten("#111827", 0.04);
+  const editAccent = "#ff4f87";
+  const completeAccent = "#8fdc97";
+
   return (
     <Accordion
       disableGutters
@@ -150,18 +156,22 @@ function ProfileSection({
       elevation={0}
       sx={{
         width: "100%",
-        borderRadius: 2,
-        border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.4)}`,
-        borderLeft: "3px solid transparent",
-        backgroundColor: (theme) => lighten(theme.palette.background.paper, 0.02),
+        borderRadius: 3,
+        border: "1px solid rgba(255, 255, 255, 0.04)",
+        backgroundColor: resolvedSurface,
+        transition: "border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease",
         "&::before": {
           display: "none",
         },
+        "&:hover": {
+          borderColor: editAccent,
+          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.3)",
+          transform: "translateY(-2px)",
+        },
         "&.Mui-expanded": {
           margin: 0,
-          borderColor: (theme) => lighten(theme.palette.primary.main, 0.7),
-          borderLeftColor: (theme) => theme.palette.primary.light,
-          boxShadow: (theme) => theme.shadows[2],
+          borderColor: editAccent,
+          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.35)",
         },
       }}
     >
@@ -179,8 +189,8 @@ function ProfileSection({
           "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
             transform: "rotate(180deg)",
           },
-          px: 2.5,
-          py: 2,
+          px: { xs: 2, sm: 2.5 },
+          py: { xs: 1.75, sm: 2 },
           gap: 2,
           backgroundColor: "transparent",
           ...(isSectionComplete
@@ -194,8 +204,8 @@ function ProfileSection({
         })}
       >
         <Stack
-          direction="row"
-          alignItems="flex-start"
+          direction={{ xs: "column", md: "row" }}
+          alignItems={{ xs: "flex-start", md: "center" }}
           spacing={2}
           sx={{ width: "100%" }}
         >
@@ -216,12 +226,13 @@ function ProfileSection({
               <IconComponent fontSize="small" />
             </Box>
           )}
-          <Stack spacing={1.25} sx={{ flexGrow: 1 }}>
+          <Stack spacing={1.75} sx={{ flexGrow: 1, width: "100%" }}>
             <Stack
               direction={{ xs: "column", sm: "row" }}
               alignItems={{ xs: "flex-start", sm: "center" }}
               justifyContent="space-between"
-              spacing={1}
+              spacing={1.25}
+              sx={{ width: "100%" }}
             >
               <Typography
                 variant="subtitle1"
@@ -234,73 +245,87 @@ function ProfileSection({
               >
                 {label}
               </Typography>
-              <Stack direction="row" alignItems="center" spacing={1.25}>
-                {totalFields > 0 && (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={0.75}
-                    sx={{
-                      color: isSectionComplete
-                        ? "success.main"
-                        : "text.secondary",
-                      minWidth: { xs: 72, sm: 96 },
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    {isSectionComplete && (
-                      <CheckCircleIcon fontSize="small" />
-                    )}
-                    <Typography
-                      variant="caption"
+              {totalFields > 0 && (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  sx={{
+                    flexWrap: "wrap",
+                    justifyContent: { xs: "flex-start", sm: "flex-end" },
+                    gap: 1,
+                  }}
+                >
+                  {isSectionComplete && (
+                    <Box
                       sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        px: 1.25,
+                        py: 0.5,
+                        borderRadius: 999,
+                        backgroundColor: alpha(completeAccent, 0.18),
+                        color: completeAccent,
                         fontFamily: MODERN_FONT_STACK,
                         fontWeight: 600,
-                        letterSpacing: 0.6,
+                        fontSize: 12,
+                        letterSpacing: 0.4,
                       }}
                     >
-                      {`${completionPercentage}%`}
-                    </Typography>
-                  </Stack>
-                )}
-                {onEdit && (
-                  <IconButton
-                    size="small"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onEdit();
+                      <CheckCircleIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      {t("profile.status.complete", { defaultValue: "Complete" })}
+                    </Box>
+                  )}
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      px: 1.25,
+                      py: 0.35,
+                      borderRadius: 999,
+                      background: "linear-gradient(90deg, rgba(255,79,135,0.16) 0%, rgba(255,122,168,0.16) 100%)",
+                      color: "#ffb6cf",
+                      fontFamily: MODERN_FONT_STACK,
+                      fontWeight: 700,
+                      letterSpacing: 0.6,
+                      fontSize: 12,
                     }}
-                    disabled={disableEdit}
-                    aria-label={t("profile.buttons.editSection", {
-                      defaultValue: "Edit",
-                    })}
                   >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </Stack>
+                    {`${completionPercentage}%`}
+                  </Box>
+                </Stack>
+              )}
             </Stack>
             {totalFields > 0 && (
-              <Stack spacing={0.5} sx={{ width: "100%", maxWidth: 360 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={completionPercentage}
-                  aria-label={completionLabel}
-                  sx={{
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.primary.light, 0.2),
-                    "& .MuiLinearProgress-bar": {
-                      borderRadius: 3,
-                      backgroundColor: (theme) => theme.palette.primary.main,
-                    },
-                  }}
-                />
+              <Stack spacing={0.75} sx={{ width: "100%", maxWidth: { xs: "100%", sm: 420 } }}>
+                <Box sx={{ position: "relative", width: "100%" }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={completionPercentage}
+                    aria-label={completionLabel}
+                    sx={{
+                      height: 8,
+                      borderRadius: 8,
+                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      overflow: "hidden",
+                      "& .MuiLinearProgress-bar": {
+                        borderRadius: 8,
+                        backgroundImage:
+                          "linear-gradient(90deg, #ff4f87 0%, #ff7aa8 100%)",
+                        transition: "width 0.5s ease",
+                      },
+                    }}
+                  />
+                </Box>
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ fontFamily: MODERN_FONT_STACK, letterSpacing: 0.4 }}
+                  sx={{
+                    fontFamily: MODERN_FONT_STACK,
+                    letterSpacing: 0.4,
+                    color: "rgba(226, 232, 240, 0.72)",
+                  }}
                 >
                   {completionLabel}
                 </Typography>
@@ -308,6 +333,49 @@ function ProfileSection({
             )}
           </Stack>
         </Stack>
+        {onEdit && (
+          <Tooltip
+            title={t("profile.buttons.editSection", { defaultValue: "Edit" })}
+            enterDelay={200}
+          >
+            <span>
+              <IconButton
+                size="medium"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit();
+                }}
+                disabled={disableEdit}
+                aria-label={t("profile.buttons.editSection", {
+                  defaultValue: "Edit",
+                })}
+                sx={{
+                  ml: { xs: 0, md: 1.5 },
+                  alignSelf: { xs: "flex-start", md: "center" },
+                  color: editAccent,
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(editAccent, 0.6)}`,
+                  backgroundColor: alpha(editAccent, 0.12),
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+                  "&:hover": {
+                    transform: "scale(1.05)",
+                    backgroundColor: alpha(editAccent, 0.2),
+                    boxShadow: "0 4px 12px rgba(255, 79, 135, 0.3)",
+                  },
+                  "&.Mui-disabled": {
+                    opacity: 0.45,
+                    color: alpha("#ffffff", 0.5),
+                    borderColor: alpha("#ffffff", 0.12),
+                    backgroundColor: alpha("#ffffff", 0.04),
+                    boxShadow: "none",
+                  },
+                }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
       </AccordionSummary>
       <AccordionDetails
         sx={{

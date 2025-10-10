@@ -3,6 +3,8 @@ import { Stack, Typography } from "@mui/material";
 import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../i18n";
 
+const SECTION_SURFACES = ["#161a23", "#1b202b"];
+
 export const profileSectionDefinitions = [
   {
     key: "verification",
@@ -42,8 +44,8 @@ function ProfileSections({ data, onEditSection, disableEditing = false }) {
   }
 
   return (
-    <Stack spacing={2} sx={{ width: "100%" }}>
-      {availableSections.map(({ key, labelKey, Icon }) => (
+    <Stack spacing={3} sx={{ width: "100%" }}>
+      {availableSections.map(({ key, labelKey, Icon }, index) => (
         <ProfileSection
           key={key}
           label={t(labelKey)}
@@ -58,6 +60,7 @@ function ProfileSections({ data, onEditSection, disableEditing = false }) {
               : undefined
           }
           disableEdit={disableEditing}
+          surfaceColor={SECTION_SURFACES[index % SECTION_SURFACES.length]}
         />
       ))}
     </Stack>
