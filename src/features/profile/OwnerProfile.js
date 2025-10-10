@@ -84,8 +84,8 @@ const createSectionCardStyles = (background) => ({
   overflow: "hidden",
   backgroundColor: background,
   color: SECTION_TEXT_COLOR,
-  border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-  boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+  border: "none",
+  boxShadow: "0 30px 50px rgba(8, 12, 24, 0.45)",
   "& .MuiCardHeader-title": {
     color: SECTION_TEXT_COLOR,
     letterSpacing: "0.02em",
@@ -115,37 +115,65 @@ const createSectionCardStyles = (background) => ({
   },
 });
 
-const createAccountActionStyles = (isEnabled, variant = "default") => {
+const createAccountActionStyles = (isEnabled, variant = "default", toneIndex = 0) => {
   const accent =
     variant === "danger"
-      ? "linear-gradient(180deg, #f87171 0%, #ef4444 100%)"
-      : isEnabled
-      ? "linear-gradient(180deg, #FF4F87 0%, #F73D7A 100%)"
-      : alpha(SECTION_SUBTEXT_COLOR, 0.35);
+      ? "linear-gradient(180deg, #ff6b6b 0%, #ff3d3d 100%)"
+      : "linear-gradient(180deg, #ff4f87 0%, #ff7f64 100%)";
+  const mutedAccent = alpha(SECTION_SUBTEXT_COLOR, 0.45);
+  const tonePalette = ["#151820", "#1b1f2b"];
+  const backgroundTone = tonePalette[toneIndex % tonePalette.length];
 
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 2,
-    border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-    backgroundColor: alpha("#0f172a", 0.6),
-    px: 2.5,
-    py: 2.5,
-    transition: "transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease",
-    "&::after": {
+    borderRadius: "12px",
+    border: "none",
+    backgroundColor: isEnabled ? backgroundTone : alpha("#111827", 0.7),
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+    px: { xs: 2.25, sm: 3 },
+    py: { xs: 2.5, sm: 3 },
+    transition:
+      "transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, opacity 0.3s ease",
+    "&::before": {
       content: '""',
       position: "absolute",
       left: 0,
       top: 0,
       bottom: 0,
-      width: 4,
-      background: accent,
+      width: 3,
+      background: isEnabled ? accent : mutedAccent,
+      opacity: 0,
+      transition: "opacity 0.3s ease",
     },
     "&:hover": {
-      boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
-      transform: "translateY(-2px)",
+      boxShadow: "0 16px 40px rgba(10, 12, 26, 0.45)",
+      transform: "translateY(-4px)",
+      backgroundColor: isEnabled ? "#1c1f2a" : alpha("#111827", 0.85),
+    },
+    "&:hover::before, &:focus-within::before": {
+      opacity: 1,
+    },
+    "&:focus-within": {
+      boxShadow: "0 18px 42px rgba(10, 12, 26, 0.5)",
+      transform: "translateY(-3px)",
+    },
+    "&:hover [data-account-action-icon='true'], &:focus-within [data-account-action-icon='true']": {
+      backgroundColor: alpha("#ff4f87", 0.18),
+    },
+    "&:hover [data-account-action-icon='true'] svg, &:focus-within [data-account-action-icon='true'] svg": {
+      transform: "rotate(2deg) scale(1.05)",
+      filter: "drop-shadow(0 0 6px rgba(255, 105, 135, 0.45))",
     },
   };
+};
+
+const accountSectionHeadingStyles = {
+  fontSize: "0.75rem",
+  textTransform: "uppercase",
+  color: "#8b8f99",
+  letterSpacing: "1px",
+  marginBottom: "0.6rem",
 };
 function OwnerProfileContent({ accountLifecycle }) {
   const lifecycleContext = accountLifecycle || {};
@@ -281,12 +309,10 @@ function OwnerProfileContent({ accountLifecycle }) {
       ? ""
       : isAccountHidden
       ? t("profile.preferences.visibilityHidden", {
-          defaultValue:
-            "Your profile is currently hidden. Matches will no longer see or contact you.",
+          defaultValue: "Profile hidden — only you can see it right now.",
         })
       : t("profile.preferences.visibilityVisible", {
-          defaultValue:
-            "Your profile is visible to the community. Hide it if you need a break.",
+          defaultValue: "Profile visible to matches — you're ready to be discovered.",
         });
 
   const updateAccountLifecycleStatus = useCallback(
@@ -2286,20 +2312,48 @@ function OwnerProfileContent({ accountLifecycle }) {
               title={t("profile.preferences.accountSettings", {
                 defaultValue: "Account settings",
               })}
-              subheader={t("profile.preferences.accountSubtitle", {
-                defaultValue:
-                  "Manage language, billing, privacy, and removal settings for your profile.",
-              })}
+              subheader={
+                <Stack spacing={0.75}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.92)",
+                      fontSize: "0.95rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {t("profile.preferences.accountTagline", {
+                      defaultValue:
+                        "Your account, your control — manage privacy and preferences easily.",
+                    })}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "rgba(255, 255, 255, 0.75)",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {t("profile.preferences.accountSubtitle", {
+                      defaultValue:
+                        "Fine-tune language, billing, security, and removal options whenever you like.",
+                    })}
+                  </Typography>
+                </Stack>
+              }
               sx={(theme) => ({
-                background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+                background: "linear-gradient(90deg, #ff4f87, #ff7f64)",
                 color: theme.palette.secondary.contrastText,
-                px: 3,
-                py: 2.5,
-                boxShadow: theme.shadows[4],
+                px: { xs: 3, sm: 4 },
+                py: { xs: 2.5, sm: 3 },
+                boxShadow: "0 1px 0 rgba(255, 255, 255, 0.1)",
                 borderTopLeftRadius: theme.shape.borderRadius * 2,
                 borderTopRightRadius: theme.shape.borderRadius * 2,
                 '& .MuiCardHeader-avatar': {
                   color: theme.palette.secondary.contrastText,
+                  backgroundColor: alpha("#ffffff", 0.12),
+                  borderRadius: "50%",
+                  padding: 0.5,
                 },
                 '& .MuiCardHeader-title': {
                   color: theme.palette.secondary.contrastText,
@@ -2310,371 +2364,521 @@ function OwnerProfileContent({ accountLifecycle }) {
                 },
               })}
             />
-            <Divider />
-            <CardContent>
-              <Stack spacing={3}>
-                <Box sx={createAccountActionStyles(canChangeLanguage)}>
-                  <Stack spacing={1.5}>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={2.5}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 600,
-                            letterSpacing: 0.2,
-                          }}
+            <CardContent sx={{ px: { xs: 2.5, sm: 3.5 }, py: { xs: 3, sm: 3.75 } }}>
+              <Stack spacing={4}>
+                <Box>
+                  <Typography sx={accountSectionHeadingStyles}>
+                    {t("profile.preferences.accountPreferencesTitle", {
+                      defaultValue: "Account Preferences",
+                    })}
+                  </Typography>
+                  <Stack spacing={3}>
+                    <Box sx={createAccountActionStyles(canChangeLanguage, "default", 0)}>
+                      <Stack spacing={1.5}>
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={2.5}
+                          alignItems={{ xs: "flex-start", sm: "center" }}
+                          justifyContent="space-between"
                         >
-                          {t("app.language.label", { defaultValue: "Language" })}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                          {t("profile.preferences.languageDescription", {
-                            defaultValue: "Choose the language you prefer to use across the app.",
-                          })}
-                        </Typography>
-                      </Stack>
-                      <FormControl
-                        size="small"
-                        disabled={!canChangeLanguage}
-                        sx={{ width: { xs: "100%", sm: 240 } }}
-                      >
-                        <InputLabel id="profile-language-select-label">
-                          {t("app.language.label")}
-                        </InputLabel>
-                        <Select
-                          labelId="profile-language-select-label"
-                          label={t("app.language.label")}
-                          value={i18n.language || "en"}
-                          onChange={handleLanguageChange}
-                        >
-                          {languageOptions.map((option) => (
-                            <MenuItem key={option.code} value={option.code}>
-                              {t(option.labelKey)}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Stack>
-                    {!canChangeLanguage && changeLanguageReason && (
-                      <Typography variant="caption" color="text.secondary">
-                        {changeLanguageReason}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-
-                <Box sx={createAccountActionStyles(canSignOut)}>
-                  <Stack spacing={1.5}>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={2.5}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="flex-start"
-                        sx={{ flex: 1, minWidth: 0 }}
-                      >
-                        <Box
-                          component="span"
-                          aria-hidden
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            pt: 0.5,
-                          }}
-                        >
-                          <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
-                        </Box>
-                        <Stack spacing={0.75} sx={{ flex: 1 }}>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 600,
-                              letterSpacing: 0.2,
-                            }}
+                          <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                fontWeight: 600,
+                                letterSpacing: 0.2,
+                              }}
+                            >
+                              {t("app.language.label", { defaultValue: "Language" })}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: SECTION_SUBTEXT_COLOR,
+                                fontSize: "0.875rem",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {t("profile.preferences.languageDescription", {
+                                defaultValue:
+                                  "Choose the language you prefer to use across the app.",
+                              })}
+                            </Typography>
+                          </Stack>
+                          <FormControl
+                            size="small"
+                            disabled={!canChangeLanguage}
+                            sx={{ width: { xs: "100%", sm: 240 } }}
                           >
-                            {t("app.signOut", { defaultValue: "Sign out" })}
-                          </Typography>
-                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                          {t("profile.preferences.signOutDescription", {
-                            defaultValue: "End your session on this device whenever you need to.",
-                          })}
-                          {" "}
-                          {t("profile.preferences.signOutReminder", {
-                            defaultValue: "Signing out keeps your account secure on shared devices.",
-                          })}
-                        </Typography>
+                            <InputLabel id="profile-language-select-label">
+                              {t("app.language.label")}
+                            </InputLabel>
+                            <Select
+                              labelId="profile-language-select-label"
+                              label={t("app.language.label")}
+                              value={i18n.language || "en"}
+                              onChange={handleLanguageChange}
+                            >
+                              {languageOptions.map((option) => (
+                                <MenuItem key={option.code} value={option.code}>
+                                  {t(option.labelKey)}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
                         </Stack>
-                      </Stack>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        startIcon={
-                          signingOut ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : (
-                            <LogoutIcon />
-                          )
-                        }
-                        onClick={handleProfileSignOut}
-                        disabled={signingOut || !canSignOut}
-                        sx={{ width: { xs: "100%", sm: "auto" } }}
-                      >
-                        {signingOut
-                          ? t("app.signingOut", { defaultValue: "Signing out..." })
-                          : t("app.signOut", { defaultValue: "Sign out" })}
-                      </Button>
-                    </Stack>
-                    {!canSignOut && signOutReason && (
-                      <Typography variant="caption" color="text.secondary">
-                        {signOutReason}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-
-                <Box sx={createAccountActionStyles(canManagePayments)}>
-                  <Stack spacing={1.5}>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={2.5}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="flex-start"
-                        sx={{ flex: 1, minWidth: 0 }}
-                      >
-                        <Box
-                          component="span"
-                          aria-hidden
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            pt: 0.5,
-                          }}
-                        >
-                          <CreditCardIcon color={canManagePayments ? "primary" : "disabled"} />
-                        </Box>
-                        <Stack spacing={0.75} sx={{ flex: 1 }}>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 600,
-                              letterSpacing: 0.2,
-                            }}
-                          >
-                            {t("profile.preferences.billing", {
-                              defaultValue: "Billing & subscriptions",
-                            })}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                            {t("profile.preferences.billingDescription", {
-                              defaultValue:
-                                "Review and manage your membership plan, payment methods, and receipts.",
-                            })}
-                            {" "}
-                            {t("profile.preferences.billingReminder", {
-                              defaultValue:
-                                "Access your invoices and update payment preferences in one place.",
-                            })}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        startIcon={<CreditCardIcon />}
-                        onClick={handleManagePayments}
-                        disabled={!canManagePayments}
-                        sx={{ width: { xs: "100%", sm: "auto" } }}
-                      >
-                        {t("profile.preferences.manageBilling", {
-                          defaultValue: "Manage billing",
-                        })}
-                      </Button>
-                    </Stack>
-                    {!canManagePayments && capabilityReasons.payments && (
-                      <Typography variant="caption" color="text.secondary">
-                        {capabilityReasons.payments}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-
-                <Box sx={createAccountActionStyles(canToggleVisibility)}>
-                  <Stack spacing={2}>
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
-                      <Box
-                        component="span"
-                        aria-hidden
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          pt: 0.5,
-                        }}
-                      >
-                        <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
-                      </Box>
-                      <Stack spacing={0.75}>
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            fontWeight: 600,
-                            letterSpacing: 0.2,
-                          }}
-                        >
-                          {t("profile.preferences.visibility", {
-                            defaultValue: "Profile visibility",
-                          })}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                          {t("profile.preferences.visibilityDescription", {
-                            defaultValue:
-                              "Hide your profile from potential matches without deleting your information.",
-                          })}
-                          {visibilityStatusText && ` ${visibilityStatusText}`}
-                        </Typography>
-                      </Stack>
-                    </Stack>
-                    <Stack
-                      spacing={2}
-                      direction={{ xs: "column", sm: "row" }}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack spacing={1} sx={{ flex: 1 }}>
-                        {(accountStatusLoading || isUpdatingAccountVisibility) && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                          >
-                            <CircularProgress size={14} />
-                            {t("profile.preferences.updatingVisibility", {
-                              defaultValue: "Updating visibility...",
-                            })}
-                          </Typography>
-                        )}
-                        {!canToggleVisibility && capabilityReasons.toggleVisibility && (
+                        {!canChangeLanguage && changeLanguageReason && (
                           <Typography variant="caption" color="text.secondary">
-                            {capabilityReasons.toggleVisibility}
+                            {changeLanguageReason}
                           </Typography>
                         )}
                       </Stack>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        <Switch
-                          checked={isAccountHidden}
-                          onChange={handleHideAccountToggle}
-                          disabled={
-                            accountStatusLoading ||
-                            isUpdatingAccountVisibility ||
-                            !canToggleVisibility
-                          }
-                          inputProps={{
-                            "aria-label": "Hide my profile",
-                            "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
-                          }}
-                        />
-                        {(accountStatusLoading || isUpdatingAccountVisibility) && (
-                          <CircularProgress size={18} />
+                    </Box>
+
+                    <Box sx={createAccountActionStyles(canManagePayments, "default", 1)}>
+                      <Stack spacing={1.5}>
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={2.5}
+                          alignItems={{ xs: "flex-start", sm: "center" }}
+                          justifyContent="space-between"
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="flex-start"
+                            sx={{ flex: 1, minWidth: 0 }}
+                          >
+                            <Box
+                              component="span"
+                              aria-hidden
+                              data-account-action-icon="true"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                pt: 0.5,
+                                borderRadius: "999px",
+                                padding: 0.75,
+                                backgroundColor: alpha("#ffffff", 0.04),
+                                transition:
+                                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
+                              }}
+                            >
+                              <CreditCardIcon color={canManagePayments ? "primary" : "disabled"} />
+                            </Box>
+                            <Stack spacing={0.75} sx={{ flex: 1 }}>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 600,
+                                  letterSpacing: 0.2,
+                                }}
+                              >
+                                {t("profile.preferences.billing", {
+                                  defaultValue: "Billing & subscriptions",
+                                })}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: SECTION_SUBTEXT_COLOR,
+                                  fontSize: "0.875rem",
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {t("profile.preferences.billingDescription", {
+                                  defaultValue:
+                                    "Review and manage your membership plan, payment methods, and receipts.",
+                                })}
+                                {" "}
+                                {t("profile.preferences.billingReminder", {
+                                  defaultValue:
+                                    "Access your invoices and update payment preferences in one place.",
+                                })}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<CreditCardIcon />}
+                            onClick={handleManagePayments}
+                            disabled={!canManagePayments}
+                            sx={{
+                              width: { xs: "100%", sm: "auto" },
+                              borderColor: "rgba(148, 163, 184, 0.45)",
+                              color: "rgba(226, 232, 240, 0.85)",
+                              backgroundColor: "transparent",
+                              transition: "all 0.3s ease",
+                              '&:hover': {
+                                borderColor: "rgba(226, 232, 240, 0.75)",
+                                backgroundColor: "rgba(24, 29, 40, 0.9)",
+                              },
+                              '&.Mui-disabled': {
+                                opacity: 0.5,
+                                borderColor: "rgba(148, 163, 184, 0.2)",
+                              },
+                            }}
+                          >
+                            {t("profile.preferences.manageBilling", {
+                              defaultValue: "Manage billing",
+                            })}
+                          </Button>
+                        </Stack>
+                        {!canManagePayments && capabilityReasons.payments && (
+                          <Typography variant="caption" color="text.secondary">
+                            {capabilityReasons.payments}
+                          </Typography>
                         )}
                       </Stack>
-                    </Stack>
+                    </Box>
                   </Stack>
                 </Box>
 
-                <Box sx={createAccountActionStyles(canRemoveAccount, "danger")}>
-                  <Stack spacing={1.5}>
-                    <Stack
-                      direction={{ xs: "column", sm: "row" }}
-                      spacing={2.5}
-                      alignItems={{ xs: "flex-start", sm: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="flex-start"
-                        sx={{ flex: 1, minWidth: 0 }}
-                      >
-                        <Box
-                          component="span"
-                          aria-hidden
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            pt: 0.5,
-                          }}
-                        >
-                          <DeleteForeverIcon color="error" />
-                        </Box>
-                        <Stack spacing={0.75} sx={{ flex: 1 }}>
-                          <Typography
-                            variant="h6"
+                <Box>
+                  <Typography sx={accountSectionHeadingStyles}>
+                    {t("profile.preferences.securityPrivacyTitle", {
+                      defaultValue: "Security & Privacy",
+                    })}
+                  </Typography>
+                  <Stack spacing={3}>
+                    <Box sx={createAccountActionStyles(canToggleVisibility, "default", 0)}>
+                      <Stack spacing={2}>
+                        <Stack direction="row" spacing={2} alignItems="flex-start">
+                          <Box
+                            component="span"
+                            aria-hidden
+                            data-account-action-icon="true"
                             sx={{
-                              fontWeight: 600,
-                              letterSpacing: 0.2,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              pt: 0.5,
+                              borderRadius: "999px",
+                              padding: 0.75,
+                              backgroundColor: alpha("#ffffff", 0.04),
+                              transition:
+                                "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
                             }}
                           >
-                            {t("profile.preferences.removeAccount", {
-                              defaultValue: "Remove account",
-                            })}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                            {t("profile.preferences.removeAccountDescription", {
-                              defaultValue:
-                                "Permanently delete your profile, matches, and conversations.",
-                            })}
-                            {" "}
-                            {t("profile.preferences.removeAccountWarning", {
-                              defaultValue:
-                                "This action cannot be undone. Your conversations, matches, and profile will be permanently deleted.",
-                            })}
-                          </Typography>
+                            <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
+                          </Box>
+                          <Stack spacing={0.75} sx={{ flex: 1 }}>
+                            <Typography
+                              variant="h6"
+                              sx={{
+                                fontWeight: 600,
+                                letterSpacing: 0.2,
+                              }}
+                            >
+                              {t("profile.preferences.visibility", {
+                                defaultValue: "Profile visibility",
+                              })}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: SECTION_SUBTEXT_COLOR,
+                                fontSize: "0.875rem",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {t("profile.preferences.visibilityDescription", {
+                                defaultValue:
+                                  "Hide your profile from potential matches without deleting your information.",
+                              })}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              key={isAccountHidden ? "hidden" : "visible"}
+                              sx={{
+                                color: isAccountHidden ? "#ff7f9f" : "#7dd3fc",
+                                fontSize: "0.875rem",
+                                lineHeight: 1.5,
+                                transition: "opacity 0.35s ease, transform 0.35s ease",
+                                opacity:
+                                  accountStatusLoading || isUpdatingAccountVisibility ? 0.7 : 1,
+                                transform: "translateY(0)",
+                              }}
+                            >
+                              {visibilityStatusText}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                        <Stack
+                          spacing={2}
+                          direction={{ xs: "column", sm: "row" }}
+                          alignItems={{ xs: "flex-start", sm: "center" }}
+                          justifyContent="space-between"
+                        >
+                          <Stack spacing={1} sx={{ flex: 1 }}>
+                            {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                              >
+                                <CircularProgress size={14} />
+                                {t("profile.preferences.updatingVisibility", {
+                                  defaultValue: "Updating visibility...",
+                                })}
+                              </Typography>
+                            )}
+                            {!canToggleVisibility && capabilityReasons.toggleVisibility && (
+                              <Typography variant="caption" color="text.secondary">
+                                {capabilityReasons.toggleVisibility}
+                              </Typography>
+                            )}
+                          </Stack>
+                          <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Switch
+                              checked={isAccountHidden}
+                              onChange={handleHideAccountToggle}
+                              disabled={
+                                accountStatusLoading ||
+                                isUpdatingAccountVisibility ||
+                                !canToggleVisibility
+                              }
+                              inputProps={{
+                                "aria-label": "Hide my profile",
+                                "aria-busy": accountStatusLoading || isUpdatingAccountVisibility,
+                              }}
+                              sx={{
+                                '& .MuiSwitch-thumb': {
+                                  boxShadow: "0 0 6px rgba(255, 79, 135, 0.45)",
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                  color: "#ff4f87",
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                  backgroundColor: alpha("#ff4f87", 0.6),
+                                },
+                              }}
+                            />
+                            {(accountStatusLoading || isUpdatingAccountVisibility) && (
+                              <CircularProgress size={18} />
+                            )}
+                          </Stack>
                         </Stack>
                       </Stack>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={handleRemoveAccount}
-                        startIcon={
-                          isRemovingAccount ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : (
-                            <DeleteForeverIcon />
-                          )
-                        }
-                        disabled={isRemovingAccount || !canRemoveAccount}
-                        sx={{ width: { xs: "100%", sm: "auto" } }}
-                      >
-                        {isRemovingAccount
-                          ? t("profile.preferences.removingAccount", {
-                              defaultValue: "Processing...",
-                            })
-                          : t("profile.preferences.removeAccountButton", {
-                              defaultValue: "Remove my account",
-                            })}
-                      </Button>
-                    </Stack>
-                    {!canRemoveAccount && capabilityReasons.removeAccount && (
-                      <Typography variant="caption" color="text.secondary">
-                        {capabilityReasons.removeAccount}
-                      </Typography>
-                    )}
+                    </Box>
+
+                    <Box sx={createAccountActionStyles(canSignOut, "default", 1)}>
+                      <Stack spacing={1.5}>
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={2.5}
+                          alignItems={{ xs: "flex-start", sm: "center" }}
+                          justifyContent="space-between"
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="flex-start"
+                            sx={{ flex: 1, minWidth: 0 }}
+                          >
+                            <Box
+                              component="span"
+                              aria-hidden
+                              data-account-action-icon="true"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                pt: 0.5,
+                                borderRadius: "999px",
+                                padding: 0.75,
+                                backgroundColor: alpha("#ffffff", 0.04),
+                                transition:
+                                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
+                              }}
+                            >
+                              <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
+                            </Box>
+                            <Stack spacing={0.75} sx={{ flex: 1 }}>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 600,
+                                  letterSpacing: 0.2,
+                                }}
+                              >
+                                {t("app.signOut", { defaultValue: "Sign out" })}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: SECTION_SUBTEXT_COLOR,
+                                  fontSize: "0.875rem",
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {t("profile.preferences.signOutDescription", {
+                                  defaultValue:
+                                    "End your session on this device whenever you need to.",
+                                })}
+                                {" "}
+                                {t("profile.preferences.signOutReminder", {
+                                  defaultValue:
+                                    "Signing out keeps your account secure on shared devices.",
+                                })}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={
+                              signingOut ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <LogoutIcon />
+                              )
+                            }
+                            onClick={handleProfileSignOut}
+                            disabled={signingOut || !canSignOut}
+                            sx={{
+                              width: { xs: "100%", sm: "auto" },
+                              borderColor: "rgba(255, 111, 156, 0.6)",
+                              color: "#ff4f87",
+                              backgroundColor: "transparent",
+                              transition: "all 0.3s ease",
+                              '&:hover': {
+                                color: "#0b0d18",
+                                borderColor: "transparent",
+                                background: "linear-gradient(90deg, #ff4f87, #ff7f64)",
+                                boxShadow: "0 0 12px rgba(255, 79, 135, 0.45)",
+                              },
+                              '&.Mui-disabled': {
+                                color: alpha("#ff4f87", 0.45),
+                                borderColor: alpha("#ff4f87", 0.3),
+                              },
+                            }}
+                          >
+                            {signingOut
+                              ? t("app.signingOut", { defaultValue: "Signing out..." })
+                              : t("app.signOut", { defaultValue: "Sign out" })}
+                          </Button>
+                        </Stack>
+                        {!canSignOut && signOutReason && (
+                          <Typography variant="caption" color="text.secondary">
+                            {signOutReason}
+                          </Typography>
+                        )}
+                      </Stack>
+                    </Box>
+
+                    <Box sx={createAccountActionStyles(canRemoveAccount, "danger", 2)}>
+                      <Stack spacing={1.5}>
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={2.5}
+                          alignItems={{ xs: "flex-start", sm: "center" }}
+                          justifyContent="space-between"
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="flex-start"
+                            sx={{ flex: 1, minWidth: 0 }}
+                          >
+                            <Box
+                              component="span"
+                              aria-hidden
+                              data-account-action-icon="true"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                pt: 0.5,
+                                borderRadius: "999px",
+                                padding: 0.75,
+                                backgroundColor: alpha("#ffffff", 0.04),
+                                transition:
+                                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
+                              }}
+                            >
+                              <DeleteForeverIcon color="error" />
+                            </Box>
+                            <Stack spacing={0.75} sx={{ flex: 1 }}>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 600,
+                                  letterSpacing: 0.2,
+                                }}
+                              >
+                                {t("profile.preferences.removeAccount", {
+                                  defaultValue: "Remove account",
+                                })}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: SECTION_SUBTEXT_COLOR,
+                                  fontSize: "0.875rem",
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {t("profile.preferences.removeAccountDescription", {
+                                  defaultValue:
+                                    "Permanently delete your profile, matches, and conversations.",
+                                })}
+                                {" "}
+                                {t("profile.preferences.removeAccountWarning", {
+                                  defaultValue:
+                                    "This action cannot be undone. Your conversations, matches, and profile will be permanently deleted.",
+                                })}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            onClick={handleRemoveAccount}
+                            startIcon={
+                              isRemovingAccount ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <DeleteForeverIcon />
+                              )
+                            }
+                            disabled={isRemovingAccount || !canRemoveAccount}
+                            sx={{
+                              width: { xs: "100%", sm: "auto" },
+                              background: "#ff3d3d",
+                              border: "none",
+                              color: "white",
+                              transition: "all 0.3s ease",
+                              boxShadow: "0 0 0 rgba(255, 61, 61, 0.4)",
+                              '&:hover': {
+                                background: "#ff5b5b",
+                                boxShadow: "0 0 12px rgba(255, 61, 61, 0.5)",
+                                transform: "translateY(-1px)",
+                              },
+                              '&.Mui-disabled': {
+                                background: alpha("#ff3d3d", 0.5),
+                                color: alpha("#ffffff", 0.8),
+                              },
+                            }}
+                          >
+                            {isRemovingAccount
+                              ? t("profile.preferences.removingAccount", {
+                                  defaultValue: "Processing...",
+                                })
+                              : t("profile.preferences.removeAccountButton", {
+                                  defaultValue: "Remove my account",
+                                })}
+                          </Button>
+                        </Stack>
+                        {!canRemoveAccount && capabilityReasons.removeAccount && (
+                          <Typography variant="caption" color="text.secondary">
+                            {capabilityReasons.removeAccount}
+                          </Typography>
+                        )}
+                      </Stack>
+                    </Box>
                   </Stack>
                 </Box>
               </Stack>
