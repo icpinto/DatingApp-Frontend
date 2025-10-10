@@ -2,11 +2,11 @@ import React, { useEffect } from "react";
 import { Alert, Box, Stack } from "@mui/material";
 import CorePreferencesCard from "../ui/CorePreferencesCard";
 import QuestionnaireCard from "../ui/QuestionnaireCard";
-import Guard from "@/shared/components/Guard";
-import { spacing } from "@/styles";
-import { useAccountLifecycle } from "@/shared/context/AccountLifecycleContext";
-import { CAPABILITIES } from "@/domain/capabilities";
-import { useUserCapabilities, useUserContext } from "@/shared/context/UserContext";
+import Guard from "shared/components/Guard";
+import { spacing } from "styles";
+import { useAccountLifecycle } from "shared/context/AccountLifecycleContext";
+import { CAPABILITIES } from "domain/capabilities";
+import { useUserCapabilities, useUserContext } from "shared/context/UserContext";
 
 export default function MatchInsightsPage() {
   const accountLifecycle = useAccountLifecycle();
