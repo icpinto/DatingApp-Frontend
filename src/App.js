@@ -45,10 +45,10 @@ import {
 
 const MessagesPage = lazy(() => import("./features/messages/Messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
-const PrivacyPolicyPage = lazy(() => import("./features/static/PrivacyPolicy"));
-const TermsOfServicePage = lazy(() => import("./features/static/TermsOfService"));
-const PricingPage = lazy(() => import("./features/static/Pricing"));
-const HelpCenterPage = lazy(() => import("./features/static/HelpCenter"));
+const PrivacyPolicyPage = lazy(() => import("./features/profile/static/PrivacyPolicy"));
+const TermsOfServicePage = lazy(() => import("./features/profile/static/TermsOfService"));
+const PricingPage = lazy(() => import("./features/profile/static/Pricing"));
+const HelpCenterPage = lazy(() => import("./features/profile/static/HelpCenter"));
 
 const RouteLoader = () => (
   <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
