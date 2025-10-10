@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "../../../shared/lib/react-query";
 import * as api from "../api/messages.api";
 import { createEmptyThread } from "../model/types";
 import { useWebSocket } from "../../../shared/context/WebSocketProvider";
