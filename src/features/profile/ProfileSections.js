@@ -3,7 +3,7 @@ import { Stack, Typography } from "@mui/material";
 import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../i18n";
 
-const SECTION_SURFACES = ["#161a23", "#1b202b"];
+const SECTION_SURFACES = ["#151820", "#191d26"];
 
 export const profileSectionDefinitions = [
   {
@@ -44,7 +44,7 @@ function ProfileSections({ data, onEditSection, disableEditing = false }) {
   }
 
   return (
-    <Stack spacing={3} sx={{ width: "100%" }}>
+    <Stack spacing={0} sx={{ width: "100%" }}>
       {availableSections.map(({ key, labelKey, Icon }, index) => (
         <ProfileSection
           key={key}

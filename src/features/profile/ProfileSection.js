@@ -156,22 +156,29 @@ function ProfileSection({
       elevation={0}
       sx={{
         width: "100%",
-        borderRadius: 3,
+        borderRadius: "10px",
         border: "1px solid rgba(255, 255, 255, 0.04)",
         backgroundColor: resolvedSurface,
-        transition: "border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease",
+        transition:
+          "border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease",
+        marginBottom: 2.5,
         "&::before": {
           display: "none",
         },
+        "&:last-of-type": {
+          marginBottom: 0,
+        },
         "&:hover": {
-          borderColor: editAccent,
-          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.3)",
+          borderColor: alpha(editAccent, 0.4),
+          backgroundColor: "#1b1e27",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.25)",
           transform: "translateY(-2px)",
         },
         "&.Mui-expanded": {
           margin: 0,
-          borderColor: editAccent,
+          borderColor: alpha(editAccent, 0.45),
           boxShadow: "0 2px 12px rgba(0, 0, 0, 0.35)",
+          backgroundColor: "#1b1e27",
         },
       }}
     >
@@ -277,47 +284,50 @@ function ProfileSection({
                       {t("profile.status.complete", { defaultValue: "Complete" })}
                     </Box>
                   )}
-                  <Box
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      px: 1.25,
-                      py: 0.35,
-                      borderRadius: 999,
-                      background: "linear-gradient(90deg, rgba(255,79,135,0.16) 0%, rgba(255,122,168,0.16) 100%)",
-                      color: "#ffb6cf",
-                      fontFamily: MODERN_FONT_STACK,
-                      fontWeight: 700,
-                      letterSpacing: 0.6,
-                      fontSize: 12,
-                    }}
-                  >
-                    {`${completionPercentage}%`}
-                  </Box>
                 </Stack>
               )}
             </Stack>
             {totalFields > 0 && (
-              <Stack spacing={0.75} sx={{ width: "100%", maxWidth: { xs: "100%", sm: 420 } }}>
-                <Box sx={{ position: "relative", width: "100%" }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={completionPercentage}
-                    aria-label={completionLabel}
-                    sx={{
-                      height: 8,
-                      borderRadius: 8,
-                      backgroundColor: "rgba(255, 255, 255, 0.08)",
-                      overflow: "hidden",
-                      "& .MuiLinearProgress-bar": {
+              <Stack spacing={0.75} sx={{ width: "100%", maxWidth: { xs: "100%", sm: 460 } }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box sx={{ position: "relative", flexGrow: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={completionPercentage}
+                      aria-label={completionLabel}
+                      sx={{
+                        height: 8,
                         borderRadius: 8,
-                        backgroundImage:
-                          "linear-gradient(90deg, #ff4f87 0%, #ff7aa8 100%)",
-                        transition: "width 0.5s ease",
-                      },
+                        backgroundColor: "rgba(255, 255, 255, 0.08)",
+                        overflow: "hidden",
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 8,
+                          backgroundImage:
+                            "linear-gradient(90deg, #ff4f87 0%, #ff7aa8 100%)",
+                          transition: "width 0.5s ease",
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontFamily: MODERN_FONT_STACK,
+                      fontWeight: 600,
+                      letterSpacing: 0.5,
+                      color: "rgba(255, 182, 207, 0.9)",
+                      minWidth: 64,
+                      textAlign: "right",
                     }}
-                  />
-                </Box>
+                  >
+                    {`${completionPercentage}%`}
+                  </Typography>
+                </Stack>
                 <Typography
                   variant="caption"
                   color="text.secondary"
@@ -352,15 +362,18 @@ function ProfileSection({
                 sx={{
                   ml: { xs: 0, md: 1.5 },
                   alignSelf: { xs: "flex-start", md: "center" },
-                  color: editAccent,
-                  borderRadius: 2,
-                  border: `1px solid ${alpha(editAccent, 0.6)}`,
-                  backgroundColor: alpha(editAccent, 0.12),
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease",
+                  color: alpha(editAccent, 0.85),
+                  borderRadius: "50%",
+                  border: `1px solid ${alpha(editAccent, 0.4)}`,
+                  backgroundColor: "transparent",
+                  boxShadow: "none",
+                  transition:
+                    "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease",
                   "&:hover": {
                     transform: "scale(1.05)",
-                    backgroundColor: alpha(editAccent, 0.2),
-                    boxShadow: "0 4px 12px rgba(255, 79, 135, 0.3)",
+                    backgroundColor: alpha(editAccent, 0.15),
+                    boxShadow: `0 4px 12px ${alpha(editAccent, 0.22)}`,
+                    color: "#ff4f87",
                   },
                   "&.Mui-disabled": {
                     opacity: 0.45,
