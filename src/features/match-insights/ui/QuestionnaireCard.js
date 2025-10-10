@@ -127,10 +127,7 @@ function QuestionnaireCard({ isLocked = false, lockReason = "" }) {
 
   const questionType = question ? question.type : null;
   const questionText = question ? question.question : "";
-  const options = useMemo(
-    () => (question && Array.isArray(question.options) ? question.options : []),
-    [question]
-  );
+  const options = question && Array.isArray(question.options) ? question.options : [];
 
   const submitAnswer = useCallback(async () => {
     if (!question || effectiveLock) return;
