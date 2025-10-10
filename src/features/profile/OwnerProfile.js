@@ -36,6 +36,7 @@ import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import api from "../../shared/services/api";
 import ProfileSections, { profileSectionDefinitions } from "./ProfileSections";
 import { spacing } from "../../styles";
@@ -57,9 +58,9 @@ import {
 import { alpha } from "@mui/material/styles";
 
 const SECTION_BACKGROUNDS = {
-  profile: "#111827",
-  account: "#030712",
-  legal: "#111827",
+  profile: "#1d222b",
+  account: "#151a24",
+  legal: "#1d222b",
 };
 
 const SECTION_TEXT_COLOR = "rgba(248, 250, 252, 0.94)";
@@ -69,6 +70,37 @@ const SECTION_DIVIDER_COLOR = "rgba(148, 163, 184, 0.28)";
 const sectionWrapperStyles = {
   mt: 8,
   mb: 8,
+};
+
+const profileSectionContainerStyles = {
+  backgroundColor: "#141820",
+  borderRadius: 4,
+  px: { xs: 2, md: 3 },
+  py: { xs: 2.5, md: 3.5 },
+  boxShadow: "0 26px 60px rgba(12, 16, 32, 0.55)",
+  border: "1px solid rgba(255, 255, 255, 0.04)",
+  position: "relative",
+  overflow: "hidden",
+};
+
+const profileCardAccentStyles = {
+  position: "relative",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 6,
+    background: "linear-gradient(90deg, #ff4f87 0%, #ff795d 100%)",
+    opacity: 0.95,
+    pointerEvents: "none",
+    zIndex: 1,
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 2,
+  },
 };
 
 const sectionTitleStyles = {
@@ -1121,6 +1153,16 @@ function OwnerProfileContent({ accountLifecycle }) {
     setEditingSection(sectionKey);
   };
 
+  const handleEditProfile = () => {
+    if (!profileSectionDefinitions.length) {
+      return;
+    }
+    const firstSectionKey = profileSectionDefinitions[0]?.key;
+    if (firstSectionKey) {
+      handleEditSection(firstSectionKey);
+    }
+  };
+
   const handleCancelEdit = () => {
     if (rawProfile) populateFormData(rawProfile);
     setEditingSection(null);
@@ -1378,13 +1420,25 @@ function OwnerProfileContent({ accountLifecycle }) {
         {isLifecycleReadOnly && (
           <Alert severity="info">{lifecycleReadOnlyMessage}</Alert>
         )}
-        <Box component="section" sx={sectionWrapperStyles}>
+        <Box
+          component="section"
+          sx={{
+            ...sectionWrapperStyles,
+            ...profileSectionContainerStyles,
+          }}
+        >
           <Typography variant="overline" sx={sectionTitleStyles}>
             {t("profile.sections.profileManagement", {
               defaultValue: "PROFILE MANAGEMENT",
             })}
           </Typography>
-          <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
+          <Card
+            elevation={10}
+            sx={{
+              ...createSectionCardStyles(SECTION_BACKGROUNDS.profile),
+              ...profileCardAccentStyles,
+            }}
+          >
             <CardHeader
               avatar={<PersonIcon color="primary" />}
               title={
@@ -1398,15 +1452,40 @@ function OwnerProfileContent({ accountLifecycle }) {
                       : t("profile.headers.edit", {
                           defaultValue: "Edit your profile",
                         })
-                    : t("profile.headers.view", { defaultValue: "Your profile" })
-                  : t("profile.headers.create", { defaultValue: "Create your profile" })
+                  : t("profile.headers.view", { defaultValue: "Your profile" })
+                : t("profile.headers.create", { defaultValue: "Create your profile" })
               }
               subheader={
                 shouldShowForm
                   ? t("profile.headers.formSubheader")
                   : t("profile.headers.viewSubheader")
               }
-              action={null}
+              action={
+                profile && !shouldShowForm ? (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={handleEditProfile}
+                    startIcon={<EditOutlinedIcon fontSize="small" />}
+                    disabled={
+                      isLifecycleReadOnly || !canSaveProfile || saving || isEditing
+                    }
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      borderRadius: 999,
+                      boxShadow: "none",
+                    }}
+                  >
+                    {t("profile.buttons.editAll", { defaultValue: "Edit all" })}
+                  </Button>
+                ) : null
+              }
+              sx={{
+                px: { xs: 3, md: 4 },
+                pt: 4,
+                pb: 2,
+              }}
             />
             <Divider />
             {shouldShowForm ? (
@@ -2204,14 +2283,27 @@ function OwnerProfileContent({ accountLifecycle }) {
               </Box>
             </CardContent>
           ) : (
-            <CardContent>
-              <Stack spacing={3}>
-                <Typography variant="body2" color="text.secondary">
-                  {t("profile.headers.viewDescription", {
-                    defaultValue:
-                      "Review and manage the personal, lifestyle, and verification details that other members can see.",
-                  })}
-                </Typography>
+            <CardContent
+              sx={{
+                px: { xs: 3, md: 4 },
+                py: { xs: 3, md: 4 },
+              }}
+            >
+              <Stack spacing={3.5}>
+                <Stack spacing={0.75}>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {t("profile.headers.viewDescription", {
+                      defaultValue:
+                        "Review and manage the personal, lifestyle, and verification details that other members can see.",
+                    })}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {t("profile.headers.viewHelper", {
+                      defaultValue:
+                        "Keep your details complete to make stronger connections. We highlight sections that still need your voice.",
+                    })}
+                  </Typography>
+                </Stack>
                 {profile?.profile_image && (
                   <Box sx={{ display: "flex", justifyContent: "center" }}>
                     <Avatar
@@ -2237,13 +2329,15 @@ function OwnerProfileContent({ accountLifecycle }) {
                       }
                     />
                     {profile.created_at && (
-                      <Stack spacing={1.5}>
-                        <Divider flexItem sx={{ my: 0 }} />
-                        <Typography variant="caption" color="text.secondary">
-                          {t("common.messages.profileCreatedOn", {
-                            date: new Date(profile.created_at).toLocaleDateString(),
-                          })}
-                        </Typography>
+                      <Stack spacing={1.5} sx={{ width: "100%" }}>
+                        <Divider flexItem sx={{ borderStyle: "dashed", opacity: 0.4 }} />
+                        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {t("common.messages.profileCreatedOn", {
+                              date: new Date(profile.created_at).toLocaleDateString(),
+                            })}
+                          </Typography>
+                        </Box>
                       </Stack>
                     )}
                   </>
