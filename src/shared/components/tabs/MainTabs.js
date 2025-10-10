@@ -27,7 +27,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
 import Home from "../../../features/home/Home";
 import Matches from "../../../features/matches/Matches";
-import { ProfilesPage } from "../../../features/profiles/index.ts";
+import { ProfilesPage } from "../../../features/profiles";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 import {
