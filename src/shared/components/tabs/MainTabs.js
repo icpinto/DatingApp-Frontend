@@ -27,7 +27,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
 import Home from "../../../features/home/Home";
 import Requests from "../../../features/requests/Requests";
-import OwnerProfile from "../../../features/profile/OwnerProfile";
+import OwnerProfile from "../../../features/profile/profile";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 import {
