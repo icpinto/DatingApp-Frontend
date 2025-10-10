@@ -8,11 +8,16 @@ import {
   Stack,
   Box,
   LinearProgress,
-  Button,
+  IconButton,
+  Tooltip,
+  Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "../../i18n";
-import { alpha, lighten } from "@mui/material/styles";
+import { alpha, lighten, useTheme } from "@mui/material/styles";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import HourglassBottomRoundedIcon from "@mui/icons-material/HourglassBottomRounded";
 
 const FIELD_LABELS = {
   verification: {
@@ -116,6 +121,7 @@ function ProfileSection({
   disableEdit = false,
 }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const sectionLabels = FIELD_LABELS[sectionKey] || {};
   const rawData =
     data && typeof data === "object" && !Array.isArray(data) ? data : {};
@@ -133,6 +139,11 @@ function ProfileSection({
   }, 0);
   const completionPercentage =
     totalFields > 0 ? Math.round((filledCount / totalFields) * 100) : 0;
+  const isComplete = totalFields > 0 && filledCount === totalFields;
+  const isInProgress = !isComplete && filledCount > 0;
+  const accentColor = theme.palette.primary.main;
+  const secondaryAccent = alpha(accentColor, 0.18);
+  const expandedShadow = theme.shadows[6];
 
   return (
     <Accordion
@@ -142,38 +153,54 @@ function ProfileSection({
       sx={{
         width: "100%",
         borderRadius: 2,
+        position: "relative",
         border: (theme) => `1px solid ${lighten(theme.palette.divider, 0.4)}`,
-        borderLeft: "3px solid transparent",
-        backgroundColor: (theme) => lighten(theme.palette.background.paper, 0.02),
+        borderLeft: `4px solid ${
+          isComplete
+            ? alpha(theme.palette.success.main, 0.7)
+            : alpha(accentColor, 0.6)
+        }`,
+        backgroundColor: (theme) =>
+          theme.palette.mode === "dark"
+            ? alpha("#1d222b", 0.95)
+            : lighten(theme.palette.background.paper, 0.04),
         "&::before": {
           display: "none",
         },
         "&.Mui-expanded": {
           margin: 0,
           borderColor: (theme) => lighten(theme.palette.primary.main, 0.7),
-          borderLeftColor: (theme) => theme.palette.primary.light,
-          boxShadow: (theme) => theme.shadows[2],
+          borderLeftColor: accentColor,
+          boxShadow: expandedShadow,
         },
       }}
     >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         sx={(theme) => ({
+          minHeight: 0,
           "& .MuiAccordionSummary-content": {
             margin: 0,
+            alignItems: "center",
+            gap: theme.spacing(2.25),
           },
           "& .MuiAccordionSummary-expandIconWrapper": {
+            color: alpha(theme.palette.text.secondary, 0.6),
             transition: theme.transitions.create("transform", {
               duration: theme.transitions.duration.shortest,
             }),
           },
           "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
             transform: "rotate(180deg)",
+            color: accentColor,
           },
-          px: 2.5,
-          py: 2,
+          px: { xs: 2, sm: 2.75 },
+          py: { xs: 1.5, sm: 1.75 },
           gap: 2,
           backgroundColor: "transparent",
+          "&:hover .MuiAccordionSummary-expandIconWrapper": {
+            color: accentColor,
+          },
         })}
       >
         {IconComponent && (
@@ -185,8 +212,8 @@ function ProfileSection({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: alpha(theme.palette.primary.main, 0.08),
-              color: theme.palette.primary.main,
+              backgroundColor: secondaryAccent,
+              color: accentColor,
               flexShrink: 0,
             })}
           >
@@ -200,72 +227,159 @@ function ProfileSection({
           sx={{ width: "100%" }}
           spacing={2}
         >
-          <Typography
-            variant="subtitle1"
-            sx={{
-              fontWeight: 600,
-              letterSpacing: 0.2,
-            }}
-          >
-            {label}
-          </Typography>
+          <Stack spacing={0.5} sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 600,
+                letterSpacing: 0.2,
+                lineHeight: 1.4,
+              }}
+            >
+              {label}
+            </Typography>
+            {totalFields > 0 && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ lineHeight: 1.6 }}
+              >
+                {isComplete
+                  ? t("profile.summary.sectionCompleteLabel", {
+                      defaultValue: "Everything here looks great",
+                    })
+                  : t("profile.summary.sectionReminder", {
+                      defaultValue: "Complete these details to boost visibility",
+                    })}
+              </Typography>
+            )}
+          </Stack>
           <Stack
             direction={{ xs: "column", sm: "row" }}
             alignItems={{ xs: "flex-start", sm: "center" }}
-            spacing={1.5}
+            spacing={{ xs: 1.25, sm: 2 }}
             sx={{ width: { xs: "100%", sm: "auto" } }}
           >
             {totalFields > 0 && (
               <Stack
                 spacing={0.75}
-                sx={{ minWidth: { xs: "100%", sm: 160 }, flexShrink: 0 }}
+                sx={{
+                  minWidth: { xs: "100%", sm: 220 },
+                  flexShrink: 0,
+                }}
               >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontWeight: 500 }}
-                >
-                  {t("profile.summary.sectionCompletion", {
-                    completed: filledCount,
-                    total: totalFields,
-                  })}
-                </Typography>
                 <LinearProgress
                   variant="determinate"
                   value={completionPercentage}
                   sx={{
                     height: 6,
                     borderRadius: 3,
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.primary.light, 0.2),
+                    backgroundColor: isComplete
+                      ? alpha(theme.palette.success.main, 0.18)
+                      : secondaryAccent,
                     "& .MuiLinearProgress-bar": {
                       borderRadius: 3,
-                      backgroundColor: (theme) => theme.palette.primary.main,
+                      backgroundColor: isComplete
+                        ? theme.palette.success.main
+                        : accentColor,
                     },
                   }}
                 />
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  spacing={1.5}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 500 }}
+                  >
+                    {t("profile.summary.sectionCompletion", {
+                      completed: filledCount,
+                      total: totalFields,
+                    })}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    variant={isComplete ? "filled" : "outlined"}
+                    color={isComplete ? "success" : "warning"}
+                    icon={
+                      isComplete ? (
+                        <CheckCircleRoundedIcon fontSize="small" />
+                      ) : (
+                        <HourglassBottomRoundedIcon fontSize="small" />
+                      )
+                    }
+                    label={
+                      isComplete
+                        ? t("profile.summary.complete", {
+                            defaultValue: "Complete",
+                          })
+                        : isInProgress
+                        ? t("profile.summary.inProgress", {
+                            defaultValue: "In progress",
+                          })
+                        : t("profile.summary.notStarted", {
+                            defaultValue: "Not started",
+                          })
+                    }
+                    sx={{
+                      fontWeight: 600,
+                      letterSpacing: 0.2,
+                    }}
+                  />
+                </Stack>
               </Stack>
             )}
             {onEdit && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEdit();
-                }}
-                disabled={disableEdit}
+              <Tooltip
+                title={t("profile.buttons.editSection", { defaultValue: "Edit" })}
               >
-                {t("profile.buttons.editSection", { defaultValue: "Edit" })}
-              </Button>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit();
+                    }}
+                    disabled={disableEdit}
+                    sx={{
+                      borderRadius: 1.5,
+                      border: `1px solid ${
+                        disableEdit
+                          ? alpha(theme.palette.divider, 0.6)
+                          : alpha(accentColor, 0.4)
+                      }`,
+                      backgroundColor: disableEdit
+                        ? alpha(theme.palette.action.disabledBackground, 0.4)
+                        : alpha(accentColor, 0.08),
+                      color: disableEdit
+                        ? theme.palette.text.disabled
+                        : accentColor,
+                      transition: theme.transitions.create([
+                        "background-color",
+                        "transform",
+                      ]),
+                      "&:hover": {
+                        backgroundColor: alpha(accentColor, 0.15),
+                        transform: "translateY(-1px)",
+                      },
+                    }}
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
             )}
           </Stack>
         </Stack>
       </AccordionSummary>
       <AccordionDetails
         sx={{
-          px: 2.5,
-          py: 2.5,
+          px: { xs: 2, sm: 2.75 },
+          py: { xs: 2, sm: 2.5 },
           borderTop: (theme) => `1px solid ${lighten(theme.palette.divider, 0.3)}`,
         }}
       >
@@ -309,7 +423,10 @@ function ProfileSection({
                     py: 1.5,
                     borderRadius: 1.5,
                     border: `1px solid ${lighten(theme.palette.divider, 0.2)}`,
-                    backgroundColor: lighten(theme.palette.background.paper, 0.04),
+                    backgroundColor:
+                      theme.palette.mode === "dark"
+                        ? alpha("#1a202c", 0.8)
+                        : lighten(theme.palette.background.paper, 0.08),
                   })}
                 >
                   <Typography
