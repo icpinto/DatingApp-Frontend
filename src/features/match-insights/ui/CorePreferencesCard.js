@@ -11,9 +11,9 @@ import {
   Stack,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
-import { spacing } from "styles";
-import { ACCOUNT_DEACTIVATED_MESSAGE } from "domain/accountLifecycle";
-import { useUserCapabilities, useUserContext } from "shared/context/UserContext";
+import { spacing } from "../../../styles";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../../domain/accountLifecycle";
+import { useUserCapabilities, useUserContext } from "../../../shared/context/UserContext";
 import PreferenceSliders from "./PreferenceSliders";
 import SelectFields from "./SelectFields";
 import SaveBar from "./SaveBar";

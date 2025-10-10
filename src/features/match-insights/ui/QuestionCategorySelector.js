@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { FormControl, InputLabel, MenuItem, Select, Typography } from "@mui/material";
-import Guard from "shared/components/Guard";
-import { useUserCapabilities } from "shared/context/UserContext";
-import { CAPABILITIES } from "domain/capabilities";
+import Guard from "../../../shared/components/Guard";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
+import { CAPABILITIES } from "../../../domain/capabilities";
 import { useQuestionnaire } from "../hooks/useMatchInsights";
 
 function QuestionCategorySelector({ value, onChange, disabled = false }) {
