@@ -23,7 +23,7 @@ import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
 import MainTabs from "./shared/components/tabs/MainTabs";
-import Profile from "./features/profile/Profile";
+import Profile from "./features/home/profile/Profile";
 import Requests from "./features/requests/Requests";
 import CapabilityRoute from "./shared/components/routing/CapabilityRoute";
 import { WebSocketProvider } from "./shared/context/WebSocketProvider";
