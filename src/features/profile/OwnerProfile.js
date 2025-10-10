@@ -1386,7 +1386,7 @@ function OwnerProfileContent({ accountLifecycle }) {
           </Typography>
           <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
             <CardHeader
-              avatar={<PersonIcon color="primary" />}
+              avatar={<PersonIcon fontSize="large" />}
               title={
                 profile
                   ? shouldShowForm
@@ -1407,6 +1407,22 @@ function OwnerProfileContent({ accountLifecycle }) {
                   : t("profile.headers.viewSubheader")
               }
               action={null}
+              sx={(theme) => ({
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                color: theme.palette.primary.contrastText,
+                px: 3,
+                py: 2.5,
+                boxShadow: theme.shadows[4],
+                borderTopLeftRadius: theme.shape.borderRadius * 2,
+                borderTopRightRadius: theme.shape.borderRadius * 2,
+                '& .MuiCardHeader-subheader': {
+                  color: theme.palette.primary.contrastText,
+                  opacity: 0.85,
+                },
+                '& .MuiCardHeader-avatar': {
+                  color: theme.palette.primary.contrastText,
+                },
+              })}
             />
             <Divider />
             {shouldShowForm ? (
