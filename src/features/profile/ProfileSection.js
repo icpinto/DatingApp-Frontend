@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useTranslation } from "../../i18n";
 import { alpha, lighten } from "@mui/material/styles";
@@ -159,8 +160,12 @@ function ProfileSection({
         borderRadius: "10px",
         border: "1px solid rgba(255, 255, 255, 0.04)",
         backgroundColor: resolvedSurface,
+        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
+        borderLeft: isSectionComplete
+          ? `3px solid ${alpha(completeAccent, 0.7)}`
+          : "3px solid transparent",
         transition:
-          "border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease",
+          "border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease, border-left-color 0.3s ease",
         marginBottom: 2.5,
         "&::before": {
           display: "none",
@@ -171,14 +176,16 @@ function ProfileSection({
         "&:hover": {
           borderColor: alpha(editAccent, 0.4),
           backgroundColor: "#1b1e27",
-          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.25)",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.25)",
           transform: "translateY(-2px)",
+          borderLeftColor: editAccent,
         },
         "&.Mui-expanded": {
           margin: 0,
           borderColor: alpha(editAccent, 0.45),
-          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.35)",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.35)",
           backgroundColor: "#1b1e27",
+          borderLeftColor: editAccent,
         },
       }}
     >
@@ -248,6 +255,8 @@ function ProfileSection({
                   fontWeight: 600,
                   letterSpacing: 0.2,
                   fontFamily: MODERN_FONT_STACK,
+                  fontSize: "1.0625rem",
+                  mb: 0.25,
                 }}
               >
                 {label}
@@ -288,7 +297,10 @@ function ProfileSection({
               )}
             </Stack>
             {totalFields > 0 && (
-              <Stack spacing={0.75} sx={{ width: "100%", maxWidth: { xs: "100%", sm: 460 } }}>
+              <Stack
+                spacing={1}
+                sx={{ width: "100%", maxWidth: { xs: "100%", sm: 460 } }}
+              >
                 <Stack
                   direction="row"
                   alignItems="center"
@@ -305,6 +317,7 @@ function ProfileSection({
                         borderRadius: 8,
                         backgroundColor: "rgba(255, 255, 255, 0.08)",
                         overflow: "hidden",
+                        mb: 0.4,
                         "& .MuiLinearProgress-bar": {
                           borderRadius: 8,
                           backgroundImage:
@@ -320,7 +333,7 @@ function ProfileSection({
                       fontFamily: MODERN_FONT_STACK,
                       fontWeight: 600,
                       letterSpacing: 0.5,
-                      color: "rgba(255, 182, 207, 0.9)",
+                      color: "#ff87a6",
                       minWidth: 64,
                       textAlign: "right",
                     }}
@@ -334,7 +347,7 @@ function ProfileSection({
                   sx={{
                     fontFamily: MODERN_FONT_STACK,
                     letterSpacing: 0.4,
-                    color: "rgba(226, 232, 240, 0.72)",
+                    color: "#a3a7b1",
                   }}
                 >
                   {completionLabel}
@@ -345,7 +358,11 @@ function ProfileSection({
         </Stack>
         {onEdit && (
           <Tooltip
-            title={t("profile.buttons.editSection", { defaultValue: "Edit" })}
+            title={
+              isSectionComplete
+                ? t("profile.status.complete", { defaultValue: "Complete" })
+                : t("profile.buttons.editSection", { defaultValue: "Edit" })
+            }
             enterDelay={200}
           >
             <span>
@@ -356,24 +373,28 @@ function ProfileSection({
                   onEdit();
                 }}
                 disabled={disableEdit}
-                aria-label={t("profile.buttons.editSection", {
-                  defaultValue: "Edit",
-                })}
+                aria-label={
+                  isSectionComplete
+                    ? t("profile.status.complete", { defaultValue: "Complete" })
+                    : t("profile.buttons.editSection", { defaultValue: "Edit" })
+                }
                 sx={{
                   ml: { xs: 0, md: 1.5 },
                   alignSelf: { xs: "flex-start", md: "center" },
-                  color: alpha(editAccent, 0.85),
-                  borderRadius: "50%",
-                  border: `1px solid ${alpha(editAccent, 0.4)}`,
+                  color: editAccent,
+                  borderRadius: 1.5,
+                  border: `1px solid ${alpha(editAccent, 0.9)}`,
                   backgroundColor: "transparent",
                   boxShadow: "none",
+                  opacity: 0.8,
                   transition:
-                    "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease",
+                    "transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease",
                   "&:hover": {
-                    transform: "scale(1.05)",
-                    backgroundColor: alpha(editAccent, 0.15),
-                    boxShadow: `0 4px 12px ${alpha(editAccent, 0.22)}`,
-                    color: "#ff4f87",
+                    transform: "translateY(-1px)",
+                    backgroundColor: editAccent,
+                    boxShadow: `0 6px 16px ${alpha(editAccent, 0.35)}`,
+                    color: "#ffffff",
+                    opacity: 1,
                   },
                   "&.Mui-disabled": {
                     opacity: 0.45,
@@ -384,7 +405,11 @@ function ProfileSection({
                   },
                 }}
               >
-                <EditIcon fontSize="small" />
+                {isSectionComplete ? (
+                  <CheckRoundedIcon fontSize="small" />
+                ) : (
+                  <EditIcon fontSize="small" />
+                )}
               </IconButton>
             </span>
           </Tooltip>
