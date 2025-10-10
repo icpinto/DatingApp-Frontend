@@ -32,8 +32,9 @@ import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
 import api from "../../shared/services/api";
-import ProfileSections, { profileSectionDefinitions } from "./sections";
 import {
+  ProfileSections,
+  profileSectionDefinitions,
   AccountManagementSection,
   AccountSettingsSection,
   HelpfulInformationSection,
@@ -54,7 +55,7 @@ import { alpha } from "@mui/material/styles";
 import {
   SECTION_BACKGROUNDS,
   createSectionCardStyles,
-} from "./components/account/accountSectionTheme";
+} from "./components/accountSettings/accountSectionTheme";
 const sectionWrapperStyles = {
   mt: 8,
   mb: 8,

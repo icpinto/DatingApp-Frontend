@@ -15,7 +15,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useTranslation } from "../../../i18n";
+import { useTranslation } from "../../../../i18n";
 import { alpha, lighten } from "@mui/material/styles";
 
 const MODERN_FONT_STACK = '"Inter","Rubik","Roboto","Helvetica","Arial",sans-serif';

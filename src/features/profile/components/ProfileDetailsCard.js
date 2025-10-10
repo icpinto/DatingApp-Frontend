@@ -3,7 +3,7 @@ import { Alert, Avatar, Card, CardContent, CardHeader, Divider } from "@mui/mate
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
 import Guard from "../Guard";
 import { CAPABILITIES } from "../../../domain/capabilities";
-import ProfileSections from "../sections";
+import ProfileSections from "./profileManagement";
 
 function ProfileDetailsCard({ profile, t, viewSectionsReason }) {
   return (
