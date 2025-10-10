@@ -16,6 +16,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useTranslation } from "../../i18n";
 import { alpha, lighten } from "@mui/material/styles";
 
+const MODERN_FONT_STACK = '"Inter","Rubik","Roboto","Helvetica","Arial",sans-serif';
+
 const FIELD_LABELS = {
   verification: {
     identity_status: "profile.fields.identityStatus",
@@ -191,95 +193,118 @@ function ProfileSection({
             : {}),
         })}
       >
-        {IconComponent && (
-          <Box
-            sx={(theme) => ({
-              width: 40,
-              height: 40,
-              borderRadius: 1.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: alpha(theme.palette.primary.main, 0.08),
-              color: theme.palette.primary.main,
-              flexShrink: 0,
-            })}
-          >
-            <IconComponent fontSize="small" />
-          </Box>
-        )}
         <Stack
-          direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
-          sx={{ width: "100%" }}
+          direction="row"
+          alignItems="flex-start"
           spacing={2}
+          sx={{ width: "100%" }}
         >
-          <Typography
-            variant="subtitle1"
-            color={isSectionComplete ? "text.secondary" : "text.primary"}
-            sx={{
-              fontWeight: 600,
-              letterSpacing: 0.2,
-            }}
-          >
-            {label}
-          </Typography>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            spacing={1.5}
-            sx={{ width: { xs: "100%", sm: "auto" } }}
-          >
-            {totalFields > 0 && (
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{ minWidth: { xs: "100%", sm: 120 }, flexShrink: 0 }}
+          {IconComponent && (
+            <Box
+              sx={(theme) => ({
+                width: 40,
+                height: 40,
+                borderRadius: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.primary.main,
+                flexShrink: 0,
+              })}
+            >
+              <IconComponent fontSize="small" />
+            </Box>
+          )}
+          <Stack spacing={1.25} sx={{ flexGrow: 1 }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              justifyContent="space-between"
+              spacing={1}
+            >
+              <Typography
+                variant="subtitle1"
+                color={isSectionComplete ? "text.secondary" : "text.primary"}
+                sx={{
+                  fontWeight: 600,
+                  letterSpacing: 0.2,
+                  fontFamily: MODERN_FONT_STACK,
+                }}
               >
-                {isSectionComplete ? (
-                  <CheckCircleIcon
-                    color="success"
-                    fontSize="small"
-                    aria-label={completionLabel}
-                  />
-                ) : (
-                  <Box sx={{ width: { xs: "100%", sm: 90 } }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={completionPercentage}
-                      aria-label={completionLabel}
+                {label}
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1.25}>
+                {totalFields > 0 && (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.75}
+                    sx={{
+                      color: isSectionComplete
+                        ? "success.main"
+                        : "text.secondary",
+                      minWidth: { xs: 72, sm: 96 },
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    {isSectionComplete && (
+                      <CheckCircleIcon fontSize="small" />
+                    )}
+                    <Typography
+                      variant="caption"
                       sx={{
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor: (theme) =>
-                          alpha(theme.palette.primary.light, 0.2),
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 3,
-                          backgroundColor: (theme) =>
-                            theme.palette.primary.main,
-                        },
+                        fontFamily: MODERN_FONT_STACK,
+                        fontWeight: 600,
+                        letterSpacing: 0.6,
                       }}
-                    />
-                  </Box>
+                    >
+                      {`${completionPercentage}%`}
+                    </Typography>
+                  </Stack>
+                )}
+                {onEdit && (
+                  <IconButton
+                    size="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit();
+                    }}
+                    disabled={disableEdit}
+                    aria-label={t("profile.buttons.editSection", {
+                      defaultValue: "Edit",
+                    })}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
                 )}
               </Stack>
-            )}
-            {onEdit && (
-              <IconButton
-                size="small"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEdit();
-                }}
-                disabled={disableEdit}
-                aria-label={t("profile.buttons.editSection", {
-                  defaultValue: "Edit",
-                })}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
+            </Stack>
+            {totalFields > 0 && (
+              <Stack spacing={0.5} sx={{ width: "100%", maxWidth: 360 }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={completionPercentage}
+                  aria-label={completionLabel}
+                  sx={{
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: (theme) =>
+                      alpha(theme.palette.primary.light, 0.2),
+                    "& .MuiLinearProgress-bar": {
+                      borderRadius: 3,
+                      backgroundColor: (theme) => theme.palette.primary.main,
+                    },
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontFamily: MODERN_FONT_STACK, letterSpacing: 0.4 }}
+                >
+                  {completionLabel}
+                </Typography>
+              </Stack>
             )}
           </Stack>
         </Stack>
@@ -337,14 +362,21 @@ function ProfileSection({
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ fontWeight: 600, letterSpacing: 0.4 }}
+                    sx={{
+                      fontWeight: 600,
+                      letterSpacing: 0.4,
+                      fontFamily: MODERN_FONT_STACK,
+                    }}
                   >
                     {resolvedLabel}
                   </Typography>
                   <Typography
                     variant="body2"
                     color={isFilled ? "text.primary" : "text.secondary"}
-                    sx={{ fontStyle: isFilled ? "normal" : "italic" }}
+                    sx={{
+                      fontStyle: isFilled ? "normal" : "italic",
+                      fontFamily: MODERN_FONT_STACK,
+                    }}
                   >
                     {displayValue}
                   </Typography>
