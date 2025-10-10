@@ -2313,33 +2313,18 @@ function OwnerProfileContent({ accountLifecycle }) {
                 defaultValue: "Account settings",
               })}
               subheader={
-                <Stack spacing={0.75}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.92)",
-                      fontSize: "0.95rem",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {t("profile.preferences.accountTagline", {
-                      defaultValue:
-                        "Your account, your control — manage privacy and preferences easily.",
-                    })}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "rgba(255, 255, 255, 0.75)",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {t("profile.preferences.accountSubtitle", {
-                      defaultValue:
-                        "Fine-tune language, billing, security, and removal options whenever you like.",
-                    })}
-                  </Typography>
-                </Stack>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.92)",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                  }}
+                >
+                  {t("profile.preferences.accountTagline", {
+                    defaultValue: "Manage privacy, security, and billing in one place.",
+                  })}
+                </Typography>
               }
               sx={(theme) => ({
                 background: "linear-gradient(90deg, #ff4f87, #ff7f64)",
@@ -2400,8 +2385,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                               }}
                             >
                               {t("profile.preferences.languageDescription", {
-                                defaultValue:
-                                  "Choose the language you prefer to use across the app.",
+                                defaultValue: "Select the language you want to see in the app.",
                               })}
                             </Typography>
                           </Stack>
@@ -2488,13 +2472,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                                 }}
                               >
                                 {t("profile.preferences.billingDescription", {
-                                  defaultValue:
-                                    "Review and manage your membership plan, payment methods, and receipts.",
-                                })}
-                                {" "}
-                                {t("profile.preferences.billingReminder", {
-                                  defaultValue:
-                                    "Access your invoices and update payment preferences in one place.",
+                                  defaultValue: "Manage your plan, payment methods, and receipts.",
                                 })}
                               </Typography>
                             </Stack>
@@ -2585,8 +2563,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                               }}
                             >
                               {t("profile.preferences.visibilityDescription", {
-                                defaultValue:
-                                  "Hide your profile from potential matches without deleting your information.",
+                                defaultValue: "Hide your profile without losing your details.",
                               })}
                             </Typography>
                             <Typography
@@ -2608,11 +2585,13 @@ function OwnerProfileContent({ accountLifecycle }) {
                         </Stack>
                         <Stack
                           spacing={2}
-                          direction={{ xs: "column", sm: "row" }}
-                          alignItems={{ xs: "flex-start", sm: "center" }}
+                          direction="row"
+                          alignItems="center"
                           justifyContent="space-between"
+                          flexWrap="wrap"
+                          rowGap={1.5}
                         >
-                          <Stack spacing={1} sx={{ flex: 1 }}>
+                          <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
                             {(accountStatusLoading || isUpdatingAccountVisibility) && (
                               <Typography
                                 variant="caption"
@@ -2631,7 +2610,12 @@ function OwnerProfileContent({ accountLifecycle }) {
                               </Typography>
                             )}
                           </Stack>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
+                          <Stack
+                            direction="row"
+                            spacing={1.5}
+                            alignItems="center"
+                            sx={{ flexShrink: 0 }}
+                          >
                             <Switch
                               checked={isAccountHidden}
                               onChange={handleHideAccountToggle}
@@ -2715,13 +2699,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                                 }}
                               >
                                 {t("profile.preferences.signOutDescription", {
-                                  defaultValue:
-                                    "End your session on this device whenever you need to.",
-                                })}
-                                {" "}
-                                {t("profile.preferences.signOutReminder", {
-                                  defaultValue:
-                                    "Signing out keeps your account secure on shared devices.",
+                                  defaultValue: "Sign out on this device to stay secure.",
                                 })}
                               </Typography>
                             </Stack>
@@ -2822,13 +2800,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                                 }}
                               >
                                 {t("profile.preferences.removeAccountDescription", {
-                                  defaultValue:
-                                    "Permanently delete your profile, matches, and conversations.",
-                                })}
-                                {" "}
-                                {t("profile.preferences.removeAccountWarning", {
-                                  defaultValue:
-                                    "This action cannot be undone. Your conversations, matches, and profile will be permanently deleted.",
+                                  defaultValue: "Delete your profile, matches, and chats permanently.",
                                 })}
                               </Typography>
                             </Stack>
