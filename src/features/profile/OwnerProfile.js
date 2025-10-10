@@ -2282,7 +2282,7 @@ function OwnerProfileContent({ accountLifecycle }) {
           </Typography>
           <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.account)}>
             <CardHeader
-              avatar={<SettingsIcon color="primary" />}
+              avatar={<SettingsIcon fontSize="large" />}
               title={t("profile.preferences.accountSettings", {
                 defaultValue: "Account settings",
               })}
@@ -2290,11 +2290,29 @@ function OwnerProfileContent({ accountLifecycle }) {
                 defaultValue:
                   "Manage language, billing, privacy, and removal settings for your profile.",
               })}
+              sx={(theme) => ({
+                background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+                color: theme.palette.secondary.contrastText,
+                px: 3,
+                py: 2.5,
+                boxShadow: theme.shadows[4],
+                borderTopLeftRadius: theme.shape.borderRadius * 2,
+                borderTopRightRadius: theme.shape.borderRadius * 2,
+                '& .MuiCardHeader-avatar': {
+                  color: theme.palette.secondary.contrastText,
+                },
+                '& .MuiCardHeader-title': {
+                  color: theme.palette.secondary.contrastText,
+                  letterSpacing: '0.02em',
+                },
+                '& .MuiCardHeader-subheader': {
+                  color: alpha(theme.palette.secondary.contrastText, 0.85),
+                },
+              })}
             />
             <Divider />
             <CardContent>
-              <Stack spacing={2.5}>
-                <Stack spacing={2.5}>
+              <Stack spacing={3}>
                 <Box sx={createAccountActionStyles(canChangeLanguage)}>
                   <Stack spacing={1.5}>
                     <Stack
