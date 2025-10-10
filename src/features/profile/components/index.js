@@ -1,5 +1,5 @@
-export { default as ProfileSections } from "../../../shared/components/profileSections";
-export * from "../../../shared/components/profileSections";
+export { default as ProfileSections } from "./ownerProfile";
+export * from "./ownerProfile";
 export {
   AccountSettingsSection,
   AccountManagementSection,
