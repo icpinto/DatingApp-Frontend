@@ -1,9 +1,9 @@
 import React from "react";
 import { Alert, Avatar, Card, CardContent, CardHeader, Divider } from "@mui/material";
 import InfoOutlined from "@mui/icons-material/InfoOutlined";
-import Guard from "../Guard";
-import { CAPABILITIES } from "../../../domain/capabilities";
-import ProfileSections from "./profileManagement";
+import Guard from "../../../../shared/components/Guard";
+import { CAPABILITIES } from "../../../../domain/capabilities";
+import ProfileSections from "../../../../shared/components/profileSections";
 
 function ProfileDetailsCard({ profile, t, viewSectionsReason }) {
   return (

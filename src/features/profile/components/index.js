@@ -1,8 +1,5 @@
-export { default as ProfileHeaderCard } from "./ProfileHeaderCard";
-export { default as ProfileDetailsCard } from "./ProfileDetailsCard";
-export { default as ProfileRequestCard } from "./ProfileRequestCard";
-export { default as ProfileSections } from "./profileManagement";
-export * from "./profileManagement";
+export { default as ProfileSections } from "../../../shared/components/profileSections";
+export * from "../../../shared/components/profileSections";
 export {
   AccountSettingsSection,
   AccountManagementSection,
