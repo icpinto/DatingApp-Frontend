@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, Grid, Stack, Typography } from "@mui/material";
 import StaticPageLayout from "./StaticPageLayout";
-import { useTranslation } from "../../i18n";
+import { useTranslation } from "../../../i18n";
 
 function Pricing() {
   const { t } = useTranslation();
