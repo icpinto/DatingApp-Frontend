@@ -43,11 +43,7 @@ import {
   useTopBarNavigation,
 } from "./shared/context/TopBarNavigationContext";
 
-const MessagesPage = lazy(() =>
-  import("./features/messages").then((module) => ({
-    default: module.MessagesPage,
-  }))
-);
+const MessagesPage = lazy(() => import("./features/messages/Messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
 const PrivacyPolicyPage = lazy(() => import("./features/profile/static/PrivacyPolicy"));
 const TermsOfServicePage = lazy(() => import("./features/profile/static/TermsOfService"));

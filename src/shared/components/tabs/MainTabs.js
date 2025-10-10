@@ -46,11 +46,7 @@ const LazyMatchInsights = lazy(() =>
     default: module.MatchInsightsPage,
   }))
 );
-const LazyMessages = lazy(() =>
-  import("../../../features/messages").then((module) => ({
-    default: module.MessagesPage,
-  }))
-);
+const LazyMessages = lazy(() => import("../../../features/messages/Messages"));
 
 const TabLoader = () => (
   <Box sx={{ px: 2, py: 4, display: "flex", justifyContent: "center" }}>
