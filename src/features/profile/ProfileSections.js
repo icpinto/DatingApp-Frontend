@@ -1,6 +1,5 @@
 import React from "react";
 import { Stack, Typography } from "@mui/material";
-import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../i18n";
 
@@ -8,7 +7,6 @@ export const profileSectionDefinitions = [
   {
     key: "verification",
     labelKey: "profile.headers.verification",
-    Icon: VerifiedUserIcon,
   },
   {
     key: "personal",
