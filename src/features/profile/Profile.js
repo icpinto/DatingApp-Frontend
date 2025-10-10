@@ -34,6 +34,8 @@ import Guard from "./Guard";
 import { useUserCapabilities } from "../../shared/context/UserContext";
 import { isAbortError } from "../../utils/http";
 
+const MODERN_FONT_STACK = '"Inter","Rubik","Roboto","Helvetica","Arial",sans-serif';
+
 const calculateAge = (dateString) => {
   if (!dateString) {
     return null;
@@ -286,6 +288,9 @@ function ProfileContent() {
     [profileCapabilities.viewMember.reason, t]
   );
 
+  const locationText =
+    location || t("common.placeholders.notAvailable");
+
   return (
     <Guard
       can={CAPABILITIES.PROFILE_VIEW_MEMBER}
@@ -341,47 +346,93 @@ function ProfileContent() {
                     {displayName.charAt(0).toUpperCase()}
                   </Avatar>
                 }
-                title={
-                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                    {displayName}
-                  </Typography>
-                }
-                subheader={
-                  <Typography variant="body2" color="text.secondary">
-                    {location || t("common.placeholders.notAvailable")}
-                  </Typography>
-                }
+                title={displayName}
+                subheader={locationText}
+                titleTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    fontFamily: MODERN_FONT_STACK,
+                    fontSize: { xs: "1.5rem", sm: "1.75rem" },
+                    lineHeight: 1.2,
+                  },
+                }}
+                subheaderTypographyProps={{
+                  sx: {
+                    fontSize: "0.875rem",
+                    color: "#aaa",
+                    fontFamily: MODERN_FONT_STACK,
+                    fontWeight: 400,
+                    letterSpacing: 0.15,
+                  },
+                }}
               />
               <Divider />
               <CardContent>
                 <Stack spacing={spacing.section}>
-                  <Typography variant="body1" color="text.primary">
+                  <Typography
+                    variant="body1"
+                    color="text.primary"
+                    sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.6 }}
+                  >
                     {profile.personal.bio || t("common.placeholders.noBio")}
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
-                      <Typography variant="overline" color="text.secondary">
+                      <Typography
+                        variant="overline"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: MODERN_FONT_STACK,
+                          fontWeight: 600,
+                          letterSpacing: 0.8,
+                        }}
+                      >
                         {t("home.labels.age")}
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography
+                        variant="body1"
+                        sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.5 }}
+                      >
                         {age !== null
                           ? t("profile.viewer.ageYears", { count: age })
                           : t("common.placeholders.notAvailable")}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Typography variant="overline" color="text.secondary">
+                      <Typography
+                        variant="overline"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: MODERN_FONT_STACK,
+                          fontWeight: 600,
+                          letterSpacing: 0.8,
+                        }}
+                      >
                         {t("home.labels.location")}
                       </Typography>
-                      <Typography variant="body1">
-                        {location || t("common.placeholders.notAvailable")}
+                      <Typography
+                        variant="body1"
+                        sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.5 }}
+                      >
+                        {locationText}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Typography variant="overline" color="text.secondary">
+                      <Typography
+                        variant="overline"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: MODERN_FONT_STACK,
+                          fontWeight: 600,
+                          letterSpacing: 0.8,
+                        }}
+                      >
                         {t("profile.fields.civilStatus")}
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography
+                        variant="body1"
+                        sx={{ fontFamily: MODERN_FONT_STACK, lineHeight: 1.5 }}
+                      >
                         {profile.personal.civil_status ||
                           t("common.placeholders.notAvailable")}
                       </Typography>
@@ -404,7 +455,15 @@ function ProfileContent() {
                   </Guard>
                   {languages.length > 0 && (
                     <Stack spacing={1}>
-                      <Typography variant="overline" color="text.secondary">
+                      <Typography
+                        variant="overline"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: MODERN_FONT_STACK,
+                          fontWeight: 600,
+                          letterSpacing: 0.8,
+                        }}
+                      >
                         {t("profile.viewer.languagesLabel")}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -420,7 +479,15 @@ function ProfileContent() {
                   )}
                   {interests.length > 0 && (
                     <Stack spacing={1}>
-                      <Typography variant="overline" color="text.secondary">
+                      <Typography
+                        variant="overline"
+                        color="text.secondary"
+                        sx={{
+                          fontFamily: MODERN_FONT_STACK,
+                          fontWeight: 600,
+                          letterSpacing: 0.8,
+                        }}
+                      >
                         {t("profile.viewer.interestsLabel")}
                       </Typography>
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
