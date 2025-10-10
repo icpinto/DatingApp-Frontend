@@ -337,7 +337,6 @@ export function deriveCapabilities(facts = {}) {
   const isDeleted = accountStatus === ACCOUNT_STATUS.DELETED;
   const isSuspended = accountStatus === ACCOUNT_STATUS.SUSPENDED;
   const isDeactivated = accountStatus === ACCOUNT_STATUS.DEACTIVATED;
-  const isOperational = accountStatus === ACCOUNT_STATUS.ACTIVATED;
   const accountRestrictionMessage = resolveAccountRestrictionMessage({
     isDeleted,
     isSuspended,
@@ -657,7 +656,7 @@ export const getCapabilityReason = (facts = {}, capability) => {
   return reasons[capability];
 };
 
-export default {
+const capabilityApi = {
   CAPABILITIES,
   COMPONENT_CAPABILITIES,
   deriveCapabilities,
@@ -665,3 +664,5 @@ export default {
   buildCapabilitySet,
   getCapabilityReason,
 };
+
+export default capabilityApi;

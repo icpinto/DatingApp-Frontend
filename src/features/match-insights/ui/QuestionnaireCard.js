@@ -22,12 +22,12 @@ import {
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import { spacing } from "@/styles";
-import Guard from "@/shared/components/Guard";
-import { CAPABILITIES } from "@/domain/capabilities";
-import { useAccountLifecycle } from "@/shared/context/AccountLifecycleContext";
-import { ACCOUNT_DEACTIVATED_MESSAGE } from "@/domain/accountLifecycle";
-import { useUserCapabilities } from "@/shared/context/UserContext";
+import { spacing } from "styles";
+import Guard from "shared/components/Guard";
+import { CAPABILITIES } from "domain/capabilities";
+import { useAccountLifecycle } from "shared/context/AccountLifecycleContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "domain/accountLifecycle";
+import { useUserCapabilities } from "shared/context/UserContext";
 import { useQuestionnaire } from "../hooks/useMatchInsights";
 import QuestionCategorySelector from "./QuestionCategorySelector";
 

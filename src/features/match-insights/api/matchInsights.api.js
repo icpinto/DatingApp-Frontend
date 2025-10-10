@@ -1,5 +1,5 @@
-import matchPreferencesService from "@/shared/services/matchPreferences";
-import questionnaireService from "@/shared/services/questionnaireService";
+import matchPreferencesService from "shared/services/matchPreferences";
+import questionnaireService from "shared/services/questionnaireService";
 
 const getUserId = () => localStorage.getItem("user_id") || "";
 
