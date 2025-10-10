@@ -24,7 +24,7 @@ import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
 import MainTabs from "./shared/components/tabs/MainTabs";
 import Profile from "./features/home/profile/Profile";
-import Requests from "./features/requests/Requests";
+import Matches from "./features/matches/Matches";
 import CapabilityRoute from "./shared/components/routing/CapabilityRoute";
 import { WebSocketProvider } from "./shared/context/WebSocketProvider";
 import AppAccessBoundary from "./shared/components/AppAccessBoundary";
@@ -87,7 +87,7 @@ function AppLayout() {
           path="/requests"
           element={
             <CapabilityRoute capability={CAPABILITIES.REQUESTS_VIEW_RECEIVED}>
-              <Requests />
+              <Matches />
             </CapabilityRoute>
           }
         />

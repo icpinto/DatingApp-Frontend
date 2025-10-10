@@ -26,7 +26,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
 import Home from "../../../features/home/Home";
-import Requests from "../../../features/requests/Requests";
+import Matches from "../../../features/matches/Matches";
 import OwnerProfile from "../../../features/profile/profile";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
@@ -69,7 +69,7 @@ const buildTabDefinitions = ({ requestCount, unreadMessages, setRequestCount }) 
         <FavoriteIcon />
       </Badge>
     ),
-    render: () => <Requests onRequestCountChange={setRequestCount} />,
+    render: () => <Matches onRequestCountChange={setRequestCount} />,
   },
   {
     key: "insights",
