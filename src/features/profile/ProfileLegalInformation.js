@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardContent,
   Divider,
+  Grid,
   Stack,
   Typography,
 } from "@mui/material";
@@ -29,6 +30,7 @@ const SUMMARY_HOVER_COLOR = alpha("#1f2937", 0.45);
 const SUMMARY_ACTIVE_COLOR = alpha("#1f2937", 0.58);
 const DETAIL_BASE_COLOR = alpha("#0f172a", 0.72);
 const DETAIL_ACTIVE_COLOR = alpha("#0f172a", 0.88);
+const MODERN_FONT_STACK = '"Inter","Rubik","Roboto","Helvetica","Arial",sans-serif';
 
 function ProfileLegalInformation() {
   const { t } = useTranslation();
@@ -55,18 +57,29 @@ function ProfileLegalInformation() {
     <Card
       elevation={6}
       sx={{
-        borderRadius: 3,
+        borderRadius: 4,
         overflow: "hidden",
         backgroundColor: SECTION_BACKGROUND,
         color: SECTION_TEXT_COLOR,
         border: `1px solid ${SECTION_DIVIDER_COLOR}`,
         boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+        maxWidth: 960,
+        margin: "0 auto",
+        "& .MuiCardHeader-root": {
+          px: { xs: 3, md: 4 },
+          py: { xs: 3, md: 4 },
+          alignItems: "flex-start",
+        },
         "& .MuiCardHeader-title": {
           color: SECTION_TEXT_COLOR,
           letterSpacing: "0.02em",
         },
         "& .MuiCardHeader-subheader": {
           color: SECTION_SUBTEXT_COLOR,
+        },
+        "& .MuiCardContent-root": {
+          px: { xs: 3, md: 4 },
+          py: { xs: 3, md: 4 },
         },
         "& .MuiTypography-root": {
           color: SECTION_TEXT_COLOR,
@@ -83,124 +96,176 @@ function ProfileLegalInformation() {
         avatar={<InfoOutlinedIcon color="primary" />}
         title={t("profile.legal.title", { defaultValue: "Helpful information" })}
         subheader={tagline}
+        titleTypographyProps={{
+          component: "h3",
+          variant: "h5",
+          fontWeight: 700,
+          sx: {
+            fontFamily: MODERN_FONT_STACK,
+            lineHeight: 1.25,
+          },
+        }}
+        subheaderTypographyProps={{
+          variant: "subtitle1",
+          sx: {
+            lineHeight: 1.5,
+            fontFamily: MODERN_FONT_STACK,
+          },
+        }}
       />
       <Divider />
       <CardContent>
-        <Stack spacing={2}>
-          <Typography variant="body2" color="text.secondary">
+        <Stack spacing={4}>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              lineHeight: 1.6,
+              fontFamily: MODERN_FONT_STACK,
+            }}
+          >
             {t("profile.legal.description", {
               defaultValue:
                 "Learn more about how MatchUp protects your privacy, keeps things fair, and supports your membership.",
             })}
           </Typography>
-          <Stack spacing={2.5}>
+          <Grid container spacing={{ xs: 2.5, md: 3 }}>
             {sections.map((section) => (
-              <Accordion
-                key={section.id}
-                disableGutters
-                square={false}
-                elevation={0}
-                sx={{
-                  borderRadius: 2,
-                  border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-                  borderLeft: "3px solid transparent",
-                  backgroundColor: alpha("#0f172a", 0.55),
-                  transition:
-                    "transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease",
-                  "&::before": {
-                    display: "none",
-                  },
-                  "&.Mui-expanded": {
-                    boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
-                    borderLeftColor: (theme) => theme.palette.primary.light,
-                  },
-                  "&:hover": {
-                    boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
-                    transform: "translateY(-2px)",
-                  },
-                }}
-                expanded={expanded === section.id}
-                onChange={handleAccordionChange(section.id)}
-              >
-                <AccordionSummary
-                  expandIcon={
-                    <ExpandMoreIcon
-                      sx={{
-                        transition: "transform 0.2s ease",
-                        transform:
-                          expanded === section.id ? "rotate(180deg)" : "rotate(0deg)",
-                      }}
-                    />
-                  }
+              <Grid key={section.id} item xs={12} md={6}>
+                <Accordion
+                  disableGutters
+                  square={false}
+                  elevation={0}
                   sx={{
-                    "& .MuiAccordionSummary-content": {
-                      margin: 0,
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    borderRadius: 2,
+                    border: `1px solid ${SECTION_DIVIDER_COLOR}`,
+                    borderLeft: "3px solid transparent",
+                    backgroundColor: alpha("#0f172a", 0.55),
+                    transition:
+                      "transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease",
+                    "&::before": {
+                      display: "none",
                     },
-                    px: 2.5,
-                    py: 2,
-                    backgroundColor:
-                      expanded === section.id ? SUMMARY_ACTIVE_COLOR : "transparent",
-                    transition: "background-color 0.2s ease",
+                    "&.Mui-expanded": {
+                      boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
+                      borderLeftColor: (theme) => theme.palette.primary.light,
+                    },
                     "&:hover": {
-                      backgroundColor: SUMMARY_HOVER_COLOR,
+                      boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
+                      transform: "translateY(-2px)",
                     },
                   }}
+                  expanded={expanded === section.id}
+                  onChange={handleAccordionChange(section.id)}
                 >
-                  <Stack direction="row" spacing={2} alignItems="flex-start">
-                    <Box
-                      component="span"
-                      aria-hidden
-                      sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        pt: 0.5,
-                      }}
-                    >
-                      {renderSectionIcon(section.id)}
-                    </Box>
-                    <Stack spacing={0.75}>
-                      <Typography
-                        variant="h6"
+                  <AccordionSummary
+                    expandIcon={
+                      <ExpandMoreIcon
                         sx={{
-                          fontWeight: 600,
-                          letterSpacing: 0.2,
+                          transition: "transform 0.2s ease",
+                          transform:
+                            expanded === section.id ? "rotate(180deg)" : "rotate(0deg)",
+                        }}
+                      />
+                    }
+                    sx={{
+                      "& .MuiAccordionSummary-content": {
+                        margin: 0,
+                      },
+                      px: { xs: 2.5, md: 3 },
+                      py: { xs: 2, md: 2.25 },
+                      backgroundColor:
+                        expanded === section.id ? SUMMARY_ACTIVE_COLOR : "transparent",
+                      transition: "background-color 0.2s ease",
+                      "&:hover": {
+                        backgroundColor: SUMMARY_HOVER_COLOR,
+                      },
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      alignItems="flex-start"
+                      sx={{ width: "100%" }}
+                    >
+                      <Box
+                        component="span"
+                        aria-hidden
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 0.5,
                         }}
                       >
-                        {section.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
-                        {section.summary}
-                      </Typography>
+                        {renderSectionIcon(section.id)}
+                      </Box>
+                      <Stack spacing={0.75} sx={{ flex: 1 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 600,
+                            letterSpacing: 0.2,
+                            fontFamily: MODERN_FONT_STACK,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {section.title}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: SECTION_SUBTEXT_COLOR,
+                            lineHeight: 1.6,
+                            fontFamily: MODERN_FONT_STACK,
+                          }}
+                        >
+                          {section.summary}
+                        </Typography>
+                      </Stack>
                     </Stack>
-                  </Stack>
-                </AccordionSummary>
-                <AccordionDetails
-                  sx={{
-                    px: 2.5,
-                    py: 2.5,
-                    borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
-                    backgroundColor:
-                      expanded === section.id ? DETAIL_ACTIVE_COLOR : DETAIL_BASE_COLOR,
-                  }}
-                >
-                  <Stack spacing={1.75}>
-                    {section.body.map((paragraph, index) => (
-                      <Typography
-                        key={index}
-                        variant="body2"
-                        sx={{ color: SECTION_SUBTEXT_COLOR }}
-                      >
-                        {paragraph}
-                      </Typography>
-                    ))}
-                  </Stack>
-                </AccordionDetails>
-              </Accordion>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      px: { xs: 2.5, md: 3 },
+                      py: { xs: 2.5, md: 3 },
+                      borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
+                      backgroundColor:
+                        expanded === section.id ? DETAIL_ACTIVE_COLOR : DETAIL_BASE_COLOR,
+                    }}
+                  >
+                    <Stack spacing={1.75}>
+                      {section.body.map((paragraph, index) => (
+                        <Typography
+                          key={index}
+                          variant="body2"
+                          sx={{
+                            color: SECTION_SUBTEXT_COLOR,
+                            lineHeight: 1.6,
+                            fontFamily: MODERN_FONT_STACK,
+                          }}
+                        >
+                          {paragraph}
+                        </Typography>
+                      ))}
+                    </Stack>
+                  </AccordionDetails>
+                </Accordion>
+              </Grid>
             ))}
-          </Stack>
+          </Grid>
           <Divider flexItem sx={{ my: 1 }} />
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              fontFamily: MODERN_FONT_STACK,
+              letterSpacing: 0.3,
+            }}
+          >
             {copyright}
           </Typography>
         </Stack>
