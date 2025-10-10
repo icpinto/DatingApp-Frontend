@@ -8,9 +8,11 @@ import {
   Stack,
   Box,
   LinearProgress,
-  Button,
+  IconButton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useTranslation } from "../../i18n";
 import { alpha, lighten } from "@mui/material/styles";
 
@@ -133,6 +135,11 @@ function ProfileSection({
   }, 0);
   const completionPercentage =
     totalFields > 0 ? Math.round((filledCount / totalFields) * 100) : 0;
+  const isSectionComplete = totalFields > 0 && filledCount === totalFields;
+  const completionLabel = t("profile.summary.sectionCompletion", {
+    completed: filledCount,
+    total: totalFields,
+  });
 
   return (
     <Accordion
@@ -174,6 +181,14 @@ function ProfileSection({
           py: 2,
           gap: 2,
           backgroundColor: "transparent",
+          ...(isSectionComplete
+            ? {
+                opacity: 0.65,
+                "&:hover": {
+                  opacity: 0.85,
+                },
+              }
+            : {}),
         })}
       >
         {IconComponent && (
@@ -202,6 +217,7 @@ function ProfileSection({
         >
           <Typography
             variant="subtitle1"
+            color={isSectionComplete ? "text.secondary" : "text.primary"}
             sx={{
               fontWeight: 600,
               letterSpacing: 0.2,
@@ -217,47 +233,53 @@ function ProfileSection({
           >
             {totalFields > 0 && (
               <Stack
-                spacing={0.75}
-                sx={{ minWidth: { xs: "100%", sm: 160 }, flexShrink: 0 }}
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ minWidth: { xs: "100%", sm: 120 }, flexShrink: 0 }}
               >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontWeight: 500 }}
-                >
-                  {t("profile.summary.sectionCompletion", {
-                    completed: filledCount,
-                    total: totalFields,
-                  })}
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={completionPercentage}
-                  sx={{
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.primary.light, 0.2),
-                    "& .MuiLinearProgress-bar": {
-                      borderRadius: 3,
-                      backgroundColor: (theme) => theme.palette.primary.main,
-                    },
-                  }}
-                />
+                {isSectionComplete ? (
+                  <CheckCircleIcon
+                    color="success"
+                    fontSize="small"
+                    aria-label={completionLabel}
+                  />
+                ) : (
+                  <Box sx={{ width: { xs: "100%", sm: 90 } }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={completionPercentage}
+                      aria-label={completionLabel}
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: (theme) =>
+                          alpha(theme.palette.primary.light, 0.2),
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 3,
+                          backgroundColor: (theme) =>
+                            theme.palette.primary.main,
+                        },
+                      }}
+                    />
+                  </Box>
+                )}
               </Stack>
             )}
             {onEdit && (
-              <Button
-                variant="outlined"
+              <IconButton
                 size="small"
                 onClick={(event) => {
                   event.stopPropagation();
                   onEdit();
                 }}
                 disabled={disableEdit}
+                aria-label={t("profile.buttons.editSection", {
+                  defaultValue: "Edit",
+                })}
               >
-                {t("profile.buttons.editSection", { defaultValue: "Edit" })}
-              </Button>
+                <EditIcon fontSize="small" />
+              </IconButton>
             )}
           </Stack>
         </Stack>
