@@ -42,7 +42,9 @@ import { isNetworkError } from "../../../utils/http";
 import { useTopBarNavigation } from "../../context/TopBarNavigationContext";
 
 const LazyMatchInsights = lazy(() =>
-  import("../../../features/home/insights/MatchInsights")
+  import("@/features/match-insights").then((module) => ({
+    default: module.MatchInsightsPage,
+  }))
 );
 const LazyMessages = lazy(() => import("../../../features/messages/Messages"));
 

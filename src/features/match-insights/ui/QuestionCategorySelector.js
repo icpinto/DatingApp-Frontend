@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { FormControl, InputLabel, Select, MenuItem, Typography } from "@mui/material";
-import questionnaireService from "../../../shared/services/questionnaireService";
-import Guard from "./Guard";
-import { useUserCapabilities } from "../../../shared/context/UserContext";
-import { CAPABILITIES } from "../../../domain/capabilities";
+import React, { useEffect, useState } from "react";
+import { FormControl, InputLabel, MenuItem, Select, Typography } from "@mui/material";
+import Guard from "@/shared/components/Guard";
+import { useUserCapabilities } from "@/shared/context/UserContext";
+import { CAPABILITIES } from "@/domain/capabilities";
+import { useQuestionnaire } from "../hooks/useMatchInsights";
 
 function QuestionCategorySelector({ value, onChange, disabled = false }) {
   const [categories, setCategories] = useState([]);
+  const { getQuestionnaireCategories } = useQuestionnaire();
   const { groups } = useUserCapabilities();
   const selectCapability = groups.insights.selectCategory;
   const canSelectCategory = selectCapability.can;
@@ -21,13 +22,13 @@ function QuestionCategorySelector({ value, onChange, disabled = false }) {
 
     const fetchCategories = async () => {
       try {
-        const res = await questionnaireService.get("/questions/categories");
+        const loadedCategories = await getQuestionnaireCategories();
         if (isSubscribed) {
-          setCategories(res.data?.categories || []);
+          setCategories(loadedCategories);
         }
-      } catch (err) {
+      } catch (error) {
         if (isSubscribed) {
-          console.error("Error fetching categories:", err);
+          console.error("Error fetching categories:", error);
         }
       }
     };
@@ -37,7 +38,7 @@ function QuestionCategorySelector({ value, onChange, disabled = false }) {
     return () => {
       isSubscribed = false;
     };
-  }, [disabled, canSelectCategory]);
+  }, [disabled, canSelectCategory, getQuestionnaireCategories]);
 
   const capabilityReason = selectCapability.reason;
 
@@ -54,7 +55,7 @@ function QuestionCategorySelector({ value, onChange, disabled = false }) {
                 labelId="question-category-label"
                 value={value}
                 label="Category"
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(event) => onChange(event.target.value)}
                 disabled={isDisabled}
               >
                 <MenuItem value="All">All</MenuItem>
