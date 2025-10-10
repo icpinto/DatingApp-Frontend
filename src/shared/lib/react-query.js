@@ -1,6 +1,13 @@
-const React = require("react");
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const QueryClientContext = React.createContext(null);
+const QueryClientContext = createContext(null);
 
 const hashKey = (key) => {
   if (Array.isArray(key)) {
@@ -12,7 +19,7 @@ const hashKey = (key) => {
   return JSON.stringify([key]);
 };
 
-class QueryClient {
+export class QueryClient {
   constructor() {
     this.cache = new Map();
     this.listeners = new Map();
@@ -28,12 +35,12 @@ class QueryClient {
     const previous = this.cache.get(key)?.data;
     const next = typeof updater === "function" ? updater(previous) : updater;
     this.cache.set(key, { data: next });
-    this._notify(key);
+    this.#notify(key);
   }
 
   invalidateQueries({ queryKey }) {
     const key = hashKey(queryKey);
-    this._notify(key);
+    this.#notify(key);
   }
 
   subscribe(queryKey, listener) {
@@ -45,23 +52,23 @@ class QueryClient {
     }
     set.add(listener);
     return () => {
-      const listeners = this.listeners.get(key);
-      if (!listeners) {
+      const currentListeners = this.listeners.get(key);
+      if (!currentListeners) {
         return;
       }
-      listeners.delete(listener);
-      if (listeners.size === 0) {
+      currentListeners.delete(listener);
+      if (currentListeners.size === 0) {
         this.listeners.delete(key);
       }
     };
   }
 
-  _notify(key) {
-    const listeners = this.listeners.get(key);
-    if (!listeners) {
+  #notify(key) {
+    const currentListeners = this.listeners.get(key);
+    if (!currentListeners) {
       return;
     }
-    Array.from(listeners).forEach((listener) => {
+    Array.from(currentListeners).forEach((listener) => {
       try {
         listener();
       } catch (error) {
@@ -72,29 +79,29 @@ class QueryClient {
   }
 }
 
-const QueryClientProvider = ({ client, children }) => {
+export function QueryClientProvider({ client, children }) {
   if (!client) {
     throw new Error("QueryClientProvider requires a client instance");
   }
-  return React.createElement(
-    QueryClientContext.Provider,
-    { value: client },
-    children
+  return (
+    <QueryClientContext.Provider value={client}>
+      {children}
+    </QueryClientContext.Provider>
   );
-};
+}
 
-const useQueryClient = () => {
-  const client = React.useContext(QueryClientContext);
+export function useQueryClient() {
+  const client = useContext(QueryClientContext);
   if (!client) {
     throw new Error("No QueryClient set, use QueryClientProvider");
   }
   return client;
-};
+}
 
-const useQuery = ({ queryKey, queryFn, enabled = true, select }) => {
+export function useQuery({ queryKey, queryFn, enabled = true, select }) {
   const client = useQueryClient();
-  const stableKey = React.useMemo(() => hashKey(queryKey), [queryKey]);
-  const [state, setState] = React.useState(() => {
+  const stableKey = useMemo(() => hashKey(queryKey), [queryKey]);
+  const [state, setState] = useState(() => {
     const cached = client.getQueryData(queryKey);
     if (cached !== undefined) {
       return {
@@ -110,7 +117,7 @@ const useQuery = ({ queryKey, queryFn, enabled = true, select }) => {
     };
   });
 
-  const runFetch = React.useCallback(async () => {
+  const runFetch = useCallback(async () => {
     if (!enabled || typeof queryFn !== "function") {
       return state.data;
     }
@@ -127,7 +134,7 @@ const useQuery = ({ queryKey, queryFn, enabled = true, select }) => {
     }
   }, [client, queryFn, queryKey, select, enabled, state.data]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) {
       setState((prev) => ({ ...prev, isLoading: false }));
       return undefined;
@@ -143,7 +150,7 @@ const useQuery = ({ queryKey, queryFn, enabled = true, select }) => {
     };
   }, [stableKey, runFetch, enabled]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) {
       return undefined;
     }
@@ -160,13 +167,13 @@ const useQuery = ({ queryKey, queryFn, enabled = true, select }) => {
     error: state.error,
     refetch: runFetch,
   };
-};
+}
 
-const useMutation = ({ mutationFn, onSuccess, onError }) => {
+export function useMutation({ mutationFn, onSuccess, onError }) {
   const client = useQueryClient();
-  const [isPending, setIsPending] = React.useState(false);
+  const [isPending, setIsPending] = useState(false);
 
-  const mutateAsync = React.useCallback(
+  const mutateAsync = useCallback(
     async (variables) => {
       if (typeof mutationFn !== "function") {
         throw new Error("mutationFn must be a function");
@@ -187,19 +194,11 @@ const useMutation = ({ mutationFn, onSuccess, onError }) => {
         throw error;
       }
     },
-    [client, mutationFn, onSuccess, onError]
+    [client, mutationFn, onSuccess, onError],
   );
 
   return {
     mutateAsync,
     isPending,
   };
-};
-
-module.exports = {
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-  useQuery,
-  useMutation,
-};
+}
