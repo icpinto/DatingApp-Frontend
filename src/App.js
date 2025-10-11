@@ -14,9 +14,10 @@ import {
   Box,
   Button,
   CircularProgress,
+  Container,
   useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import Signup from "./features/auth/Signup";
@@ -176,37 +177,58 @@ function TopBar() {
     };
   }, []);
 
+  const glassBackground =
+    theme.palette.mode === "light"
+      ? alpha(theme.palette.background.paper, 0.85)
+      : alpha(theme.palette.background.default, 0.75);
+
   return (
-    <>
-      <AppBar
-        position="static"
-        color="primary"
-        enableColorOnDark
-        elevation={theme.palette.mode === "light" ? 2 : 4}
-      >
+    <AppBar
+      position="sticky"
+      color="transparent"
+      elevation={0}
+      sx={{
+        backdropFilter: "blur(18px)",
+        backgroundColor: glassBackground,
+        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+        boxShadow:
+          theme.palette.mode === "light"
+            ? "0 12px 32px -18px rgba(15, 23, 42, 0.35)"
+            : "0 18px 38px -24px rgba(15, 23, 42, 0.65)",
+      }}
+    >
+      <Container maxWidth="lg" disableGutters sx={{ px: { xs: 2, md: 4 } }}>
         <Toolbar
           sx={{
             gap: { xs: 1, md: 2 },
             flexWrap: { xs: "wrap", md: "nowrap" },
             alignItems: "center",
-            minHeight: { md: 96 },
+            minHeight: { md: 88 },
+            py: { xs: 1.5, md: 2 },
           }}
         >
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1.25,
               flexShrink: 0,
+              px: 1,
+              py: 0.5,
+              borderRadius: 2,
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
             }}
           >
             <Box
               component="img"
               src={logo}
               alt={t("app.alt")}
-              sx={{ height: 40 }}
+              sx={{ height: 36, filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))" }}
             />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" }}
+            >
               {t("app.name")}
             </Typography>
           </Box>
@@ -216,7 +238,7 @@ function TopBar() {
                 flexGrow: 1,
                 display: "flex",
                 justifyContent: "center",
-                px: 2,
+                px: { xs: 1, md: 3 },
               }}
             >
               {navigation}
@@ -226,7 +248,7 @@ function TopBar() {
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1,
+              gap: { xs: 1, md: 1.5 },
               ml: { xs: "auto", md: navigation ? 0 : "auto" },
             }}
           >
@@ -234,19 +256,48 @@ function TopBar() {
               aria-label={t("app.themeToggle")}
               onClick={colorMode.toggleColorMode}
               color="inherit"
+              sx={{
+                borderRadius: 2,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                transition: theme.transitions.create(["background-color", "transform"], {
+                  duration: theme.transitions.duration.shorter,
+                }),
+                "&:hover": {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                  transform: "translateY(-1px)",
+                },
+              }}
             >
               {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
             {!hasToken && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Button color="inherit" onClick={() => navigate("/login")}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.5 } }}>
+                <Button
+                  color="inherit"
+                  onClick={() => navigate("/login")}
+                  sx={{
+                    fontWeight: 600,
+                    px: 1.5,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
+                  }}
+                >
                   {t("app.signIn", { defaultValue: "Sign in" })}
                 </Button>
                 <Button
                   color="secondary"
                   variant="contained"
                   onClick={() => navigate("/signup")}
-                  sx={{ whiteSpace: "nowrap" }}
+                  sx={{
+                    whiteSpace: "nowrap",
+                    fontWeight: 700,
+                    borderRadius: 2.5,
+                    px: { xs: 2, md: 2.75 },
+                    py: 1,
+                    boxShadow: "0 10px 30px -12px rgba(236, 72, 153, 0.8)",
+                  }}
                 >
                   {t("app.joinNow", { defaultValue: "Join now" })}
                 </Button>
@@ -254,8 +305,8 @@ function TopBar() {
             )}
           </Box>
         </Toolbar>
-      </AppBar>
-    </>
+      </Container>
+    </AppBar>
   );
 }
 
