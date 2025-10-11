@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useContext, useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -10,16 +10,15 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  IconButton,
   Box,
   Button,
   CircularProgress,
   Container,
   useMediaQuery,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
 import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
@@ -33,7 +32,6 @@ import {
   AccountLifecycleProvider,
   useAccountLifecycle,
 } from "./shared/context/AccountLifecycleContext";
-import { ColorModeContext } from "./shared/context/ThemeContext";
 import { UserProvider } from "./shared/context/UserContext";
 import logo from "./logo.svg";
 import { useTranslation } from "./i18n";
@@ -43,6 +41,7 @@ import {
   TopBarNavigationProvider,
   useTopBarNavigation,
 } from "./shared/context/TopBarNavigationContext";
+import { useSignOut } from "./shared/hooks/useSignOut";
 
 const MessagesPage = lazy(() => import("./features/messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
@@ -151,7 +150,6 @@ function AppLayout() {
 }
 
 function TopBar() {
-  const colorMode = useContext(ColorModeContext);
   const theme = useTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -160,6 +158,12 @@ function TopBar() {
   const [hasToken, setHasToken] = useState(() =>
     Boolean(typeof window !== "undefined" && localStorage.getItem("token"))
   );
+  const { signOut, signingOut, canSignOut, signOutReason } = useSignOut();
+  const [signOutFeedback, setSignOutFeedback] = useState({
+    open: false,
+    severity: "success",
+    message: "",
+  });
 
   useEffect(() => {
     const updateTokenState = (event) => {
@@ -181,6 +185,56 @@ function TopBar() {
     theme.palette.mode === "light"
       ? alpha(theme.palette.background.paper, 0.85)
       : alpha(theme.palette.background.default, 0.75);
+
+  const handleSignOutClick = async () => {
+    const result = await signOut();
+
+    if (!result) {
+      return;
+    }
+
+    if (result.status === "blocked") {
+      setSignOutFeedback({
+        open: true,
+        severity: "info",
+        message:
+          signOutReason ||
+          t("app.signOutUnavailable", {
+            defaultValue: "Signing out is currently unavailable.",
+          }),
+      });
+      return;
+    }
+
+    if (result.status === "warning") {
+      setSignOutFeedback({
+        open: true,
+        severity: "warning",
+        message: t("app.signOutError", {
+          defaultValue:
+            "We couldn't reach the server, but your local session was cleared.",
+        }),
+      });
+    } else {
+      setSignOutFeedback({
+        open: true,
+        severity: "success",
+        message: t("app.signOutSuccess", {
+          defaultValue: "Signed out successfully.",
+        }),
+      });
+    }
+
+    setHasToken(false);
+    navigate("/");
+  };
+
+  const handleCloseSignOutFeedback = (_, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSignOutFeedback((previous) => ({ ...previous, open: false }));
+  };
 
   return (
     <AppBar
@@ -252,26 +306,53 @@ function TopBar() {
               ml: { xs: "auto", md: navigation ? 0 : "auto" },
             }}
           >
-            <IconButton
-              aria-label={t("app.themeToggle")}
-              onClick={colorMode.toggleColorMode}
-              color="inherit"
-              sx={{
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                transition: theme.transitions.create(["background-color", "transform"], {
-                  duration: theme.transitions.duration.shorter,
-                }),
-                "&:hover": {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                  transform: "translateY(-1px)",
-                },
-              }}
-            >
-              {theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-            {!hasToken && (
+            {hasToken ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: 0.5,
+                  minWidth: 0,
+                }}
+              >
+                <Button
+                  color="inherit"
+                  variant="outlined"
+                  onClick={handleSignOutClick}
+                  disabled={signingOut || !canSignOut}
+                  startIcon={
+                    signingOut ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : undefined
+                  }
+                  sx={{
+                    fontWeight: 600,
+                    px: { xs: 1.5, md: 2 },
+                    textTransform: "none",
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
+                    backgroundColor: "transparent",
+                    "&:hover": {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                    },
+                  }}
+                >
+                  {signingOut
+                    ? t("app.signingOut", { defaultValue: "Signing out..." })
+                    : t("app.signOut", { defaultValue: "Sign out" })}
+                </Button>
+                {!canSignOut && signOutReason && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textAlign: "right", maxWidth: 240 }}
+                  >
+                    {signOutReason}
+                  </Typography>
+                )}
+              </Box>
+            ) : (
               <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.5 } }}>
                 <Button
                   color="inherit"
@@ -306,6 +387,20 @@ function TopBar() {
           </Box>
         </Toolbar>
       </Container>
+      <Snackbar
+        open={signOutFeedback.open && Boolean(signOutFeedback.message)}
+        autoHideDuration={6000}
+        onClose={handleCloseSignOutFeedback}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSignOutFeedback}
+          severity={signOutFeedback.severity}
+          sx={{ width: "100%" }}
+        >
+          {signOutFeedback.message}
+        </Alert>
+      </Snackbar>
     </AppBar>
   );
 }

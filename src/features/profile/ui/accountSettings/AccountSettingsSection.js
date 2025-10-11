@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   Box,
   Button,
@@ -11,9 +11,11 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import LogoutIcon from "@mui/icons-material/Logout";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
 import SettingsIcon from "@mui/icons-material/Settings";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import FeatureCard from "../../../../shared/components/FeatureCard";
@@ -24,6 +26,7 @@ import {
   SECTION_BACKGROUNDS,
   SECTION_SUBTEXT_COLOR,
 } from "./accountSectionTheme";
+import { ColorModeContext } from "../../../../shared/context/ThemeContext";
 
 function AccountSettingsSection({
   canChangeLanguage,
@@ -41,10 +44,6 @@ function AccountSettingsSection({
   isUpdatingAccountVisibility,
   onToggleVisibility,
   visibilityStatusText,
-  canSignOut,
-  signOutReason,
-  signingOut,
-  onSignOut,
   canRemoveAccount,
   removeAccountReason,
   onRemoveAccount,
@@ -64,6 +63,11 @@ function AccountSettingsSection({
   const cardSubheader = t("profile.preferences.accountTagline", {
     defaultValue: "Manage privacy, security, and billing in one place.",
   });
+
+  const theme = useTheme();
+  const colorMode = useContext(ColorModeContext);
+  const canToggleTheme = typeof colorMode?.toggleColorMode === "function";
+  const isDarkMode = theme.palette.mode === "dark";
 
   const renderVisibilityHelper = () => {
     if (accountStatusLoading || isUpdatingAccountVisibility) {
@@ -155,8 +159,116 @@ function AccountSettingsSection({
     </Box>
   );
 
+  const themePreference = (
+    <Box sx={createAccountActionStyles(canToggleTheme, "default", 1)}>
+      <Stack spacing={1.5}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2.5}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          justifyContent="space-between"
+        >
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="flex-start"
+            sx={{ flex: 1, minWidth: 0 }}
+          >
+            <Box
+              component="span"
+              aria-hidden
+              data-account-action-icon="true"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pt: 0.5,
+                borderRadius: "999px",
+                padding: 0.75,
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
+                transition:
+                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
+              }}
+            >
+              {isDarkMode ? (
+                <Brightness7Icon color={canToggleTheme ? "primary" : "disabled"} />
+              ) : (
+                <Brightness4Icon color={canToggleTheme ? "primary" : "disabled"} />
+              )}
+            </Box>
+            <Stack spacing={0.75} sx={{ flex: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  letterSpacing: 0.2,
+                }}
+              >
+                {t("profile.preferences.theme", { defaultValue: "Appearance" })}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: SECTION_SUBTEXT_COLOR,
+                  fontSize: "0.875rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("profile.preferences.themeDescription", {
+                  defaultValue:
+                    "Switch between light and dark mode to match your environment.",
+                })}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: isDarkMode ? "#7dd3fc" : "#ffb86c",
+                  fontSize: "0.85rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {isDarkMode
+                  ? t("profile.preferences.darkModeActive", {
+                      defaultValue: "Dark mode keeps things easy on the eyes.",
+                    })
+                  : t("profile.preferences.lightModeActive", {
+                      defaultValue: "Light mode brightens up your experience.",
+                    })}
+              </Typography>
+            </Stack>
+          </Stack>
+          <Switch
+            checked={isDarkMode}
+            onChange={() => {
+              if (canToggleTheme) {
+                colorMode.toggleColorMode();
+              }
+            }}
+            disabled={!canToggleTheme}
+            inputProps={{
+              "aria-label": t("profile.preferences.themeToggleLabel", {
+                defaultValue: "Toggle dark mode",
+              }),
+            }}
+            sx={{
+              "& .MuiSwitch-thumb": {
+                boxShadow: "0 0 6px rgba(125, 211, 252, 0.45)",
+              },
+              "& .MuiSwitch-switchBase.Mui-checked": {
+                color: "#38bdf8",
+              },
+              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                backgroundColor: "rgba(56, 189, 248, 0.45)",
+              },
+            }}
+          />
+        </Stack>
+      </Stack>
+    </Box>
+  );
+
   const billingManagement = (
-    <Box sx={createAccountActionStyles(canManagePayments, "default", 1)}>
+    <Box sx={createAccountActionStyles(canManagePayments, "default", 2)}>
       <Stack spacing={1.5}>
         <Stack
           direction={{ xs: "column", sm: "row" }}
@@ -328,6 +440,7 @@ function AccountSettingsSection({
       <Stack spacing={3}>
         <Typography sx={accountSectionHeadingStyles}>{preferencesTitle}</Typography>
         {languagePreference}
+        {themePreference}
         {billingManagement}
       </Stack>
       <Stack spacing={3}>
@@ -437,100 +550,6 @@ function AccountSettingsSection({
                 )}
               </Stack>
             </Stack>
-          </Stack>
-        </Box>
-        <Box sx={createAccountActionStyles(canSignOut, "default", 1)}>
-          <Stack spacing={1.5}>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2.5}
-              alignItems={{ xs: "flex-start", sm: "center" }}
-              justifyContent="space-between"
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="flex-start"
-                sx={{ flex: 1, minWidth: 0 }}
-              >
-                <Box
-                  component="span"
-                  aria-hidden
-                  data-account-action-icon="true"
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    pt: 0.5,
-                    borderRadius: "999px",
-                    padding: 0.75,
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    transition:
-                      "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-                  }}
-                >
-                  <LogoutIcon color={canSignOut ? "primary" : "disabled"} />
-                </Box>
-                <Stack spacing={0.75} sx={{ flex: 1 }}>
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 600,
-                      letterSpacing: 0.2,
-                    }}
-                  >
-                    {t("app.signOut", { defaultValue: "Sign out" })}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: SECTION_SUBTEXT_COLOR,
-                      fontSize: "0.875rem",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {t("profile.preferences.signOutDescription", {
-                      defaultValue: "Sign out on this device to stay secure.",
-                    })}
-                  </Typography>
-                </Stack>
-              </Stack>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={
-                  signingOut ? <CircularProgress size={16} color="inherit" /> : <LogoutIcon />
-                }
-                onClick={onSignOut}
-                disabled={signingOut || !canSignOut}
-                sx={{
-                  width: { xs: "100%", sm: "auto" },
-                  borderColor: "rgba(255, 111, 156, 0.6)",
-                  color: "#ff4f87",
-                  backgroundColor: "transparent",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    color: "#0b0d18",
-                    borderColor: "transparent",
-                    background: "linear-gradient(90deg, #ff4f87, #ff7f64)",
-                    boxShadow: "0 0 12px rgba(255, 79, 135, 0.45)",
-                  },
-                  "&.Mui-disabled": {
-                    color: "rgba(255, 79, 135, 0.45)",
-                    borderColor: "rgba(255, 79, 135, 0.3)",
-                  },
-                }}
-              >
-                {signingOut
-                  ? t("app.signingOut", { defaultValue: "Signing out..." })
-                  : t("app.signOut", { defaultValue: "Sign out" })}
-              </Button>
-            </Stack>
-            {!canSignOut && signOutReason && (
-              <Typography variant="caption" color="text.secondary">
-                {signOutReason}
-              </Typography>
-            )}
           </Stack>
         </Box>
         <Box sx={createAccountActionStyles(canRemoveAccount, "danger", 2)}>

@@ -6,12 +6,8 @@ export function useOwnerProfileCapabilities() {
   const { groups, select } = useUserCapabilities();
   const ownerProfileCapabilities = groups.ownerProfile;
 
-  const [changeLanguageCapability, signOutCapability] = useMemo(
-    () =>
-      select([
-        CAPABILITIES.APP_CHANGE_LANGUAGE,
-        CAPABILITIES.APP_SIGN_OUT,
-      ]),
+  const [changeLanguageCapability] = useMemo(
+    () => select([CAPABILITIES.APP_CHANGE_LANGUAGE]),
     [select]
   );
 
@@ -48,8 +44,6 @@ export function useOwnerProfileCapabilities() {
     canRemoveAccount: ownerProfileCapabilities.removeAccount.can,
     canChangeLanguage: Boolean(changeLanguageCapability?.can),
     changeLanguageReason: changeLanguageCapability?.reason,
-    canSignOut: Boolean(signOutCapability?.can),
-    signOutReason: signOutCapability?.reason,
   };
 }
 
