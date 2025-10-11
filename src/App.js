@@ -19,9 +19,13 @@ import {
   Alert,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import LoginRoundedIcon from "@mui/icons-material/LoginRounded";
-import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
-import PersonAddAltRoundedIcon from "@mui/icons-material/PersonAddAltRounded";
+import {
+  LazyMotion,
+  domAnimation,
+  m,
+  useScroll,
+  useMotionValueEvent,
+} from "framer-motion";
 import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
@@ -45,9 +49,11 @@ import {
   useTopBarNavigation,
 } from "./shared/context/TopBarNavigationContext";
 import { useSignOut } from "./shared/hooks/useSignOut";
-const AnimatedAppBar = AppBar;
-const AnimatedBox = Box;
-const AnimatedButton = Button;
+import { LogIn, LogOut, UserPlus } from "lucide-react";
+
+const MotionAppBar = m(AppBar);
+const MotionBox = m(Box);
+const MotionButton = m(Button);
 
 const MessagesPage = lazy(() => import("./features/messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
@@ -171,6 +177,11 @@ function TopBar() {
     message: "",
   });
   const [hasScrolled, setHasScrolled] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setHasScrolled(latest > 12);
+  });
 
   useEffect(() => {
     const updateTokenState = (event) => {
@@ -189,20 +200,9 @@ function TopBar() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    const updateScrollState = () => {
+    if (typeof window !== "undefined") {
       setHasScrolled(window.scrollY > 12);
-    };
-
-    updateScrollState();
-    window.addEventListener("scroll", updateScrollState, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", updateScrollState);
-    };
+    }
   }, []);
 
   const glassBackground =
@@ -266,11 +266,14 @@ function TopBar() {
     setSignOutFeedback((previous) => ({ ...previous, open: false }));
   };
 
-    return (
-      <AnimatedAppBar
+  return (
+    <LazyMotion features={domAnimation}>
+      <MotionAppBar
         position="sticky"
         color="transparent"
         elevation={0}
+        animate={{ opacity: hasScrolled ? 0.97 : 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
         sx={{
           backdropFilter: hasScrolled ? "blur(18px)" : "blur(0px)",
           backgroundColor: glassBackground,
@@ -301,229 +304,179 @@ function TopBar() {
               py: { xs: 1.5, md: 2 },
             }}
           >
-            <AnimatedBox
+          <MotionBox
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.25,
+              flexShrink: 0,
+              px: 1,
+              py: 0.5,
+              borderRadius: 2,
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              cursor: "pointer",
+            }}
+            onClick={() => navigate("/")}
+            role="button"
+            aria-label={t("app.name")}
+          >
+            <MotionBox
+              component="img"
+              src={logo}
+              alt={t("app.alt")}
+              whileHover={{ rotate: -2 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1.25,
-                flexShrink: 0,
-                px: 1,
-                py: 0.5,
-                borderRadius: 2,
-                backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                cursor: "pointer",
-                transform: "scale(1)",
-                transition: theme.transitions.create("transform", {
-                  duration: theme.transitions.duration.shorter,
-                  easing: theme.transitions.easing.easeOut,
-                }),
-                "&:hover": {
-                  transform: "scale(1.02)",
-                },
-                "&:active": {
-                  transform: "scale(0.98)",
-                },
+                height: 36,
+                filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))",
               }}
-              onClick={() => navigate("/")}
-              role="button"
-              aria-label={t("app.name")}
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                letterSpacing: 0.4,
+                textTransform: "uppercase",
+                color: theme.palette.text.primary,
+              }}
             >
-              <AnimatedBox
-                component="img"
-                src={logo}
-                alt={t("app.alt")}
-                sx={{
-                  height: 36,
-                  filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))",
-                  transition: theme.transitions.create("transform", {
-                    duration: theme.transitions.duration.standard,
-                    easing: theme.transitions.easing.easeOut,
-                  }),
-                  "&:hover": {
-                    transform: "rotate(-2deg)",
-                  },
-                }}
-              />
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  letterSpacing: 0.4,
-                  textTransform: "uppercase",
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {t("app.name")}
-              </Typography>
-            </AnimatedBox>
-            {isDesktop && navigation && (
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  display: "flex",
-                  justifyContent: "center",
-                  px: { xs: 1, md: 3 },
-                }}
-              >
-                {navigation}
-              </Box>
-            )}
+              {t("app.name")}
+            </Typography>
+          </MotionBox>
+          {isDesktop && navigation && (
             <Box
               sx={{
+                flexGrow: 1,
                 display: "flex",
-                alignItems: "center",
-                gap: { xs: 1, md: 1.5 },
-                ml: { xs: "auto", md: navigation ? 0 : "auto" },
+                justifyContent: "center",
+                px: { xs: 1, md: 3 },
               }}
             >
-              {hasToken ? (
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: 0.5,
-                    minWidth: 0,
-                  }}
-                >
-                  <AnimatedButton
-                    color="inherit"
-                    variant="outlined"
-                    onClick={handleSignOutClick}
-                    disabled={signingOut || !canSignOut}
-                    startIcon={
-                      signingOut ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <LogoutRoundedIcon fontSize="small" />
-                      )
-                    }
-                    sx={{
-                      fontWeight: 600,
-                      px: { xs: 1.5, md: 2 },
-                      textTransform: "none",
-                      borderRadius: 2,
-                      border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
-                      backgroundColor: "transparent",
-                      color: theme.palette.text.primary,
-                      transform: "scale(1)",
-                      transition: theme.transitions.create(
-                        ["background-color", "transform"],
-                        {
-                          duration: theme.transitions.duration.shorter,
-                          easing: theme.transitions.easing.easeOut,
-                        }
-                      ),
-                      "&:hover": {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                        transform:
-                          canSignOut && !signingOut ? "scale(1.03)" : "scale(1)",
-                      },
-                      "&:active": {
-                        transform:
-                          canSignOut && !signingOut ? "scale(0.97)" : "scale(1)",
-                      },
-                    }}
-                  >
-                    {signingOut
-                      ? t("app.signingOut", { defaultValue: "Signing out..." })
-                      : t("app.signOut", { defaultValue: "Sign out" })}
-                  </AnimatedButton>
-                  {!canSignOut && signOutReason && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ textAlign: "right", maxWidth: 240 }}
-                    >
-                      {signOutReason}
-                    </Typography>
-                  )}
-                </Box>
-              ) : (
-                <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.5 } }}>
-                  <AnimatedButton
-                    color="inherit"
-                    onClick={() => navigate("/login")}
-                    sx={{
-                      fontWeight: 600,
-                      px: 1.5,
-                      textTransform: "none",
-                      borderRadius: 2,
-                      border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
-                      color: theme.palette.text.primary,
-                      transform: "scale(1)",
-                      transition: theme.transitions.create(
-                        ["background-color", "transform"],
-                        {
-                          duration: theme.transitions.duration.shorter,
-                          easing: theme.transitions.easing.easeOut,
-                        }
-                      ),
-                      "&:hover": {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                        transform: "scale(1.03)",
-                      },
-                      "&:active": {
-                        transform: "scale(0.97)",
-                      },
-                    }}
-                    startIcon={<LoginRoundedIcon fontSize="small" />}
-                  >
-                    {t("app.signIn", { defaultValue: "Sign in" })}
-                  </AnimatedButton>
-                  <AnimatedButton
-                    color="secondary"
-                    variant="contained"
-                    onClick={() => navigate("/signup")}
-                    sx={{
-                      whiteSpace: "nowrap",
-                      fontWeight: 700,
-                      borderRadius: 2.5,
-                      px: { xs: 2, md: 2.75 },
-                      py: 1,
-                      boxShadow: "0 10px 30px -12px rgba(236, 72, 153, 0.8)",
-                      transform: "scale(1)",
-                      transition: theme.transitions.create(
-                        ["box-shadow", "transform"],
-                        {
-                          duration: theme.transitions.duration.shorter,
-                          easing: theme.transitions.easing.easeOut,
-                        }
-                      ),
-                      "&:hover": {
-                        transform: "scale(1.05)",
-                        boxShadow: "0 16px 40px -16px rgba(236, 72, 153, 0.9)",
-                      },
-                      "&:active": {
-                        transform: "scale(0.98)",
-                      },
-                    }}
-                    startIcon={<PersonAddAltRoundedIcon fontSize="small" />}
-                  >
-                    {t("app.joinNow", { defaultValue: "Join now" })}
-                  </AnimatedButton>
-                </Box>
-              )}
+              {navigation}
             </Box>
-          </Toolbar>
-        </Container>
-        <Snackbar
-          open={signOutFeedback.open && Boolean(signOutFeedback.message)}
-          autoHideDuration={6000}
-          onClose={handleCloseSignOutFeedback}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={handleCloseSignOutFeedback}
-            severity={signOutFeedback.severity}
-            sx={{ width: "100%" }}
+          )}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: 1, md: 1.5 },
+              ml: { xs: "auto", md: navigation ? 0 : "auto" },
+            }}
           >
-            {signOutFeedback.message}
-          </Alert>
-        </Snackbar>
-      </AnimatedAppBar>
-    );
-  }
+            {hasToken ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: 0.5,
+                  minWidth: 0,
+                }}
+              >
+                <MotionButton
+                  color="inherit"
+                  variant="outlined"
+                  onClick={handleSignOutClick}
+                  disabled={signingOut || !canSignOut}
+                  startIcon={
+                    signingOut ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <LogOut size={18} strokeWidth={2.5} />
+                    )
+                  }
+                  sx={{
+                    fontWeight: 600,
+                    px: { xs: 1.5, md: 2 },
+                    textTransform: "none",
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
+                    backgroundColor: "transparent",
+                    color: theme.palette.text.primary,
+                    "&:hover": {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                    },
+                  }}
+                  whileHover={{ scale: canSignOut && !signingOut ? 1.03 : 1 }}
+                  whileTap={{ scale: canSignOut && !signingOut ? 0.97 : 1 }}
+                >
+                  {signingOut
+                    ? t("app.signingOut", { defaultValue: "Signing out..." })
+                    : t("app.signOut", { defaultValue: "Sign out" })}
+                </MotionButton>
+                {!canSignOut && signOutReason && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textAlign: "right", maxWidth: 240 }}
+                  >
+                    {signOutReason}
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.5 } }}>
+                <MotionButton
+                  color="inherit"
+                  onClick={() => navigate("/login")}
+                  sx={{
+                    fontWeight: 600,
+                    px: 1.5,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
+                    color: theme.palette.text.primary,
+                  }}
+                  startIcon={<LogIn size={18} strokeWidth={2.5} />}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  {t("app.signIn", { defaultValue: "Sign in" })}
+                </MotionButton>
+                <MotionButton
+                  color="secondary"
+                  variant="contained"
+                  onClick={() => navigate("/signup")}
+                  sx={{
+                    whiteSpace: "nowrap",
+                    fontWeight: 700,
+                    borderRadius: 2.5,
+                    px: { xs: 2, md: 2.75 },
+                    py: 1,
+                    boxShadow: "0 10px 30px -12px rgba(236, 72, 153, 0.8)",
+                  }}
+                  startIcon={<UserPlus size={18} strokeWidth={2.5} />}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {t("app.joinNow", { defaultValue: "Join now" })}
+                </MotionButton>
+              </Box>
+            )}
+          </Box>
+        </Toolbar>
+      </Container>
+      <Snackbar
+        open={signOutFeedback.open && Boolean(signOutFeedback.message)}
+        autoHideDuration={6000}
+        onClose={handleCloseSignOutFeedback}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSignOutFeedback}
+          severity={signOutFeedback.severity}
+          sx={{ width: "100%" }}
+        >
+          {signOutFeedback.message}
+        </Alert>
+      </Snackbar>
+      </MotionAppBar>
+    </LazyMotion>
+  );
+}
 
 function AppShell() {
   return (
