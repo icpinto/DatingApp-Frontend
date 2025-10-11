@@ -5,7 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import ThemeContext from './shared/context/ThemeContext';
 import { I18nextProvider } from './i18n';
-import { QueryClient, QueryClientProvider } from './lib/react-query';
+import { QueryClient, QueryClientProvider } from 'lib/react-query';
 
 const queryClient = new QueryClient();
 

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '../../../lib/react-query';
+import { useMutation, useQuery, useQueryClient } from 'lib/react-query';
 import * as api from '../api/profiles.api';
 import type { ProfileSectionUpdate } from '../model/types';
 
