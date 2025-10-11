@@ -13,32 +13,17 @@ import {
   Typography,
 } from "@mui/material";
 import { Group } from "@mui/icons-material";
-import { spacing } from "../../../styles";
-import MatchRecommendations from "../ui/MatchRecommendations";
-import { useTranslation } from "../../../i18n";
-import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
-import { CAPABILITIES } from "../../../domain/capabilities";
-import Guard from "../ui/Guard";
-import FiltersPanel from "../ui/FiltersPanel";
-import ActiveUserCard from "../ui/ActiveUserCard";
-import { useHome } from "../hooks/useHome";
-import { FILTER_FIELDS } from "../model/constants";
-
-const getUserIdentifier = (user) => {
-  if (!user) {
-    return undefined;
-  }
-
-  const value =
-    user.user_id ?? user.id ?? user.userId ?? user.profile_id ?? user.profileId;
-
-  if (value === undefined || value === null || value === "") {
-    return undefined;
-  }
-
-  const numericValue = Number(value);
-  return Number.isNaN(numericValue) ? value : numericValue;
-};
+import { spacing } from "@/styles";
+import MatchRecommendations from "@/features/home/ui/MatchRecommendations";
+import { useTranslation } from "@/i18n";
+import { useAccountLifecycle } from "@/shared/context/AccountLifecycleContext";
+import { CAPABILITIES } from "@/domain/capabilities";
+import Guard from "@/features/home/ui/Guard";
+import FiltersPanel from "@/features/home/ui/FiltersPanel";
+import ActiveUserCard from "@/features/home/ui/ActiveUserCard";
+import { useHome } from "@/features/home/hooks/useHome";
+import { FILTER_FIELDS } from "@/features/home/model/constants";
+import { getUserIdentifier } from "@/features/home/utils/normalizeUserId";
 
 function HomeContent({ accountLifecycle }) {
   const { t } = useTranslation();
@@ -87,6 +72,7 @@ function HomeContent({ accountLifecycle }) {
     handleClearFilters,
     handleToggleExpand,
     handleSendRequest,
+    setFeedback,
   } = handlers;
 
   const handleRequestMessageChange = (value) => {
@@ -95,6 +81,7 @@ function HomeContent({ accountLifecycle }) {
     }
     setRequestMessage(value);
     setRequestMessageError("");
+    setFeedback(null);
   };
 
   if (!canViewHome) {
