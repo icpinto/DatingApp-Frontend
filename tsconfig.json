@@ -16,7 +16,8 @@
     "jsx": "react-jsx",
     "baseUrl": "src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["*"],
+      "@tanstack/react-query": ["@tanstack/react-query"]
     }
   },
   "include": ["src"]
