@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Alert,
   Avatar,
   Box,
   Card,
@@ -128,11 +129,7 @@ const SentRequestsList = ({ requests, profiles, loading, error }) => {
     }
 
     if (error) {
-      return (
-        <Typography color="error" variant="body2">
-          {t(error)}
-        </Typography>
-      );
+      return <Alert severity="error">{t(error)}</Alert>;
     }
 
     if (!requests.length) {

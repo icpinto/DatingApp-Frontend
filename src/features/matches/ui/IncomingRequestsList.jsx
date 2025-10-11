@@ -36,6 +36,7 @@ const IncomingRequestsList = ({
   isDeactivated,
   onAccept,
   onReject,
+  actionInProgress = false,
 }) => {
   const { t } = useTranslation();
 
@@ -105,10 +106,20 @@ const IncomingRequestsList = ({
           </Typography>
           <Guard can={CAPABILITIES.REQUESTS_RESPOND}>
             <Stack direction="row" spacing={1}>
-              <Button variant="contained" color="primary" onClick={() => onAccept(request.id)}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => onAccept(request.id)}
+                disabled={actionInProgress}
+              >
                 {t("common.actions.accept")}
               </Button>
-              <Button variant="outlined" color="secondary" onClick={() => onReject(request.id)}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={() => onReject(request.id)}
+                disabled={actionInProgress}
+              >
                 {t("common.actions.reject")}
               </Button>
             </Stack>
@@ -124,11 +135,7 @@ const IncomingRequestsList = ({
     }
 
     if (error) {
-      return (
-        <Typography color="error" variant="body2">
-          {t(error)}
-        </Typography>
-      );
+      return <Alert severity="error">{t(error)}</Alert>;
     }
 
     if (!requests.length) {

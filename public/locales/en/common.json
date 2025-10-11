@@ -302,7 +302,9 @@
       "sentError": "Failed to fetch sent requests.",
       "noPending": "You have no pending requests.",
       "noSent": "You haven't sent any requests yet.",
+      "acceptSuccess": "Request accepted successfully.",
       "acceptFailed": "Failed to accept the request. Please try again.",
+      "rejectSuccess": "Request rejected.",
       "rejectFailed": "Failed to reject the request. Please try again.",
       "deactivatedReadOnly": "Your account is deactivated. Reactivate your profile to respond to new requests."
     },
