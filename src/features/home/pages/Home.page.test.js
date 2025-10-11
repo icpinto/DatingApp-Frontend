@@ -2,23 +2,23 @@ import React from "react";
 import { MemoryRouter } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import Home from "./Home.page";
-import { AccountLifecycleContext } from "../../../shared/context/AccountLifecycleContext";
-import { UserProvider } from "../../../shared/context/UserContext";
-import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../../domain/accountLifecycle";
-import api from "../../../shared/services/api";
+import { AccountLifecycleContext } from "@/shared/context/AccountLifecycleContext";
+import { UserProvider } from "@/shared/context/UserContext";
+import { ACCOUNT_DEACTIVATED_MESSAGE } from "@/domain/accountLifecycle";
+import api from "@/shared/services/api";
 
-jest.mock("../../../shared/services/api", () => ({
+jest.mock("@/shared/services/api", () => ({
   get: jest.fn(),
   post: jest.fn(),
 }));
 
-jest.mock("../../../i18n", () => ({
+jest.mock("@/i18n", () => ({
   useTranslation: () => ({
     t: (key, options) => options?.defaultValue ?? key,
   }),
 }));
 
-jest.mock("../ui/MatchRecommendations", () => () => (
+jest.mock("@/features/home/ui/MatchRecommendations", () => () => (
   <div data-testid="match-recommendations">Match recommendations placeholder</div>
 ));
 
