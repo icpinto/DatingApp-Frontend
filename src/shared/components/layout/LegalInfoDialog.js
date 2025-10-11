@@ -19,11 +19,11 @@ import { Link as RouterLink } from "react-router-dom";
 import useLegalContent from "./useLegalContent";
 import { useTranslation } from "../../../i18n";
 
-const SECTION_BACKGROUND = "#111827";
-const SECTION_TEXT_COLOR = "rgba(248, 250, 252, 0.94)";
-const SECTION_SUBTEXT_COLOR = "rgba(226, 232, 240, 0.72)";
-const SECTION_DIVIDER_COLOR = "rgba(148, 163, 184, 0.28)";
-const SECTION_SURFACE_COLOR = alpha("#0f172a", 0.55);
+const SECTION_BACKGROUND = "#05211f";
+const SECTION_TEXT_COLOR = "rgba(224, 252, 243, 0.96)";
+const SECTION_SUBTEXT_COLOR = "rgba(165, 218, 206, 0.76)";
+const SECTION_DIVIDER_COLOR = "rgba(73, 139, 130, 0.32)";
+const SECTION_SURFACE_COLOR = alpha("#0b2f2c", 0.55);
 
 function LegalInfoDialog({ open, onClose }) {
   const theme = useTheme();
@@ -55,7 +55,7 @@ function LegalInfoDialog({ open, onClose }) {
           backgroundColor: SECTION_BACKGROUND,
           color: SECTION_TEXT_COLOR,
           border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-          boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+          boxShadow: "0px 20px 45px rgba(6, 23, 21, 0.35)",
         },
       }}
     >
@@ -160,7 +160,7 @@ function LegalInfoDialog({ open, onClose }) {
         sx={{
           px: { xs: 3, sm: 4 },
           py: { xs: 2, sm: 2.5 },
-          backgroundColor: alpha("#0f172a", 0.7),
+          backgroundColor: alpha("#0b2f2c", 0.7),
           borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
         }}
       >

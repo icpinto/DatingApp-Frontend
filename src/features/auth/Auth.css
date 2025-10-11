@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  background: linear-gradient(135deg, #115e59 0%, #14b8a6 100%);
 }
 
 .auth-container {
@@ -20,7 +20,7 @@
 }
 
 .auth-switch a {
-  color: #ff3366;
+  color: #0f766e;
   text-decoration: none;
   font-weight: bold;
 }
