@@ -27,10 +27,7 @@ import PersonIcon from "@mui/icons-material/Person";
 
 import FeatureCard from "../../../../shared/components/FeatureCard";
 import { spacing } from "../../../../styles";
-import {
-  SECTION_BACKGROUNDS,
-  createSectionCardStyles,
-} from "../accountSettings/accountSectionTheme";
+import { createSectionCardStyles } from "../accountSettings/accountSectionTheme";
 
 const headerGradientStyles = (theme) => ({
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
@@ -95,7 +92,7 @@ function OwnerProfileFormCard({
 }) {
   return (
     <FeatureCard
-      sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}
+      sx={createSectionCardStyles("profile")}
       title={
         profile
           ? editingSection

@@ -30,10 +30,7 @@ import {
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
 } from "../../../domain/accountLifecycle";
-import {
-  SECTION_BACKGROUNDS,
-  createSectionCardStyles,
-} from "../ui/accountSettings/accountSectionTheme";
+import { createSectionCardStyles } from "../ui/accountSettings/accountSectionTheme";
 import FeatureCard from "../../../shared/components/FeatureCard";
 const sectionWrapperStyles = {
   mt: 8,
@@ -1244,7 +1241,7 @@ function OwnerProfileContent({ accountLifecycle }) {
             />
           ) : (
             <FeatureCard
-              sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}
+              sx={createSectionCardStyles("profile")}
               title={profileViewCardTitle}
               subheader={profileViewCardSubheader}
               avatar={<PersonIcon fontSize="large" />}
@@ -1332,7 +1329,7 @@ function OwnerProfileContent({ accountLifecycle }) {
             onRemoveAccount={handleRemoveAccount}
             isRemovingAccount={isRemovingAccount}
             featureCardProps={{
-              sx: createSectionCardStyles(SECTION_BACKGROUNDS.account),
+              sx: createSectionCardStyles("account"),
             }}
             featureCardContentProps={{
               sx: { px: { xs: 2.5, sm: 3.5 }, py: { xs: 3, sm: 3.75 } },

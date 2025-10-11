@@ -14,19 +14,17 @@ import PrivacyTipOutlinedIcon from "@mui/icons-material/PrivacyTipOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import DiamondOutlinedIcon from "@mui/icons-material/DiamondOutlined";
 import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
-import { alpha } from "@mui/material/styles";
+import { alpha, darken, lighten, useTheme } from "@mui/material/styles";
 import { useTranslation } from "../../../../i18n";
 import useLegalContent from "../../../../shared/components/layout/useLegalContent";
 import FeatureCard from "../../../../shared/components/FeatureCard";
-
-const SECTION_BACKGROUND = "#111111";
-const SECTION_TEXT_COLOR = "rgba(245, 245, 245, 0.94)";
-const SECTION_SUBTEXT_COLOR = "rgba(215, 215, 215, 0.72)";
-const SECTION_DIVIDER_COLOR = "rgba(255, 255, 255, 0.18)";
-const SUMMARY_HOVER_COLOR = alpha("#1c1c1c", 0.45);
-const SUMMARY_ACTIVE_COLOR = alpha("#1c1c1c", 0.6);
-const DETAIL_BASE_COLOR = alpha("#0f0f0f", 0.72);
-const DETAIL_ACTIVE_COLOR = alpha("#0f0f0f", 0.88);
+import {
+  createSectionCardStyles,
+  getSectionBackground,
+  getSectionDividerColor,
+  getSectionSubtextColor,
+  getSectionTextColor,
+} from "../accountSettings/accountSectionTheme";
 
 function HelpfulInformationSection({
   sectionTitleStyles,
@@ -37,9 +35,36 @@ function HelpfulInformationSection({
   featureCardHeaderProps = {},
   featureCardDividerProps = {},
 }) {
+  const theme = useTheme();
   const { t } = useTranslation();
   const { tagline, sections, copyright } = useLegalContent();
   const [expanded, setExpanded] = useState(null);
+
+  const isDarkMode = theme.palette.mode === "dark";
+  const sectionBackground = getSectionBackground(theme, "legal");
+  const sectionTextColor = getSectionTextColor(theme);
+  const sectionSubtextColor = getSectionSubtextColor(theme);
+  const sectionDividerColor = getSectionDividerColor(theme);
+  const cardBaseSx = createSectionCardStyles("legal");
+  const summaryHoverBase = isDarkMode
+    ? lighten(sectionBackground, 0.08)
+    : darken(sectionBackground, 0.04);
+  const summaryActiveBase = isDarkMode
+    ? lighten(sectionBackground, 0.12)
+    : darken(sectionBackground, 0.06);
+  const summaryHoverColor = alpha(summaryHoverBase, isDarkMode ? 0.9 : 0.85);
+  const summaryActiveColor = alpha(summaryActiveBase, isDarkMode ? 0.95 : 0.9);
+  const detailBaseColor = alpha(sectionBackground, isDarkMode ? 0.92 : 0.97);
+  const detailActiveColor = alpha(
+    isDarkMode ? lighten(sectionBackground, 0.05) : darken(sectionBackground, 0.02),
+    isDarkMode ? 0.98 : 0.99
+  );
+  const cardShadow = isDarkMode
+    ? "0px 20px 45px rgba(0, 0, 0, 0.35)"
+    : "0px 18px 36px rgba(0, 0, 0, 0.12)";
+  const accordionShadow = isDarkMode
+    ? "0px 12px 32px rgba(0, 0, 0, 0.45)"
+    : "0px 12px 24px rgba(0, 0, 0, 0.15)";
 
   const handleAccordionChange = (sectionId) => (_event, isExpanded) => {
     setExpanded(isExpanded ? sectionId : null);
@@ -74,20 +99,20 @@ function HelpfulInformationSection({
             elevation={0}
             sx={{
               borderRadius: 2,
-              border: `1px solid ${SECTION_DIVIDER_COLOR}`,
+              border: `1px solid ${sectionDividerColor}`,
               borderLeft: "3px solid transparent",
-              backgroundColor: alpha("#111111", 0.65),
+              backgroundColor: alpha(sectionBackground, isDarkMode ? 0.75 : 0.9),
               transition:
                 "transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease",
               "&::before": {
                 display: "none",
               },
               "&.Mui-expanded": {
-                boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.45)",
+                boxShadow: accordionShadow,
                 borderLeftColor: (theme) => theme.palette.primary.light,
               },
               "&:hover": {
-                boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.45)",
+                boxShadow: accordionShadow,
                 transform: "translateY(-2px)",
               },
             }}
@@ -111,10 +136,10 @@ function HelpfulInformationSection({
                 px: 2.5,
                 py: 2,
                 backgroundColor:
-                  expanded === section.id ? SUMMARY_ACTIVE_COLOR : "transparent",
+                  expanded === section.id ? summaryActiveColor : "transparent",
                 transition: "background-color 0.2s ease",
                 "&:hover": {
-                  backgroundColor: SUMMARY_HOVER_COLOR,
+                  backgroundColor: summaryHoverColor,
                 },
               }}
             >
@@ -141,7 +166,7 @@ function HelpfulInformationSection({
                   >
                     {section.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
+                  <Typography variant="body2" sx={{ color: sectionSubtextColor }}>
                     {section.summary}
                   </Typography>
                 </Stack>
@@ -151,9 +176,9 @@ function HelpfulInformationSection({
               sx={{
                 px: 2.5,
                 py: 2.5,
-                borderTop: `1px solid ${SECTION_DIVIDER_COLOR}`,
+                borderTop: `1px solid ${sectionDividerColor}`,
                 backgroundColor:
-                  expanded === section.id ? DETAIL_ACTIVE_COLOR : DETAIL_BASE_COLOR,
+                  expanded === section.id ? detailActiveColor : detailBaseColor,
               }}
             >
               <Stack spacing={1.75}>
@@ -161,7 +186,7 @@ function HelpfulInformationSection({
                   <Typography
                     key={index}
                     variant="body2"
-                    sx={{ color: SECTION_SUBTEXT_COLOR }}
+                    sx={{ color: sectionSubtextColor }}
                   >
                     {paragraph}
                   </Typography>
@@ -183,7 +208,7 @@ function HelpfulInformationSection({
   const { sx: dividerSx = {}, ...restDividerProps } = featureCardDividerProps;
   const featureCardDivider = {
     sx: {
-      borderColor: SECTION_DIVIDER_COLOR,
+      borderColor: sectionDividerColor,
       borderStyle: "solid",
       ...dividerSx,
     },
@@ -203,14 +228,14 @@ function HelpfulInformationSection({
     },
     titleTypographyProps: {
       sx: {
-        color: SECTION_TEXT_COLOR,
+        color: sectionTextColor,
         letterSpacing: "0.02em",
         ...titleTypographyProps.sx,
       },
       ...titleTypographyProps,
     },
     subheaderTypographyProps: {
-      sx: { color: SECTION_SUBTEXT_COLOR, ...subheaderTypographyProps.sx },
+      sx: { color: sectionSubtextColor, ...subheaderTypographyProps.sx },
       ...subheaderTypographyProps,
     },
     ...restHeaderProps,
@@ -220,13 +245,13 @@ function HelpfulInformationSection({
   const featureCardContent = {
     sx: {
       "& .MuiTypography-root": {
-        color: SECTION_TEXT_COLOR,
+        color: sectionTextColor,
       },
       "& .MuiTypography-root.MuiTypography-colorTextSecondary": {
-        color: SECTION_SUBTEXT_COLOR,
+        color: sectionSubtextColor,
       },
       "& .MuiDivider-root": {
-        borderColor: SECTION_DIVIDER_COLOR,
+        borderColor: sectionDividerColor,
       },
       ...contentSx,
     },
@@ -250,10 +275,10 @@ function HelpfulInformationSection({
         <Box
           sx={{
             borderRadius: 3,
-            border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-            backgroundColor: SECTION_BACKGROUND,
-            color: SECTION_TEXT_COLOR,
-            boxShadow: "0px 20px 45px rgba(0, 0, 0, 0.35)",
+            border: `1px solid ${sectionDividerColor}`,
+            backgroundColor: sectionBackground,
+            color: sectionTextColor,
+            boxShadow: cardShadow,
             p: { xs: 2.5, sm: 3 },
           }}
         >
@@ -265,7 +290,7 @@ function HelpfulInformationSection({
               </Typography>
             </Stack>
             {tagline && (
-              <Typography variant="body2" sx={{ color: SECTION_SUBTEXT_COLOR }}>
+              <Typography variant="body2" sx={{ color: sectionSubtextColor }}>
                 {tagline}
               </Typography>
             )}
@@ -283,13 +308,7 @@ function HelpfulInformationSection({
         title={title}
         subheader={tagline}
         icon={InfoOutlinedIcon}
-        sx={{
-          backgroundColor: SECTION_BACKGROUND,
-          color: SECTION_TEXT_COLOR,
-          border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-          boxShadow: "0px 20px 45px rgba(0, 0, 0, 0.35)",
-          ...featureCardSx,
-        }}
+        sx={[cardBaseSx, { border: `1px solid ${sectionDividerColor}`, boxShadow: cardShadow }, featureCardSx]}
         dividerProps={featureCardDivider}
         headerProps={featureCardHeader}
         contentProps={featureCardContent}
