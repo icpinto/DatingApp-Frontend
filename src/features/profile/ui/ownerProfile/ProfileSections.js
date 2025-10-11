@@ -5,7 +5,7 @@ import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../../../i18n";
 import { profileSectionDefinitions } from "../../model";
 
-const SECTION_SURFACES = ["#181c25", "#1d212c"];
+const SECTION_SURFACES = ["#1a1a1a", "#1f1f1f"];
 
 function ProfileSections({
   data,

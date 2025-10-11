@@ -69,7 +69,7 @@ const sectionTitleStyles = {
   fontSize: 12,
   fontWeight: 700,
   letterSpacing: "0.18em",
-  color: "rgba(148, 163, 184, 0.85)",
+  color: "rgba(200, 200, 200, 0.85)",
   mb: 2.5,
 };
 

@@ -19,14 +19,14 @@ import { useTranslation } from "../../../../i18n";
 import useLegalContent from "../../../../shared/components/layout/useLegalContent";
 import FeatureCard from "../../../../shared/components/FeatureCard";
 
-const SECTION_BACKGROUND = "#111827";
-const SECTION_TEXT_COLOR = "rgba(248, 250, 252, 0.94)";
-const SECTION_SUBTEXT_COLOR = "rgba(226, 232, 240, 0.72)";
-const SECTION_DIVIDER_COLOR = "rgba(148, 163, 184, 0.28)";
-const SUMMARY_HOVER_COLOR = alpha("#1f2937", 0.45);
-const SUMMARY_ACTIVE_COLOR = alpha("#1f2937", 0.58);
-const DETAIL_BASE_COLOR = alpha("#0f172a", 0.72);
-const DETAIL_ACTIVE_COLOR = alpha("#0f172a", 0.88);
+const SECTION_BACKGROUND = "#111111";
+const SECTION_TEXT_COLOR = "rgba(245, 245, 245, 0.94)";
+const SECTION_SUBTEXT_COLOR = "rgba(215, 215, 215, 0.72)";
+const SECTION_DIVIDER_COLOR = "rgba(255, 255, 255, 0.18)";
+const SUMMARY_HOVER_COLOR = alpha("#1c1c1c", 0.45);
+const SUMMARY_ACTIVE_COLOR = alpha("#1c1c1c", 0.6);
+const DETAIL_BASE_COLOR = alpha("#0f0f0f", 0.72);
+const DETAIL_ACTIVE_COLOR = alpha("#0f0f0f", 0.88);
 
 function HelpfulInformationSection({
   sectionTitleStyles,
@@ -76,18 +76,18 @@ function HelpfulInformationSection({
               borderRadius: 2,
               border: `1px solid ${SECTION_DIVIDER_COLOR}`,
               borderLeft: "3px solid transparent",
-              backgroundColor: alpha("#0f172a", 0.55),
+              backgroundColor: alpha("#111111", 0.65),
               transition:
                 "transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease",
               "&::before": {
                 display: "none",
               },
               "&.Mui-expanded": {
-                boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
+                boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.45)",
                 borderLeftColor: (theme) => theme.palette.primary.light,
               },
               "&:hover": {
-                boxShadow: "0px 12px 32px rgba(15, 23, 42, 0.45)",
+                boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.45)",
                 transform: "translateY(-2px)",
               },
             }}
@@ -253,7 +253,7 @@ function HelpfulInformationSection({
             border: `1px solid ${SECTION_DIVIDER_COLOR}`,
             backgroundColor: SECTION_BACKGROUND,
             color: SECTION_TEXT_COLOR,
-            boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+            boxShadow: "0px 20px 45px rgba(0, 0, 0, 0.35)",
             p: { xs: 2.5, sm: 3 },
           }}
         >
@@ -287,7 +287,7 @@ function HelpfulInformationSection({
           backgroundColor: SECTION_BACKGROUND,
           color: SECTION_TEXT_COLOR,
           border: `1px solid ${SECTION_DIVIDER_COLOR}`,
-          boxShadow: "0px 20px 45px rgba(15, 23, 42, 0.35)",
+          boxShadow: "0px 20px 45px rgba(0, 0, 0, 0.35)",
           ...featureCardSx,
         }}
         dividerProps={featureCardDivider}

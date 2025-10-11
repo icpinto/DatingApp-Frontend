@@ -146,9 +146,9 @@ function ProfileSection({
     total: totalFields,
   });
 
-  const resolvedSurface = surfaceColor || lighten("#041615", 0.08);
-  const editAccent = "#2dd4bf";
-  const completeAccent = "#facc15";
+  const resolvedSurface = surfaceColor || lighten("#111111", 0.08);
+  const editAccent = "#c0c0c0";
+  const completeAccent = "#f5f5f5";
 
   return (
     <Accordion
@@ -158,9 +158,9 @@ function ProfileSection({
       sx={{
         width: "100%",
         borderRadius: "10px",
-        border: "1px solid rgba(45, 212, 191, 0.12)",
+        border: "1px solid rgba(255, 255, 255, 0.12)",
         backgroundColor: resolvedSurface,
-        boxShadow: "0 2px 6px rgba(4, 22, 21, 0.2)",
+        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
         borderLeft: isSectionComplete
           ? `3px solid ${alpha(completeAccent, 0.7)}`
           : "3px solid transparent",
@@ -175,16 +175,16 @@ function ProfileSection({
         },
         "&:hover": {
           borderColor: alpha(editAccent, 0.4),
-          backgroundColor: "#0d2c29",
-          boxShadow: "0 4px 12px rgba(4, 22, 21, 0.3)",
+          backgroundColor: "#1a1a1a",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
           transform: "translateY(-2px)",
           borderLeftColor: editAccent,
         },
         "&.Mui-expanded": {
           margin: 0,
           borderColor: alpha(editAccent, 0.45),
-          boxShadow: "0 4px 16px rgba(4, 22, 21, 0.38)",
-          backgroundColor: "#0d2c29",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.38)",
+          backgroundColor: "#1a1a1a",
           borderLeftColor: editAccent,
         },
       }}
@@ -315,16 +315,16 @@ function ProfileSection({
                         sx={{
                           height: 8,
                           borderRadius: 8,
-                          backgroundColor: "rgba(224, 252, 243, 0.12)",
+                          backgroundColor: "rgba(255, 255, 255, 0.12)",
                           overflow: "hidden",
                           mb: 0.4,
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 8,
-                          backgroundImage:
-                            "linear-gradient(90deg, #2dd4bf 0%, #0f766e 100%)",
-                          transition: "width 0.5s ease",
-                        },
-                      }}
+                          "& .MuiLinearProgress-bar": {
+                            borderRadius: 8,
+                            backgroundImage:
+                              "linear-gradient(90deg, #d9d9d9 0%, #808080 100%)",
+                            transition: "width 0.5s ease",
+                          },
+                        }}
                     />
                   </Box>
                   <Typography
@@ -333,7 +333,7 @@ function ProfileSection({
                     fontFamily: MODERN_FONT_STACK,
                     fontWeight: 600,
                     letterSpacing: 0.5,
-                    color: "#2dd4bf",
+                    color: "#d0d0d0",
                     minWidth: 64,
                     textAlign: "right",
                   }}
@@ -347,7 +347,7 @@ function ProfileSection({
                 sx={{
                   fontFamily: MODERN_FONT_STACK,
                   letterSpacing: 0.4,
-                  color: "#7fbcb3",
+                  color: "#b5b5b5",
                 }}
               >
                 {completionLabel}
@@ -393,7 +393,7 @@ function ProfileSection({
                     transform: "translateY(-1px)",
                     backgroundColor: editAccent,
                     boxShadow: `0 6px 16px ${alpha(editAccent, 0.35)}`,
-                    color: "#ffffff",
+                    color: "#000000",
                     opacity: 1,
                   },
                   "&.Mui-disabled": {
