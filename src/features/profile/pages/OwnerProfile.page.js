@@ -30,10 +30,8 @@ import InterestsIcon from "@mui/icons-material/Interests";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import PersonIcon from "@mui/icons-material/Person";
-import SettingsIcon from "@mui/icons-material/Settings";
 import {
   ProfileSections,
-  AccountManagementSection,
   AccountSettingsSection,
   HelpfulInformationSection,
 } from "../ui";
@@ -61,7 +59,6 @@ import {
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
 } from "../../../domain/accountLifecycle";
-import { alpha } from "@mui/material/styles";
 import {
   SECTION_BACKGROUNDS,
   createSectionCardStyles,
@@ -2158,83 +2155,37 @@ function OwnerProfileContent({ accountLifecycle }) {
               defaultValue: "ACCOUNT & SECURITY",
             })}
           </Typography>
-          <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.account)}>
-            <CardHeader
-              avatar={<SettingsIcon fontSize="large" />}
-              title={t("profile.preferences.accountSettings", {
-                defaultValue: "Account settings",
-              })}
-              subheader={
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "rgba(255, 255, 255, 0.92)",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  {t("profile.preferences.accountTagline", {
-                    defaultValue: "Manage privacy, security, and billing in one place.",
-                  })}
-                </Typography>
-              }
-              sx={(theme) => ({
-                background: "linear-gradient(90deg, #ff4f87, #ff7f64)",
-                color: theme.palette.secondary.contrastText,
-                px: { xs: 3, sm: 4 },
-                py: { xs: 2.5, sm: 3 },
-                boxShadow: "0 1px 0 rgba(255, 255, 255, 0.1)",
-                borderTopLeftRadius: theme.shape.borderRadius * 2,
-                borderTopRightRadius: theme.shape.borderRadius * 2,
-                '& .MuiCardHeader-avatar': {
-                  color: theme.palette.secondary.contrastText,
-                  backgroundColor: alpha("#ffffff", 0.12),
-                  borderRadius: "50%",
-                  padding: 0.5,
-                },
-                '& .MuiCardHeader-title': {
-                  color: theme.palette.secondary.contrastText,
-                  letterSpacing: '0.02em',
-                },
-                '& .MuiCardHeader-subheader': {
-                  color: alpha(theme.palette.secondary.contrastText, 0.85),
-                },
-              })}
-            />
-            <CardContent sx={{ px: { xs: 2.5, sm: 3.5 }, py: { xs: 3, sm: 3.75 } }}>
-              <Stack spacing={4}>
-                <AccountSettingsSection
-                  canChangeLanguage={canChangeLanguage}
-                  changeLanguageReason={changeLanguageReason}
-                  currentLanguage={i18n.language || "en"}
-                  onLanguageChange={handleLanguageChange}
-                  languageOptions={languageOptions}
-                  canManagePayments={canManagePayments}
-                  onManagePayments={handleManagePayments}
-                  capabilityReasons={capabilityReasons}
-                  t={t}
-                />
-                <AccountManagementSection
-                  canToggleVisibility={canToggleVisibility}
-                  capabilityReasons={capabilityReasons}
-                  isAccountHidden={isAccountHidden}
-                  accountStatusLoading={accountStatusLoading}
-                  isUpdatingAccountVisibility={isUpdatingAccountVisibility}
-                  onToggleVisibility={handleHideAccountToggle}
-                  visibilityStatusText={visibilityStatusText}
-                  t={t}
-                  canSignOut={canSignOut}
-                  signOutReason={signOutReason}
-                  signingOut={signingOut}
-                  onSignOut={handleProfileSignOut}
-                  canRemoveAccount={canRemoveAccount}
-                  removeAccountReason={capabilityReasons.removeAccount}
-                  onRemoveAccount={handleRemoveAccount}
-                  isRemovingAccount={isRemovingAccount}
-                />
-              </Stack>
-            </CardContent>
-          </Card>
+          <AccountSettingsSection
+            canChangeLanguage={canChangeLanguage}
+            changeLanguageReason={changeLanguageReason}
+            currentLanguage={i18n.language || "en"}
+            onLanguageChange={handleLanguageChange}
+            languageOptions={languageOptions}
+            canManagePayments={canManagePayments}
+            onManagePayments={handleManagePayments}
+            capabilityReasons={capabilityReasons}
+            t={t}
+            canToggleVisibility={canToggleVisibility}
+            isAccountHidden={isAccountHidden}
+            accountStatusLoading={accountStatusLoading}
+            isUpdatingAccountVisibility={isUpdatingAccountVisibility}
+            onToggleVisibility={handleHideAccountToggle}
+            visibilityStatusText={visibilityStatusText}
+            canSignOut={canSignOut}
+            signOutReason={signOutReason}
+            signingOut={signingOut}
+            onSignOut={handleProfileSignOut}
+            canRemoveAccount={canRemoveAccount}
+            removeAccountReason={capabilityReasons.removeAccount}
+            onRemoveAccount={handleRemoveAccount}
+            isRemovingAccount={isRemovingAccount}
+            featureCardProps={{
+              sx: createSectionCardStyles(SECTION_BACKGROUNDS.account),
+            }}
+            featureCardContentProps={{
+              sx: { px: { xs: 2.5, sm: 3.5 }, py: { xs: 3, sm: 3.75 } },
+            }}
+          />
         </Box>
         <HelpfulInformationSection
           sectionTitleStyles={sectionTitleStyles}
