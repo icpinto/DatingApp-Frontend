@@ -7,16 +7,16 @@ const getTheme = (mode) =>
     palette: {
       mode,
       primary: {
-        light: mode === 'light' ? '#5eead4' : '#34d399',
-        main: mode === 'light' ? '#0f766e' : '#2dd4bf',
-        dark: mode === 'light' ? '#0b504a' : '#0f766e',
-        contrastText: '#f0fdfa',
+        light: mode === 'light' ? '#ffffff' : '#cbd5f5',
+        main: mode === 'light' ? '#ffffff' : '#1e293b',
+        dark: mode === 'light' ? '#e2e8f0' : '#0f172a',
+        contrastText: mode === 'light' ? '#0f172a' : '#f8fafc',
       },
       secondary: {
-        light: mode === 'light' ? '#fbbf75' : '#fb923c',
-        main: mode === 'light' ? '#f97316' : '#fda769',
-        dark: mode === 'light' ? '#c2410c' : '#ea580c',
-        contrastText: '#1f1300',
+        light: mode === 'light' ? '#3b82f6' : '#38bdf8',
+        main: mode === 'light' ? '#1d4ed8' : '#60a5fa',
+        dark: mode === 'light' ? '#1e3a8a' : '#1d4ed8',
+        contrastText: '#ffffff',
       },
       error: {
         main: mode === 'light' ? '#dc2626' : '#f87171',
@@ -31,12 +31,12 @@ const getTheme = (mode) =>
         main: mode === 'light' ? '#16a34a' : '#4ade80',
       },
       background: {
-        default: mode === 'light' ? '#ecfdf5' : '#041615',
-        paper: mode === 'light' ? '#ffffff' : '#0b1f1d',
+        default: mode === 'light' ? '#ffffff' : '#0f172a',
+        paper: mode === 'light' ? '#ffffff' : '#111827',
       },
       text: {
-        primary: mode === 'light' ? '#07211f' : '#f0fdfa',
-        secondary: mode === 'light' ? '#3a4d4a' : '#94c6bd',
+        primary: mode === 'light' ? '#0f172a' : '#f8fafc',
+        secondary: mode === 'light' ? '#475569' : '#94a3b8',
       },
     },
     typography: {
