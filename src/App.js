@@ -19,6 +19,13 @@ import {
   Alert,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import {
+  LazyMotion,
+  domAnimation,
+  m,
+  useScroll,
+  useMotionValueEvent,
+} from "framer-motion";
 import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
@@ -42,6 +49,11 @@ import {
   useTopBarNavigation,
 } from "./shared/context/TopBarNavigationContext";
 import { useSignOut } from "./shared/hooks/useSignOut";
+import { LogIn, LogOut, UserPlus } from "lucide-react";
+
+const MotionAppBar = m(AppBar);
+const MotionBox = m(Box);
+const MotionButton = m(Button);
 
 const MessagesPage = lazy(() => import("./features/messages"));
 const PaymentPage = lazy(() => import("./features/premium/Payment"));
@@ -164,6 +176,12 @@ function TopBar() {
     severity: "success",
     message: "",
   });
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setHasScrolled(latest > 12);
+  });
 
   useEffect(() => {
     const updateTokenState = (event) => {
@@ -181,10 +199,22 @@ function TopBar() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHasScrolled(window.scrollY > 12);
+    }
+  }, []);
+
   const glassBackground =
     theme.palette.mode === "light"
-      ? alpha(theme.palette.background.paper, 0.85)
-      : alpha(theme.palette.background.default, 0.75);
+      ? alpha(theme.palette.background.paper, hasScrolled ? 0.85 : 0.55)
+      : alpha(theme.palette.background.default, hasScrolled ? 0.75 : 0.45);
+  const glassBorder = alpha(theme.palette.divider, hasScrolled ? 0.2 : 0.08);
+  const glassShadow = hasScrolled
+    ? theme.palette.mode === "light"
+      ? "0 18px 38px -24px rgba(15, 23, 42, 0.45)"
+      : "0 22px 48px -30px rgba(15, 23, 42, 0.75)"
+    : "none";
 
   const handleSignOutClick = async () => {
     const result = await signOut();
@@ -237,31 +267,47 @@ function TopBar() {
   };
 
   return (
-    <AppBar
-      position="sticky"
-      color="transparent"
-      elevation={0}
-      sx={{
-        backdropFilter: "blur(18px)",
-        backgroundColor: glassBackground,
-        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-        boxShadow:
-          theme.palette.mode === "light"
-            ? "0 12px 32px -18px rgba(15, 23, 42, 0.35)"
-            : "0 18px 38px -24px rgba(15, 23, 42, 0.65)",
-      }}
-    >
-      <Container maxWidth="lg" disableGutters sx={{ px: { xs: 2, md: 4 } }}>
-        <Toolbar
-          sx={{
-            gap: { xs: 1, md: 2 },
-            flexWrap: { xs: "wrap", md: "nowrap" },
-            alignItems: "center",
-            minHeight: { md: 88 },
-            py: { xs: 1.5, md: 2 },
-          }}
-        >
-          <Box
+    <LazyMotion features={domAnimation}>
+      <MotionAppBar
+        position="sticky"
+        color="transparent"
+        elevation={0}
+        animate={{ opacity: hasScrolled ? 0.97 : 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        sx={{
+          backdropFilter: hasScrolled ? "blur(18px)" : "blur(0px)",
+          backgroundColor: glassBackground,
+          borderBottom: `1px solid ${glassBorder}`,
+          boxShadow: glassShadow,
+          transition: theme.transitions.create(
+            [
+              "backdrop-filter",
+              "background-color",
+              "box-shadow",
+              "border-color",
+              "opacity",
+            ],
+            {
+              duration: theme.transitions.duration.shorter,
+              easing: theme.transitions.easing.easeOut,
+            }
+          ),
+        }}
+      >
+        <Container maxWidth="lg" disableGutters sx={{ px: { xs: 2, md: 4 } }}>
+          <Toolbar
+            sx={{
+              gap: { xs: 1, md: 2 },
+              flexWrap: { xs: "wrap", md: "nowrap" },
+              alignItems: "center",
+              minHeight: { md: 88 },
+              py: { xs: 1.5, md: 2 },
+            }}
+          >
+          <MotionBox
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -271,21 +317,35 @@ function TopBar() {
               py: 0.5,
               borderRadius: 2,
               backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              cursor: "pointer",
             }}
+            onClick={() => navigate("/")}
+            role="button"
+            aria-label={t("app.name")}
           >
-            <Box
+            <MotionBox
               component="img"
               src={logo}
               alt={t("app.alt")}
-              sx={{ height: 36, filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))" }}
+              whileHover={{ rotate: -2 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              sx={{
+                height: 36,
+                filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))",
+              }}
             />
             <Typography
               variant="h6"
-              sx={{ fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase" }}
+              sx={{
+                fontWeight: 700,
+                letterSpacing: 0.4,
+                textTransform: "uppercase",
+                color: theme.palette.text.primary,
+              }}
             >
               {t("app.name")}
             </Typography>
-          </Box>
+          </MotionBox>
           {isDesktop && navigation && (
             <Box
               sx={{
@@ -316,7 +376,7 @@ function TopBar() {
                   minWidth: 0,
                 }}
               >
-                <Button
+                <MotionButton
                   color="inherit"
                   variant="outlined"
                   onClick={handleSignOutClick}
@@ -324,7 +384,9 @@ function TopBar() {
                   startIcon={
                     signingOut ? (
                       <CircularProgress size={16} color="inherit" />
-                    ) : undefined
+                    ) : (
+                      <LogOut size={18} strokeWidth={2.5} />
+                    )
                   }
                   sx={{
                     fontWeight: 600,
@@ -333,15 +395,18 @@ function TopBar() {
                     borderRadius: 2,
                     border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
                     backgroundColor: "transparent",
+                    color: theme.palette.text.primary,
                     "&:hover": {
                       backgroundColor: alpha(theme.palette.primary.main, 0.12),
                     },
                   }}
+                  whileHover={{ scale: canSignOut && !signingOut ? 1.03 : 1 }}
+                  whileTap={{ scale: canSignOut && !signingOut ? 0.97 : 1 }}
                 >
                   {signingOut
                     ? t("app.signingOut", { defaultValue: "Signing out..." })
                     : t("app.signOut", { defaultValue: "Sign out" })}
-                </Button>
+                </MotionButton>
                 {!canSignOut && signOutReason && (
                   <Typography
                     variant="caption"
@@ -354,7 +419,7 @@ function TopBar() {
               </Box>
             ) : (
               <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.5 } }}>
-                <Button
+                <MotionButton
                   color="inherit"
                   onClick={() => navigate("/login")}
                   sx={{
@@ -363,11 +428,15 @@ function TopBar() {
                     textTransform: "none",
                     borderRadius: 2,
                     border: `1px solid ${alpha(theme.palette.text.primary, 0.12)}`,
+                    color: theme.palette.text.primary,
                   }}
+                  startIcon={<LogIn size={18} strokeWidth={2.5} />}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   {t("app.signIn", { defaultValue: "Sign in" })}
-                </Button>
-                <Button
+                </MotionButton>
+                <MotionButton
                   color="secondary"
                   variant="contained"
                   onClick={() => navigate("/signup")}
@@ -379,9 +448,12 @@ function TopBar() {
                     py: 1,
                     boxShadow: "0 10px 30px -12px rgba(236, 72, 153, 0.8)",
                   }}
+                  startIcon={<UserPlus size={18} strokeWidth={2.5} />}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {t("app.joinNow", { defaultValue: "Join now" })}
-                </Button>
+                </MotionButton>
               </Box>
             )}
           </Box>
@@ -401,7 +473,8 @@ function TopBar() {
           {signOutFeedback.message}
         </Alert>
       </Snackbar>
-    </AppBar>
+      </MotionAppBar>
+    </LazyMotion>
   );
 }
 
