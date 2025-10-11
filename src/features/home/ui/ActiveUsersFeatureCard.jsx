@@ -44,6 +44,15 @@ const ActiveUsersFeatureCard = ({
       title={t("home.headers.activeUsers")}
       subheader={t("home.headers.activeUsersSub")}
       icon={Group}
+      headerProps={{
+        sx: {
+          "& .MuiCardHeader-action": {
+            alignSelf: "center",
+            marginTop: 0,
+            marginRight: 0,
+          },
+        },
+      }}
       headerAction={
         canUseFilters ? (
           <Button
