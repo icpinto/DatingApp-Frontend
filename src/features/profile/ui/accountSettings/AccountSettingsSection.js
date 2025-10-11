@@ -11,7 +11,7 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, darken, lighten, useTheme } from "@mui/material/styles";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -24,9 +24,10 @@ import {
   createAccountActionStyles,
   accountSectionHeadingStyles,
   createSectionCardStyles,
-  SECTION_BACKGROUNDS,
-  SECTION_SUBTEXT_COLOR,
-  SECTION_TEXT_COLOR,
+  getSectionBackground,
+  getSectionDividerColor,
+  getSectionSubtextColor,
+  getSectionTextColor,
 } from "./accountSectionTheme";
 import { ColorModeContext } from "../../../../shared/context/ThemeContext";
 
@@ -70,6 +71,65 @@ function AccountSettingsSection({
   const colorMode = useContext(ColorModeContext);
   const canToggleTheme = typeof colorMode?.toggleColorMode === "function";
   const isDarkMode = theme.palette.mode === "dark";
+  const sectionTextColor = getSectionTextColor(theme);
+  const sectionSubtextColor = getSectionSubtextColor(theme);
+  const sectionDividerColor = getSectionDividerColor(theme);
+  const accountHeadingSx = accountSectionHeadingStyles(theme);
+  const accountCardBackground = getSectionBackground(theme, "account");
+  const iconBackground = alpha(
+    theme.palette.primary.main,
+    theme.palette.mode === "dark" ? 0.12 : 0.08
+  );
+  const iconHighlight = alpha(
+    theme.palette.primary.main,
+    theme.palette.mode === "dark" ? 0.18 : 0.12
+  );
+  const themeStatusColor = alpha(sectionTextColor, isDarkMode ? 0.85 : 0.8);
+  const visibilityStatusColor = isAccountHidden
+    ? alpha(sectionTextColor, 0.75)
+    : alpha(sectionTextColor, 0.95);
+  const visibilitySwitchTrack = alpha(
+    isAccountHidden ? theme.palette.warning.main : theme.palette.primary.main,
+    0.45
+  );
+  const accountActionIconSx = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    pt: 0.5,
+    borderRadius: "999px",
+    padding: 0.75,
+    backgroundColor: iconBackground,
+    transition:
+      "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
+  };
+  const headerGradientStart = isDarkMode
+    ? lighten(accountCardBackground, 0.05)
+    : darken(accountCardBackground, 0.05);
+  const headerGradientEnd = isDarkMode
+    ? darken(accountCardBackground, 0.12)
+    : darken(accountCardBackground, 0.15);
+  const headerShadow = isDarkMode
+    ? "0 1px 0 rgba(255, 255, 255, 0.12)"
+    : "0 1px 0 rgba(0, 0, 0, 0.08)";
+  const switchThumbShadow = alpha(
+    theme.palette.common.white,
+    isDarkMode ? 0.35 : 0.25
+  );
+  const switchTrackChecked = alpha(theme.palette.primary.main, 0.45);
+  const removeButtonGradient = `linear-gradient(90deg, ${darken(
+    theme.palette.error.main,
+    0.2
+  )}, ${theme.palette.error.main})`;
+  const removeButtonHoverGradient = `linear-gradient(90deg, ${darken(
+    theme.palette.error.main,
+    0.3
+  )}, ${darken(theme.palette.error.main, 0.1)})`;
+  const removeButtonDisabledBg = alpha(theme.palette.error.main, 0.4);
+  const removeButtonTextColor = theme.palette.getContrastText(
+    theme.palette.error.main
+  );
+  const removeButtonDisabledText = alpha(removeButtonTextColor, 0.7);
 
   const renderVisibilityHelper = () => {
     if (accountStatusLoading || isUpdatingAccountVisibility) {
@@ -119,17 +179,7 @@ function AccountSettingsSection({
               component="span"
               aria-hidden
               data-account-action-icon="true"
-              sx={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pt: 0.5,
-                borderRadius: "999px",
-                padding: 0.75,
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                transition:
-                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-              }}
+              sx={accountActionIconSx}
             >
               <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
             </Box>
@@ -143,14 +193,14 @@ function AccountSettingsSection({
               >
                 {t("app.language.label", { defaultValue: "Language" })}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: SECTION_SUBTEXT_COLOR,
-                  fontSize: "0.875rem",
-                  lineHeight: 1.5,
-                }}
-              >
+            <Typography
+              variant="body2"
+              sx={{
+                color: sectionSubtextColor,
+                fontSize: "0.875rem",
+                lineHeight: 1.5,
+              }}
+            >
                 {t("profile.preferences.languageDescription", {
                   defaultValue: "Select the language you want to see in the app.",
                 })}
@@ -203,22 +253,12 @@ function AccountSettingsSection({
             alignItems="flex-start"
             sx={{ flex: 1, minWidth: 0 }}
           >
-              <Box
-                component="span"
-                aria-hidden
-                data-account-action-icon="true"
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  pt: 0.5,
-                  borderRadius: "999px",
-                  padding: 0.75,
-                  backgroundColor: "rgba(255, 255, 255, 0.08)",
-                  transition:
-                    "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-                }}
-              >
+            <Box
+              component="span"
+              aria-hidden
+              data-account-action-icon="true"
+              sx={accountActionIconSx}
+            >
               {isDarkMode ? (
                 <Brightness7Icon color={canToggleTheme ? "primary" : "disabled"} />
               ) : (
@@ -238,7 +278,7 @@ function AccountSettingsSection({
               <Typography
                 variant="body2"
                 sx={{
-                  color: SECTION_SUBTEXT_COLOR,
+                  color: sectionSubtextColor,
                   fontSize: "0.875rem",
                   lineHeight: 1.5,
                 }}
@@ -251,7 +291,7 @@ function AccountSettingsSection({
               <Typography
                 variant="body2"
                 sx={{
-                  color: isDarkMode ? "#e0e0e0" : "#1f1f1f",
+                  color: themeStatusColor,
                   fontSize: "0.85rem",
                   lineHeight: 1.5,
                 }}
@@ -281,13 +321,13 @@ function AccountSettingsSection({
             }}
           sx={{
             "& .MuiSwitch-thumb": {
-              boxShadow: "0 0 6px rgba(255, 255, 255, 0.35)",
+              boxShadow: `0 0 6px ${switchThumbShadow}`,
             },
             "& .MuiSwitch-switchBase.Mui-checked": {
-              color: "#f5f5f5",
+              color: theme.palette.getContrastText(theme.palette.primary.main),
             },
             "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-              backgroundColor: "rgba(245, 245, 245, 0.55)",
+              backgroundColor: switchTrackChecked,
             },
           }}
         />
@@ -315,17 +355,7 @@ function AccountSettingsSection({
               component="span"
               aria-hidden
               data-account-action-icon="true"
-              sx={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pt: 0.5,
-                borderRadius: "999px",
-                padding: 0.75,
-                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                transition:
-                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-              }}
+              sx={accountActionIconSx}
             >
               <CreditCardIcon color={canManagePayments ? "primary" : "disabled"} />
             </Box>
@@ -344,7 +374,7 @@ function AccountSettingsSection({
               <Typography
                 variant="body2"
                 sx={{
-                  color: SECTION_SUBTEXT_COLOR,
+                  color: sectionSubtextColor,
                   fontSize: "0.875rem",
                   lineHeight: 1.5,
                 }}
@@ -363,17 +393,17 @@ function AccountSettingsSection({
             disabled={!canManagePayments}
             sx={{
               width: { xs: "100%", sm: "auto" },
-              borderColor: "rgba(200, 200, 200, 0.55)",
-              color: SECTION_TEXT_COLOR,
+              borderColor: sectionDividerColor,
+              color: sectionTextColor,
               backgroundColor: "transparent",
               transition: "all 0.3s ease",
               "&:hover": {
-                borderColor: "rgba(230, 230, 230, 0.75)",
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                borderColor: alpha(sectionDividerColor, 0.65),
+                backgroundColor: iconHighlight,
               },
               "&.Mui-disabled": {
-                opacity: 0.5,
-                borderColor: "rgba(200, 200, 200, 0.25)",
+                opacity: 0.6,
+                borderColor: alpha(sectionDividerColor, 0.4),
               },
             }}
           >
@@ -411,11 +441,11 @@ function AccountSettingsSection({
     incomingSubheaderTypographyProps;
 
   const defaultHeaderSx = {
-    background: "linear-gradient(90deg, #1f1f1f, #0d0d0d)",
-    color: "rgba(245, 245, 245, 0.96)",
+    background: `linear-gradient(90deg, ${headerGradientStart}, ${headerGradientEnd})`,
+    color: sectionTextColor,
     px: { xs: 3, sm: 4 },
     py: { xs: 2.5, sm: 3 },
-    boxShadow: "0 1px 0 rgba(255, 255, 255, 0.15)",
+    boxShadow: headerShadow,
   };
 
   const headerProps = {
@@ -424,7 +454,7 @@ function AccountSettingsSection({
     titleTypographyProps: {
       ...restTitleTypographyProps,
       sx: {
-        color: "rgba(245, 245, 245, 0.98)",
+        color: sectionTextColor,
         letterSpacing: "0.02em",
         ...titleSx,
       },
@@ -432,7 +462,7 @@ function AccountSettingsSection({
     subheaderTypographyProps: {
       ...restSubheaderTypographyProps,
       sx: {
-        color: "rgba(220, 220, 220, 0.85)",
+        color: sectionSubtextColor,
         ...subheaderSx,
       },
     },
@@ -442,13 +472,13 @@ function AccountSettingsSection({
   const avatarProps = {
     ...restAvatarProps,
     sx: {
-      backgroundColor: "rgba(255, 255, 255, 0.16)",
-      color: "rgba(245, 245, 245, 0.96)",
+      backgroundColor: iconHighlight,
+      color: sectionTextColor,
       ...avatarSx,
     },
   };
 
-  const defaultCardSx = createSectionCardStyles(SECTION_BACKGROUNDS.account);
+  const defaultCardSx = createSectionCardStyles("account");
 
   return (
     <FeatureCard
@@ -463,17 +493,17 @@ function AccountSettingsSection({
         sx: { ...contentSx },
         ...restContentProps,
       }}
-      sx={{ ...defaultCardSx, ...incomingCardSx }}
+      sx={[defaultCardSx, incomingCardSx]}
       {...restFeatureCardProps}
     >
       <Stack spacing={3}>
-        <Typography sx={accountSectionHeadingStyles}>{preferencesTitle}</Typography>
+        <Typography sx={accountHeadingSx}>{preferencesTitle}</Typography>
         {languagePreference}
         {themePreference}
         {billingManagement}
       </Stack>
       <Stack spacing={3}>
-        <Typography sx={accountSectionHeadingStyles}>{securityTitle}</Typography>
+        <Typography sx={accountHeadingSx}>{securityTitle}</Typography>
         <Box sx={createAccountActionStyles(canToggleVisibility, "default", 0)}>
           <Stack spacing={1.5}>
             <Stack
@@ -488,22 +518,12 @@ function AccountSettingsSection({
                 alignItems="flex-start"
                 sx={{ flex: 1, minWidth: 0 }}
               >
-                  <Box
-                    component="span"
-                    aria-hidden
-                    data-account-action-icon="true"
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      pt: 0.5,
-                      borderRadius: "999px",
-                      padding: 0.75,
-                      backgroundColor: "rgba(255, 255, 255, 0.08)",
-                      transition:
-                        "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-                    }}
-                  >
+                <Box
+                  component="span"
+                  aria-hidden
+                  data-account-action-icon="true"
+                  sx={accountActionIconSx}
+                >
                   <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
                 </Box>
                 <Stack spacing={0.75} sx={{ flex: 1 }}>
@@ -521,7 +541,7 @@ function AccountSettingsSection({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: SECTION_SUBTEXT_COLOR,
+                      color: sectionSubtextColor,
                       fontSize: "0.875rem",
                       lineHeight: 1.5,
                     }}
@@ -534,11 +554,12 @@ function AccountSettingsSection({
                     variant="body2"
                     key={isAccountHidden ? "hidden" : "visible"}
                     sx={{
-                      color: isAccountHidden ? "#d0d0d0" : "#f5f5f5",
+                      color: visibilityStatusColor,
                       fontSize: "0.875rem",
                       lineHeight: 1.5,
                       transition: "opacity 0.35s ease, transform 0.35s ease",
-                      opacity: accountStatusLoading || isUpdatingAccountVisibility ? 0.7 : 1,
+                      opacity:
+                        accountStatusLoading || isUpdatingAccountVisibility ? 0.7 : 1,
                       transform: "translateY(0)",
                     }}
                   >
@@ -560,13 +581,17 @@ function AccountSettingsSection({
                   }}
                   sx={{
                     "& .MuiSwitch-thumb": {
-                      boxShadow: "0 0 6px rgba(255, 255, 255, 0.4)",
+                      boxShadow: `0 0 6px ${switchThumbShadow}`,
                     },
                     "& .MuiSwitch-switchBase.Mui-checked": {
-                      color: "#f5f5f5",
+                      color: theme.palette.getContrastText(
+                        isAccountHidden
+                          ? theme.palette.warning.main
+                          : theme.palette.primary.main
+                      ),
                     },
                     "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                      backgroundColor: "rgba(245, 245, 245, 0.6)",
+                      backgroundColor: visibilitySwitchTrack,
                     },
                   }}
                 />
@@ -595,17 +620,7 @@ function AccountSettingsSection({
                   component="span"
                   aria-hidden
                   data-account-action-icon="true"
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    pt: 0.5,
-                    borderRadius: "999px",
-                    padding: 0.75,
-                    backgroundColor: "rgba(255, 255, 255, 0.12)",
-                    transition:
-                      "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-                  }}
+                  sx={[accountActionIconSx, { backgroundColor: alpha(theme.palette.error.main, 0.12) }]}
                 >
                   <DeleteForeverIcon color="error" />
                 </Box>
@@ -624,7 +639,7 @@ function AccountSettingsSection({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: SECTION_SUBTEXT_COLOR,
+                      color: sectionSubtextColor,
                       fontSize: "0.875rem",
                       lineHeight: 1.5,
                     }}
@@ -649,19 +664,25 @@ function AccountSettingsSection({
                 disabled={isRemovingAccount || !canRemoveAccount}
                 sx={{
                   width: { xs: "100%", sm: "auto" },
-                  background: "linear-gradient(90deg, #4d4d4d, #1f1f1f)",
+                  background: removeButtonGradient,
                   border: "none",
-                  color: "#f5f5f5",
+                  color: removeButtonTextColor,
                   transition: "all 0.3s ease",
-                  boxShadow: "0 0 0 rgba(0, 0, 0, 0.4)",
+                  boxShadow:
+                    theme.palette.mode === "dark"
+                      ? "0 0 0 rgba(0, 0, 0, 0.4)"
+                      : "0 0 0 rgba(0, 0, 0, 0.25)",
                   "&:hover": {
-                    background: "linear-gradient(90deg, #1f1f1f, #000000)",
-                    boxShadow: "0 0 12px rgba(0, 0, 0, 0.45)",
+                    background: removeButtonHoverGradient,
+                    boxShadow:
+                      theme.palette.mode === "dark"
+                        ? "0 0 12px rgba(0, 0, 0, 0.45)"
+                        : "0 0 12px rgba(0, 0, 0, 0.18)",
                     transform: "translateY(-1px)",
                   },
                   "&.Mui-disabled": {
-                    background: "rgba(79, 79, 79, 0.6)",
-                    color: "rgba(245, 245, 245, 0.85)",
+                    background: removeButtonDisabledBg,
+                    color: removeButtonDisabledText,
                   },
                 }}
               >
