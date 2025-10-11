@@ -17,9 +17,6 @@ import {
   AccordionDetails,
   Stack,
   Container,
-  Card,
-  CardHeader,
-  CardContent,
   Divider,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
@@ -63,6 +60,7 @@ import {
   SECTION_BACKGROUNDS,
   createSectionCardStyles,
 } from "../ui/accountSettings/accountSectionTheme";
+import FeatureCard from "../../../shared/components/FeatureCard";
 const sectionWrapperStyles = {
   mt: 8,
   mb: 8,
@@ -1258,30 +1256,30 @@ function OwnerProfileContent({ accountLifecycle }) {
               defaultValue: "PROFILE MANAGEMENT",
             })}
           </Typography>
-          <Card elevation={6} sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}>
-            <CardHeader
-              avatar={<PersonIcon fontSize="large" />}
-              title={
-                profile
-                  ? shouldShowForm
-                    ? editingSection
-                      ? t("profile.headers.editSection", {
-                          defaultValue: "Edit {{section}}",
-                          section: editingSectionLabel,
-                        })
-                      : t("profile.headers.edit", {
-                          defaultValue: "Edit your profile",
-                        })
-                    : t("profile.headers.view", { defaultValue: "Your profile" })
-                  : t("profile.headers.create", { defaultValue: "Create your profile" })
-              }
-              subheader={
-                shouldShowForm
-                  ? t("profile.headers.formSubheader")
-                  : t("profile.headers.viewSubheader")
-              }
-              action={null}
-              sx={(theme) => ({
+          <FeatureCard
+            sx={createSectionCardStyles(SECTION_BACKGROUNDS.profile)}
+            title={
+              profile
+                ? shouldShowForm
+                  ? editingSection
+                    ? t("profile.headers.editSection", {
+                        defaultValue: "Edit {{section}}",
+                        section: editingSectionLabel,
+                      })
+                    : t("profile.headers.edit", {
+                        defaultValue: "Edit your profile",
+                      })
+                  : t("profile.headers.view", { defaultValue: "Your profile" })
+                : t("profile.headers.create", { defaultValue: "Create your profile" })
+            }
+            subheader={
+              shouldShowForm
+                ? t("profile.headers.formSubheader")
+                : t("profile.headers.viewSubheader")
+            }
+            avatar={<PersonIcon fontSize="large" />}
+            headerProps={{
+              sx: (theme) => ({
                 background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                 color: theme.palette.primary.contrastText,
                 px: 3,
@@ -1296,15 +1294,20 @@ function OwnerProfileContent({ accountLifecycle }) {
                 '& .MuiCardHeader-avatar': {
                   color: theme.palette.primary.contrastText,
                 },
-              })}
-            />
-            <Divider />
+              }),
+              titleTypographyProps: {
+                sx: { color: "inherit" },
+              },
+              subheaderTypographyProps: {
+                sx: { color: "inherit", opacity: 0.85 },
+              },
+            }}
+          >
             {shouldShowForm ? (
-              <CardContent>
-                <Box component="form" id="owner-profile-form" onSubmit={handleSubmit}>
-                  <Stack spacing={spacing.section}>
-                    {isSectionActive("verification") && (
-                      <Accordion defaultExpanded>
+              <Box component="form" id="owner-profile-form" onSubmit={handleSubmit}>
+                <Stack spacing={spacing.section}>
+                  {isSectionActive("verification") && (
+                    <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography variant="h6">
                           {t("profile.headers.verification")}
@@ -2092,9 +2095,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                   </Stack>
                 </Stack>
               </Box>
-            </CardContent>
-          ) : (
-            <CardContent>
+            ) : (
               <Stack spacing={3}>
                 <Typography variant="body2" color="text.secondary">
                   {t("profile.headers.viewDescription", {
@@ -2145,9 +2146,8 @@ function OwnerProfileContent({ accountLifecycle }) {
                   </Alert>
                 )}
               </Stack>
-            </CardContent>
-          )}
-          </Card>
+            )}
+          </FeatureCard>
         </Box>
         <Box component="section" sx={sectionWrapperStyles}>
           <Typography variant="overline" sx={sectionTitleStyles}>
