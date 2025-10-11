@@ -33,7 +33,6 @@ import {
   HelpfulInformationSection,
 } from "../ui";
 import {
-  signOut as signOutRequest,
   fetchAccountStatus,
   fetchProfileEnums,
   fetchOwnerProfile,
@@ -143,7 +142,6 @@ function OwnerProfileContent({ accountLifecycle }) {
   const [editingSection, setEditingSection] = useState(null);
   const [isAccountHidden, setIsAccountHidden] = useState(false);
   const [isRemovingAccount, setIsRemovingAccount] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   const [accountStatusLoading, setAccountStatusLoading] = useState(true);
   const [accountLifecycleStatus, setAccountLifecycleStatus] = useState(
     sharedLifecycleStatus ?? null
@@ -172,8 +170,6 @@ function OwnerProfileContent({ accountLifecycle }) {
     canRemoveAccount,
     canChangeLanguage,
     changeLanguageReason,
-    canSignOut,
-    signOutReason,
   } = useOwnerProfileCapabilities();
   useEffect(() => {
     hasLoadedProfileRef.current = false;
@@ -314,70 +310,6 @@ function OwnerProfileContent({ accountLifecycle }) {
     },
     [canChangeLanguage, changeLanguageReason, i18n, t]
   );
-
-  const handleProfileSignOut = useCallback(async () => {
-    if (!canSignOut) {
-      if (signOutReason) {
-        setSnackbar({
-          open: true,
-          messageKey: "",
-          message: signOutReason,
-          severity: "info",
-        });
-      }
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user_id");
-      window.dispatchEvent(
-        new CustomEvent("auth-token-changed", { detail: { token: null } })
-      );
-      setSnackbar({
-        open: true,
-        messageKey: "",
-        message: t("app.signOutSuccess", {
-          defaultValue: "Signed out successfully.",
-        }),
-        severity: "success",
-      });
-      navigate("/");
-      return;
-    }
-
-    setSigningOut(true);
-    try {
-      await signOutRequest(token);
-      setSnackbar({
-        open: true,
-        messageKey: "",
-        message: t("app.signOutSuccess", {
-          defaultValue: "Signed out successfully.",
-        }),
-        severity: "success",
-      });
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        messageKey: "",
-        message: t("app.signOutError", {
-          defaultValue:
-            "We couldn't reach the server, but your local session was cleared.",
-        }),
-        severity: "warning",
-      });
-    } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user_id");
-      window.dispatchEvent(
-        new CustomEvent("auth-token-changed", { detail: { token: null } })
-      );
-      setSigningOut(false);
-      navigate("/");
-    }
-  }, [canSignOut, navigate, signOutReason, t]);
 
   useEffect(() => {
     const shouldSkipFetch =
@@ -2171,10 +2103,6 @@ function OwnerProfileContent({ accountLifecycle }) {
             isUpdatingAccountVisibility={isUpdatingAccountVisibility}
             onToggleVisibility={handleHideAccountToggle}
             visibilityStatusText={visibilityStatusText}
-            canSignOut={canSignOut}
-            signOutReason={signOutReason}
-            signingOut={signingOut}
-            onSignOut={handleProfileSignOut}
             canRemoveAccount={canRemoveAccount}
             removeAccountReason={capabilityReasons.removeAccount}
             onRemoveAccount={handleRemoveAccount}
