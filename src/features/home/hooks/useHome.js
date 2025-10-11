@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { useActiveUserProfile } from "@/features/home/hooks/useActiveUserProfile";
-import { useActiveUsers } from "@/features/home/hooks/useActiveUsers";
-import { useConnectionRequest } from "@/features/home/hooks/useConnectionRequest";
-import { useDiscoveryCapabilities } from "@/features/home/hooks/useDiscoveryCapabilities";
-import { useDiscoveryFilters } from "@/features/home/hooks/useDiscoveryFilters";
-import { useRequestMessaging } from "@/features/home/hooks/useRequestMessaging";
+import { useActiveUserProfile } from "./useActiveUserProfile";
+import { useActiveUsers } from "./useActiveUsers";
+import { useConnectionRequest } from "./useConnectionRequest";
+import { useDiscoveryCapabilities } from "./useDiscoveryCapabilities";
+import { useDiscoveryFilters } from "./useDiscoveryFilters";
+import { useRequestMessaging } from "./useRequestMessaging";
 
 export function useHome({ accountLifecycle }) {
   const capabilities = useDiscoveryCapabilities(accountLifecycle);

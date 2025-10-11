@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { useUserCapabilities } from "@/shared/context/UserContext";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
 
 export function useDiscoveryCapabilities(accountLifecycle) {
   const { groups = {} } = useUserCapabilities();
-  const discoveryCapabilities = groups.discovery || {};
+  const { discovery: discoveryCapabilities = {} } = groups;
   const { isDeactivated = false, loading: lifecycleLoading = false } =
     accountLifecycle || {};
   const discoveryBlockedByLifecycle = !lifecycleLoading && isDeactivated;

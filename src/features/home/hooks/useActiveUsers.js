@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchActiveUsersApi } from "@/features/home/api/home.api";
-import { getUserIdentifier, normalizeUserId } from "@/features/home/utils/normalizeUserId";
-import { isAbortError } from "@/utils/http";
+import { fetchActiveUsersApi } from "../api/home.api";
+import { getUserIdentifier, normalizeUserId } from "../utils/normalizeUserId";
+import { isAbortError } from "../../../utils/http";
 
 export function useActiveUsers({
   canViewActiveUsers,
