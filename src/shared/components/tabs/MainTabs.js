@@ -27,7 +27,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
 import Home from "../../../features/home/Home";
 import Matches from "../../../features/matches/Matches";
-import { ProfilesPage } from "../../../features/profiles";
+import OwnerProfile from "../../../features/profile/profile";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
 import {
@@ -104,7 +104,7 @@ const buildTabDefinitions = ({ requestCount, unreadMessages, setRequestCount }) 
     label: "Profile",
     capability: CAPABILITIES.NAV_ACCESS_PROFILE,
     icon: () => <PersonIcon />,
-    render: () => <ProfilesPage />,
+    render: () => <OwnerProfile />,
   },
 ];
 

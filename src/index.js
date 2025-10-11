@@ -5,18 +5,13 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import ThemeContext from './shared/context/ThemeContext';
 import { I18nextProvider } from './i18n';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const queryClient = new QueryClient();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <I18nextProvider>
-    <QueryClientProvider client={queryClient}>
-      <ThemeContext>
-        <App />
-      </ThemeContext>
-    </QueryClientProvider>
+    <ThemeContext>
+      <App />
+    </ThemeContext>
   </I18nextProvider>
 );
 
