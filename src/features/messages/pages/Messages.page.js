@@ -16,8 +16,6 @@ import { useTheme } from "@mui/material/styles";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import ConversationListPane from "../ui/ConversationListPane";
 import ChatDrawer from "../ui/ChatDrawer";
-import api from "../../../shared/services/api";
-import chatService from "../../../shared/services/chatService";
 import { spacing } from "../../../styles";
 import { useWebSocket } from "../../../shared/context/WebSocketProvider";
 import { useTranslation } from "../../../i18n";
@@ -28,18 +26,15 @@ import { useUserCapabilities, useUserContext } from "../../../shared/context/Use
 import {
   pickFirst,
   toNumberOrUndefined,
-  normalizeConversationList,
-  flattenConversationEntry,
   extractUnreadCount,
-  getLatestMessageSnapshot,
   extractLastMessageId,
   extractLastReadMessageId,
+  getLatestMessageSnapshot,
 } from "../../../utils/conversationUtils";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
   ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE,
 } from "../../../domain/accountLifecycle";
-import { isAbortError } from "../../../utils/http";
 import {
   buildMessagePreview,
   extractLastMessageInfo,
@@ -48,106 +43,15 @@ import {
   getConversationUsers,
   getCurrentUserId,
 } from "../utils/conversationDisplayHelpers";
-
-const buildRealtimePatch = ({
-  conversation,
-  wsConversation,
-  currentUserId,
-  selectedConversationId,
-  conversationKey,
-}) => {
-  if (!wsConversation || typeof wsConversation !== "object") {
-    return null;
-  }
-
-  const messages = Array.isArray(wsConversation.messages)
-    ? wsConversation.messages
-    : [];
-  const lastRead = wsConversation.lastRead;
-  const latestSnapshot = getLatestMessageSnapshot(messages);
-
-  const wsUnreadCount = toNumberOrUndefined(
-    extractUnreadCount(wsConversation)
-  );
-  let unreadCount = wsUnreadCount;
-
-  const isSelected =
-    selectedConversationId !== undefined &&
-    selectedConversationId !== null &&
-    conversationKey !== undefined &&
-    conversationKey !== null &&
-    String(conversationKey) === String(selectedConversationId);
-
-  if (isSelected) {
-    unreadCount = 0;
-  }
-
-  const updates = {};
-  const previousUnread = toNumberOrUndefined(
-    extractUnreadCount(conversation)
-  );
-
-  if (unreadCount !== undefined && unreadCount !== previousUnread) {
-    updates.__localUnreadCount = unreadCount;
-    updates.unread_count = unreadCount;
-    updates.unreadCount = unreadCount;
-    updates.unread_messages_count = unreadCount;
-  }
-
-  const normalizedLastRead = toNumberOrUndefined(lastRead);
-  const existingLastRead = extractLastReadMessageId(conversation);
-
-  if (
-    normalizedLastRead !== undefined &&
-    normalizedLastRead !== existingLastRead
-  ) {
-    updates.__lastReadMessageId = normalizedLastRead;
-    updates.last_read_message_id = normalizedLastRead;
-    updates.lastReadMessageId = normalizedLastRead;
-  }
-
-  const previousLastId = extractLastMessageId(conversation);
-
-  if (
-    latestSnapshot.messageId !== undefined &&
-    latestSnapshot.messageId !== previousLastId
-  ) {
-    updates.__lastMessageId = latestSnapshot.messageId;
-
-    if (latestSnapshot.message) {
-      updates.last_message = latestSnapshot.message;
-    }
-
-    if (latestSnapshot.body !== undefined) {
-      updates.last_message_body = latestSnapshot.body;
-      updates.lastMessageBody = latestSnapshot.body;
-    }
-
-    if (latestSnapshot.mimeType !== undefined) {
-      updates.last_message_mime_type = latestSnapshot.mimeType;
-      updates.lastMessageMimeType = latestSnapshot.mimeType;
-    }
-
-    if (latestSnapshot.timestamp !== undefined) {
-      updates.last_message_timestamp = latestSnapshot.timestamp;
-      updates.lastMessageTimestamp = latestSnapshot.timestamp;
-      updates.last_message_sent_at = latestSnapshot.timestamp;
-      updates.lastMessageSentAt = latestSnapshot.timestamp;
-    }
-  }
-
-  return Object.keys(updates).length > 0 ? updates : null;
-};
+import useConversations from "../hooks/useConversations";
+import usePartnerProfiles from "../hooks/usePartnerProfiles";
+import useRealtimePatches from "../hooks/useRealtimePatches";
 
 function MessagesContent({
   onUnreadCountChange = () => {},
   accountLifecycle,
 }) {
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
-  const [profiles, setProfiles] = useState({});
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const currentUserId = getCurrentUserId();
@@ -166,6 +70,20 @@ function MessagesContent({
   const canOpenConversation = messagingCapabilities.openConversation.can;
   const canMarkRead = messagingCapabilities.markRead.can;
   const canViewPartnerStatus = messagingCapabilities.viewPartnerStatus.can;
+
+  const { conversations, setConversations, loading, error } = useConversations({
+    canViewInbox,
+    canViewConversationList,
+    chatDisabled,
+    hydrateConversations,
+  });
+
+  const profiles = usePartnerProfiles({
+    conversations,
+    canViewPartnerStatus,
+    chatDisabled,
+    normalizedCurrentUserId,
+  });
 
   const resolveLifecyclePlaceholder = useCallback(
     (status) => {
@@ -194,143 +112,16 @@ function MessagesContent({
 
   useEffect(() => {
     if (!canViewInbox || !canViewConversationList || chatDisabled) {
-      setLoading(false);
+      setSelectedConversationId(null);
       setConversations([]);
-      setError(null);
-      return () => {};
+      return;
     }
-
-    let isActive = true;
-    const controller = new AbortController();
-
-    const fetchConversations = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const response = await chatService.get("/conversations", {
-          headers: {
-            Authorization: `${token}`,
-          },
-          signal: controller.signal,
-        });
-
-        const normalized = normalizeConversationList(response.data)
-          .map(flattenConversationEntry)
-          .filter(Boolean);
-
-        if (isActive) {
-          setConversations(normalized);
-          setError(null);
-        }
-
-        hydrateConversations(normalized);
-      } catch (err) {
-        if (isAbortError(err)) {
-          return;
-        }
-        if (isActive) {
-          setError("Failed to fetch conversations");
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchConversations();
-
-    return () => {
-      isActive = false;
-      controller.abort();
-    };
   }, [
     canViewConversationList,
     canViewInbox,
     chatDisabled,
-    hydrateConversations,
-  ]);
-
-  useEffect(() => {
-    if (
-      chatDisabled ||
-      !canViewPartnerStatus ||
-      !Array.isArray(conversations) ||
-      conversations.length === 0
-    ) {
-      setProfiles({});
-      return () => {};
-    }
-
-    let isActive = true;
-    const controller = new AbortController();
-
-    const fetchProfiles = async () => {
-      const token = localStorage.getItem("token");
-      const uniqueIds = new Set();
-
-      conversations.forEach((conv) => {
-        const { otherUserId } = getConversationPartnerDetails(
-          conv,
-          normalizedCurrentUserId
-        );
-
-        if (
-          otherUserId !== undefined &&
-          otherUserId !== null &&
-          otherUserId !== normalizedCurrentUserId
-        ) {
-          uniqueIds.add(otherUserId);
-        }
-      });
-
-      if (uniqueIds.size === 0) {
-        if (isActive) {
-          setProfiles({});
-        }
-        return;
-      }
-
-      const profilesData = {};
-
-      await Promise.all(
-        Array.from(uniqueIds)
-          .map((id) => toNumberOrUndefined(id))
-          .filter(
-            (id) =>
-              id !== undefined && id !== null && id !== normalizedCurrentUserId
-          )
-          .map(async (id) => {
-            try {
-              const res = await api.get(`/user/profile/${id}`, {
-                headers: { Authorization: `${token}` },
-                signal: controller.signal,
-              });
-              profilesData[id] = res.data;
-            } catch (e) {
-              if (!isAbortError(e)) {
-                // ignore individual profile fetch errors
-              }
-            }
-          })
-      );
-
-      if (isActive) {
-        setProfiles(profilesData);
-      }
-    };
-
-    fetchProfiles();
-
-    return () => {
-      isActive = false;
-      controller.abort();
-    };
-  }, [
-    canViewPartnerStatus,
-    chatDisabled,
-    conversations,
-    normalizedCurrentUserId,
+    setConversations,
+    setSelectedConversationId,
   ]);
 
   useEffect(() => {
@@ -355,11 +146,14 @@ function MessagesContent({
 
     setSelectedConversationId(null);
     setConversations([]);
-    setProfiles({});
-    setLoading(false);
-    setError(null);
     clearConversationFacts();
-  }, [canViewInbox, chatDisabled, clearConversationFacts]);
+  }, [
+    canViewInbox,
+    chatDisabled,
+    clearConversationFacts,
+    setConversations,
+    setSelectedConversationId,
+  ]);
 
   const resolveConversationId = useCallback(
     (conversation) =>
@@ -396,6 +190,16 @@ function MessagesContent({
     },
     [resolveConversationId]
   );
+
+  useRealtimePatches({
+    canViewConversationList,
+    currentUserId,
+    wsConversations,
+    selectedConversationId,
+    resolveConversationId,
+    getConversationKey,
+    setConversations,
+  });
 
   const selectedConversation = useMemo(() => {
     if (selectedConversationId === null || selectedConversationId === undefined) {
@@ -490,71 +294,6 @@ function MessagesContent({
     getConversationKey,
     selectedConversationId,
   ]);
-
-  const applyRealtimeUpdates = useCallback(
-    (previous = []) => {
-      if (!canViewConversationList) {
-        return previous;
-      }
-
-      if (
-        !Array.isArray(previous) ||
-        previous.length === 0 ||
-        !wsConversations ||
-        typeof wsConversations !== "object" ||
-        Object.keys(wsConversations).length === 0
-      ) {
-        return previous;
-      }
-
-      let hasChanges = false;
-
-      const nextConversations = previous.map((conversation) => {
-        const conversationId = resolveConversationId(conversation);
-        if (conversationId === undefined || conversationId === null) {
-          return conversation;
-        }
-
-        const key = String(conversationId);
-        const wsConversation =
-          wsConversations[key] ?? wsConversations[conversationId];
-
-        if (!wsConversation) {
-          return conversation;
-        }
-
-        const conversationKey = getConversationKey(conversation);
-        const patch = buildRealtimePatch({
-          conversation,
-          wsConversation,
-          currentUserId,
-          selectedConversationId,
-          conversationKey,
-        });
-
-        if (!patch) {
-          return conversation;
-        }
-
-        hasChanges = true;
-        return { ...conversation, ...patch };
-      });
-
-      return hasChanges ? nextConversations : previous;
-    },
-    [
-      canViewConversationList,
-      currentUserId,
-      getConversationKey,
-      resolveConversationId,
-      selectedConversationId,
-      wsConversations,
-    ]
-  );
-
-  useEffect(() => {
-    setConversations((prev) => applyRealtimeUpdates(prev));
-  }, [applyRealtimeUpdates]);
 
   useEffect(() => {
     if (!canOpenConversation) {
@@ -689,6 +428,7 @@ function MessagesContent({
       getConversationKey,
       hydrateConversations,
       markRead,
+      setConversations,
       resolveConversationId,
       wsConversations,
     ]
@@ -696,7 +436,7 @@ function MessagesContent({
 
   const handleCloseConversation = useCallback(() => {
     setSelectedConversationId(null);
-  }, []);
+  }, [setSelectedConversationId]);
 
   const activeConversationKey =
     selectedConversationId !== null && selectedConversationId !== undefined
