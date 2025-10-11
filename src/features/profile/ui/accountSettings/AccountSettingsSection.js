@@ -96,6 +96,8 @@ function AccountSettingsSection({
     return null;
   };
 
+  const visibilityHelper = renderVisibilityHelper();
+
   const languagePreference = (
     <Box sx={createAccountActionStyles(canChangeLanguage, "default", 0)}>
       <Stack spacing={1.5}>
@@ -446,83 +448,79 @@ function AccountSettingsSection({
       <Stack spacing={3}>
         <Typography sx={accountSectionHeadingStyles}>{securityTitle}</Typography>
         <Box sx={createAccountActionStyles(canToggleVisibility, "default", 0)}>
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={2} alignItems="flex-start">
-              <Box
-                component="span"
-                aria-hidden
-                data-account-action-icon="true"
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  pt: 0.5,
-                  borderRadius: "999px",
-                  padding: 0.75,
-                  backgroundColor: "rgba(255, 255, 255, 0.04)",
-                  transition:
-                    "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
-                }}
-              >
-                <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
-              </Box>
-              <Stack spacing={0.75} sx={{ flex: 1 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  {t("profile.preferences.visibility", {
-                    defaultValue: "Profile visibility",
-                  })}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: SECTION_SUBTEXT_COLOR,
-                    fontSize: "0.875rem",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {t("profile.preferences.visibilityDescription", {
-                    defaultValue: "Hide your profile without losing your details.",
-                  })}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  key={isAccountHidden ? "hidden" : "visible"}
-                  sx={{
-                    color: isAccountHidden ? "#ff7f9f" : "#7dd3fc",
-                    fontSize: "0.875rem",
-                    lineHeight: 1.5,
-                    transition: "opacity 0.35s ease, transform 0.35s ease",
-                    opacity: accountStatusLoading || isUpdatingAccountVisibility ? 0.7 : 1,
-                    transform: "translateY(0)",
-                  }}
-                >
-                  {visibilityStatusText}
-                </Typography>
-              </Stack>
-            </Stack>
+          <Stack spacing={1.5}>
             <Stack
-              spacing={2}
-              direction="row"
-              alignItems="center"
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2.5}
+              alignItems={{ xs: "flex-start", sm: "center" }}
               justifyContent="space-between"
-              flexWrap="wrap"
-              rowGap={1.5}
             >
-              <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
-                {renderVisibilityHelper()}
-              </Stack>
               <Stack
                 direction="row"
-                spacing={1.5}
-                alignItems="center"
-                sx={{ flexShrink: 0 }}
+                spacing={2}
+                alignItems="flex-start"
+                sx={{ flex: 1, minWidth: 0 }}
               >
+                <Box
+                  component="span"
+                  aria-hidden
+                  data-account-action-icon="true"
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    pt: 0.5,
+                    borderRadius: "999px",
+                    padding: 0.75,
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    transition:
+                      "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
+                  }}
+                >
+                  <VisibilityOffIcon color={isAccountHidden ? "warning" : "primary"} />
+                </Box>
+                <Stack spacing={0.75} sx={{ flex: 1 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    {t("profile.preferences.visibility", {
+                      defaultValue: "Profile visibility",
+                    })}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: SECTION_SUBTEXT_COLOR,
+                      fontSize: "0.875rem",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {t("profile.preferences.visibilityDescription", {
+                      defaultValue: "Hide your profile without losing your details.",
+                    })}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    key={isAccountHidden ? "hidden" : "visible"}
+                    sx={{
+                      color: isAccountHidden ? "#ff7f9f" : "#7dd3fc",
+                      fontSize: "0.875rem",
+                      lineHeight: 1.5,
+                      transition: "opacity 0.35s ease, transform 0.35s ease",
+                      opacity: accountStatusLoading || isUpdatingAccountVisibility ? 0.7 : 1,
+                      transform: "translateY(0)",
+                    }}
+                  >
+                    {visibilityStatusText}
+                  </Typography>
+                  {visibilityHelper && <Box sx={{ pt: 0.25 }}>{visibilityHelper}</Box>}
+                </Stack>
+              </Stack>
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexShrink: 0 }}>
                 <Switch
                   checked={isAccountHidden}
                   onChange={onToggleVisibility}
