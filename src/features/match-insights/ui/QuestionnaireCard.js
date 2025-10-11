@@ -206,9 +206,10 @@ function QuestionnaireCard({ isLocked = false, lockReason = "" }) {
             {questionnaireDisabled ? (
               <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
             ) : effectiveLock ? (
-              <Typography color="text.secondary">
-                {combinedLockReason || "Core preferences are required to continue."}
-              </Typography>
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                {combinedLockReason ||
+                  "Save your core match preferences to unlock the questionnaire."}
+              </Alert>
             ) : loading ? (
               <Stack spacing={spacing.section}>
                 <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
