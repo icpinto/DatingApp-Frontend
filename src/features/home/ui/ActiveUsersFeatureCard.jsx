@@ -1,6 +1,7 @@
 import React from "react";
-import { Divider, Skeleton, Stack, Typography } from "@mui/material";
+import { Button, Divider, Skeleton, Stack, Typography } from "@mui/material";
 import { Group } from "@mui/icons-material";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
 
 import FeatureCard from "../../../shared/components/FeatureCard";
 import { spacing } from "../../../styles";
@@ -43,6 +44,24 @@ const ActiveUsersFeatureCard = ({
       title={t("home.headers.activeUsers")}
       subheader={t("home.headers.activeUsersSub")}
       icon={Group}
+      headerAction={
+        canUseFilters ? (
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<FilterAltIcon fontSize="small" />}
+            onClick={() => {
+              if (!canToggleFilterPanel) {
+                return;
+              }
+              onToggleFilters((prev) => !prev);
+            }}
+            disabled={!canToggleFilterPanel}
+          >
+            {showFilters ? t("home.filters.hide") : t("home.filters.show")}
+          </Button>
+        ) : null
+      }
       dividerProps={{ sx: { borderStyle: "solid" } }}
     >
       <Stack spacing={spacing.section}>
@@ -52,12 +71,9 @@ const ActiveUsersFeatureCard = ({
           onFilterChange={onFilterChange}
           onApplyFilters={onApplyFilters}
           onClearFilters={onClearFilters}
-          onToggleFilters={onToggleFilters}
           loadingUsers={loadingUsers}
           canUseFilters={canUseFilters}
-          canToggleFilterPanel={canToggleFilterPanel}
           filterPanelOpen={filterPanelOpen}
-          showFilters={showFilters}
           t={t}
         />
 
