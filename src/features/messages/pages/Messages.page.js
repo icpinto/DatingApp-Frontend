@@ -1,17 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Alert,
-  Avatar,
-  Card,
-  CardContent,
-  CardHeader,
-  Container,
-  Divider,
-  Grid,
-  Stack,
-  Typography,
-  useMediaQuery,
-} from "@mui/material";
+import { Alert, Container, Grid, Stack, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import ConversationListPane from "../ui/ConversationListPane";
@@ -23,6 +11,7 @@ import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleCon
 import { CAPABILITIES } from "../../../domain/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities, useUserContext } from "../../../shared/context/UserContext";
+import FeatureCard from "../../../shared/components/FeatureCard";
 import {
   pickFirst,
   toNumberOrUndefined,
@@ -569,86 +558,88 @@ function MessagesContent({
                 can={CAPABILITIES.MESSAGING_VIEW_HISTORY}
                 fallback={
                   <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
-                    <Card
-                      elevation={3}
+                    <FeatureCard
+                      divider={false}
                       sx={{
                         width: "100%",
                         display: "flex",
                         flexDirection: "column",
-                        borderRadius: 3,
                         minHeight: { xs: "50vh", md: "100%" },
-                        overflow: "hidden",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        p: spacing.section,
-                        textAlign: "center",
+                      }}
+                      contentProps={{
+                        sx: {
+                          flexGrow: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          textAlign: "center",
+                          px: spacing.section,
+                          py: spacing.section,
+                        },
                       }}
                     >
                       <Typography variant="body1" color="text.secondary">
                         You do not have permission to view message history.
                       </Typography>
-                    </Card>
+                    </FeatureCard>
                   </Grid>
                 }
               >
                 <Grid item xs={12} md={8} sx={{ display: "flex", minHeight: 0 }}>
-                  <Card
-                    elevation={3}
+                  {(() => {
+                    const showPlaceholder = !selectedConversation;
+                    return (
+                      <FeatureCard
                     sx={{
                       width: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      borderRadius: 3,
                       minHeight: { xs: "50vh", md: "100%" },
-                      overflow: "hidden",
                     }}
-                  >
-                    {selectedConversation ? (
-                      <ChatDrawer
-                        conversationId={resolveConversationId(selectedConversation)}
-                        user1_id={selectedConversationUsers.user1.id}
-                        user2_id={selectedConversationUsers.user2.id}
-                        open={Boolean(selectedConversation)}
-                        onClose={handleCloseConversation}
-                        partnerName={selectedConversationDetails?.displayName}
-                        partnerBio={selectedConversationDetails?.bio}
-                        partnerLifecycleStatus={
-                          selectedConversationDetails?.lifecycleStatus
+                        title={
+                          showPlaceholder
+                            ? "Select a conversation"
+                            : undefined
                         }
-                        blocked={selectedConversationBlocked}
-                        messagingDisabled={chatDisabled}
-                        messagingDisabledReason={
-                          ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE
+                        subheader={
+                          showPlaceholder
+                            ? "Choose someone from the list to start chatting"
+                            : undefined
                         }
-                      />
-                    ) : (
-                      <>
-                        <CardHeader
-                          title="Select a conversation"
-                          subheader="Choose someone from the list to start chatting"
-                          avatar={
-                            <Avatar
-                              variant="rounded"
-                              sx={{
-                                bgcolor: "secondary.light",
-                                color: "secondary.dark",
-                              }}
-                            >
-                              <ChatBubbleOutlineRoundedIcon />
-                            </Avatar>
-                          }
-                          sx={{ px: spacing.section, py: spacing.section }}
-                        />
-                        <Divider sx={{ borderStyle: "dashed" }} />
-                        <CardContent
-                          sx={{
-                            flexGrow: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            textAlign: "center",
-                          }}
-                        >
+                        icon={
+                          showPlaceholder
+                            ? ChatBubbleOutlineRoundedIcon
+                            : undefined
+                        }
+                        avatarProps={
+                          showPlaceholder
+                            ? {
+                                sx: {
+                                  bgcolor: "secondary.light",
+                                  color: "secondary.dark",
+                                },
+                              }
+                            : undefined
+                        }
+                        divider={showPlaceholder}
+                        contentProps={{
+                          sx: showPlaceholder
+                            ? {
+                                flexGrow: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                textAlign: "center",
+                              }
+                            : {
+                                flexGrow: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                                p: 0,
+                              },
+                        }}
+                      >
+                        {showPlaceholder ? (
                           <Stack
                             spacing={1.5}
                             alignItems="center"
@@ -661,10 +652,28 @@ function MessagesContent({
                               Once you pick someone, you can continue your conversation here.
                             </Typography>
                           </Stack>
-                        </CardContent>
-                      </>
-                    )}
-                  </Card>
+                        ) : (
+                          <ChatDrawer
+                            conversationId={resolveConversationId(selectedConversation)}
+                            user1_id={selectedConversationUsers.user1.id}
+                            user2_id={selectedConversationUsers.user2.id}
+                            open={Boolean(selectedConversation)}
+                            onClose={handleCloseConversation}
+                            partnerName={selectedConversationDetails?.displayName}
+                            partnerBio={selectedConversationDetails?.bio}
+                            partnerLifecycleStatus={
+                              selectedConversationDetails?.lifecycleStatus
+                            }
+                            blocked={selectedConversationBlocked}
+                            messagingDisabled={chatDisabled}
+                            messagingDisabledReason={
+                              ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE
+                            }
+                          />
+                        )}
+                      </FeatureCard>
+                    );
+                  })()}
                 </Grid>
               </Guard>
             ) : null}

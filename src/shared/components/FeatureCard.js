@@ -20,6 +20,7 @@ const FeatureCard = forwardRef(function FeatureCard(
   },
   ref
 ) {
+  const { sx: cardSx = {}, ...restCardProps } = cardProps;
   const {
     sx: headerSx = {},
     titleTypographyProps = {},
@@ -56,8 +57,8 @@ const FeatureCard = forwardRef(function FeatureCard(
     <Card
       ref={ref}
       elevation={3}
-      sx={{ borderRadius: 3, overflow: "hidden", ...cardProps.sx }}
-      {...cardProps}
+      sx={{ borderRadius: 3, overflow: "hidden", ...cardSx }}
+      {...restCardProps}
     >
       {(title || subheader || headerAvatar || headerAction) && (
         <CardHeader

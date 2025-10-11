@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
-import { Card, CardContent, Grid, Stack, Typography } from "@mui/material";
+import { Grid, Stack, Typography } from "@mui/material";
 import StaticPageLayout from "../ui/layouts/StaticPageLayout";
+import FeatureCard from "../../../shared/components/FeatureCard";
 import { useTranslation } from "../../../i18n";
 
 function Pricing() {
@@ -99,30 +100,30 @@ function Pricing() {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {plans.map((plan) => (
           <Grid item xs={12} md={4} key={plan.name}>
-            <Card elevation={4} sx={{ height: "100%" }}>
-              <CardContent>
-                <Stack spacing={2}>
-                  <div>
-                    <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                      {plan.name}
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary">
-                      {plan.price}
-                    </Typography>
-                  </div>
-                  <Typography variant="body2" color="text.secondary">
-                    {plan.description}
+            <FeatureCard
+              divider={false}
+              sx={{ height: "100%" }}
+              contentProps={{ sx: { display: "flex", flexDirection: "column", gap: 2 } }}
+            >
+              <div>
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  {plan.name}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary">
+                  {plan.price}
+                </Typography>
+              </div>
+              <Typography variant="body2" color="text.secondary">
+                {plan.description}
+              </Typography>
+              <Stack component="ul" spacing={1} sx={{ pl: 2, m: 0 }}>
+                {plan.features.map((feature, index) => (
+                  <Typography key={`${plan.name}-feature-${index}`} component="li" variant="body2" color="text.secondary">
+                    {feature}
                   </Typography>
-                  <Stack component="ul" spacing={1} sx={{ pl: 2, m: 0 }}>
-                    {plan.features.map((feature, index) => (
-                      <Typography key={`${plan.name}-feature-${index}`} component="li" variant="body2" color="text.secondary">
-                        {feature}
-                      </Typography>
-                    ))}
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
+                ))}
+              </Stack>
+            </FeatureCard>
           </Grid>
         ))}
       </Grid>

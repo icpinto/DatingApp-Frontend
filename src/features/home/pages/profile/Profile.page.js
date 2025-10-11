@@ -3,9 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   Chip,
   Container,
   Skeleton,
@@ -26,6 +23,7 @@ import { CAPABILITIES } from "../../../../domain/capabilities";
 import Guard from "../../../../shared/components/Guard";
 import { useUserCapabilities } from "../../../../shared/context/UserContext";
 import { isAbortError } from "../../../../utils/http";
+import FeatureCard from "../../../../shared/components/FeatureCard";
 
 const STATUS_LABEL_MAP = {
   verified: "profile.status.verified",
@@ -293,20 +291,21 @@ function ProfileContent() {
         t={t}
       />
       {[48, 40].map((avatarSize, index) => (
-        <Card key={`profile-skeleton-${index}`}>
-          <CardHeader
-            avatar={<Skeleton variant="circular" width={avatarSize} height={avatarSize} />}
-            title={<Skeleton width="40%" />}
-            subheader={<Skeleton width="60%" />}
-          />
-          <CardContent>
-            <Stack spacing={1.5}>
-              <Skeleton width="100%" height={24} />
-              <Skeleton width="90%" height={20} />
-              <Skeleton width="80%" height={20} />
-            </Stack>
-          </CardContent>
-        </Card>
+        <FeatureCard
+          key={`profile-skeleton-${index}`}
+          avatar={
+            <Skeleton variant="circular" width={avatarSize} height={avatarSize} />
+          }
+          title={<Skeleton width="40%" />}
+          subheader={<Skeleton width="60%" />}
+          divider={false}
+        >
+          <Stack spacing={1.5}>
+            <Skeleton width="100%" height={24} />
+            <Skeleton width="90%" height={20} />
+            <Skeleton width="80%" height={20} />
+          </Stack>
+        </FeatureCard>
       ))}
     </Stack>
   );
