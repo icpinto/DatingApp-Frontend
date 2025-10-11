@@ -1,3 +1,3 @@
-export { default as Matches } from "./Matches";
-export { default as IncomingRequestsList } from "./components/IncomingRequestsList";
-export { default as SentRequestsList } from "./components/SentRequestsList";
+export { default as Matches } from "./pages/Matches.page";
+export { default as IncomingRequestsList } from "./ui/IncomingRequestsList";
+export { default as SentRequestsList } from "./ui/SentRequestsList";
