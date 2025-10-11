@@ -5,9 +5,7 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
   CircularProgress,
-  Divider,
   FormControlLabel,
   Grid,
   InputAdornment,
@@ -30,6 +28,7 @@ import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../../domain/accountLifecycle";
 import { useUserCapabilities } from "../../../shared/context/UserContext";
 import { useQuestionnaire } from "../hooks/useMatchInsights";
 import QuestionCategorySelector from "./QuestionCategorySelector";
+import FeatureCard from "../../../shared/components/FeatureCard";
 
 function buildAnswerPayload({ answer, questionType, options }) {
   const formatAnswer = (value) => {
@@ -192,24 +191,17 @@ function QuestionnaireCard({ isLocked = false, lockReason = "" }) {
       can={CAPABILITIES.INSIGHTS_VIEW_QUESTIONNAIRE}
       fallback={viewFallback}
     >
-      <Card elevation={3} sx={{ borderRadius: 3 }}>
-        <CardHeader
-          avatar={
-            <Avatar sx={{ bgcolor: "primary.main" }}>
-              <FavoriteIcon />
-            </Avatar>
-          }
-          title="Questionnaire"
-          subheader="Share your preferences to improve recommendations"
-        />
-        <Divider />
-        <CardContent>
-          <Stack spacing={spacing.section}>
-            <QuestionCategorySelector
-              value={selectedCategory}
-              onChange={setSelectedCategory}
-              disabled={effectiveLock}
-            />
+      <FeatureCard
+        title="Questionnaire"
+        subheader="Share your preferences to improve recommendations"
+        icon={FavoriteIcon}
+      >
+        <Stack spacing={spacing.section}>
+          <QuestionCategorySelector
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            disabled={effectiveLock}
+          />
 
             {questionnaireDisabled ? (
               <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
@@ -377,9 +369,8 @@ function QuestionnaireCard({ isLocked = false, lockReason = "" }) {
                 </Stack>
               </Stack>
             )}
-          </Stack>
-        </CardContent>
-      </Card>
+        </Stack>
+      </FeatureCard>
 
       <Snackbar
         open={snackbar.open}

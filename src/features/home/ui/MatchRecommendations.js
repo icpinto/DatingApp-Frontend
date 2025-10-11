@@ -4,9 +4,6 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   Chip,
   Collapse,
   Divider,
@@ -30,6 +27,7 @@ import { CAPABILITIES } from "../../../domain/capabilities";
 import Guard from "./Guard";
 import { useUserCapabilities } from "../../../shared/context/UserContext";
 import { isAbortError } from "../../../utils/http";
+import FeatureCard from "../../../shared/components/FeatureCard";
 
 const MAX_SCORE = 100;
 
@@ -533,21 +531,14 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
   const showLifecycleBanner = !lifecycleLoading && accountDeactivated;
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 3 }}>
-      <CardHeader
-        title={t("matches.headers.title")}
-        subheader={t("matches.headers.subheader")}
-        avatar={
-          <Avatar sx={{ bgcolor: "primary.main" }}>
-            <TrendingUpIcon />
-          </Avatar>
-        }
-      />
-      <Divider />
-      <CardContent>
-        {showLifecycleBanner && (
-          <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
-        )}
+    <FeatureCard
+      title={t("matches.headers.title")}
+      subheader={t("matches.headers.subheader")}
+      icon={TrendingUpIcon}
+    >
+      {showLifecycleBanner && (
+        <Alert severity="warning">{ACCOUNT_DEACTIVATED_MESSAGE}</Alert>
+      )}
         <Guard
           can={CAPABILITIES.MATCHES_VIEW_RECOMMENDATIONS}
           fallback={
@@ -906,8 +897,7 @@ const MatchRecommendationsContent = ({ limit = 10, accountLifecycle }) => {
             </Stack>
           )}
         </Guard>
-      </CardContent>
-    </Card>
+    </FeatureCard>
   );
 };
 

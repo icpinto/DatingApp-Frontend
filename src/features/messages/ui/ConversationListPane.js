@@ -1,20 +1,10 @@
 import React from "react";
-import {
-  Avatar,
-  Badge,
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  Skeleton,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Avatar, Badge, Box, Divider, Skeleton, Stack, Typography } from "@mui/material";
 import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
 import { alpha } from "@mui/material/styles";
 import { spacing } from "../../../styles";
 import { useUserCapabilities } from "../../../shared/context/UserContext";
+import FeatureCard from "../../../shared/components/FeatureCard";
 
 function ConversationListPane({
   loading,
@@ -49,88 +39,57 @@ function ConversationListPane({
 
   if (!canViewConversationList) {
     return (
-      <Card
-        elevation={3}
-        sx={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: 3,
-          overflow: "hidden",
-        }}
-      >
-        <CardHeader
-          title="Conversations"
-          subheader="Stay in touch with people you've connected with"
-          avatar={
-            <Avatar
-              variant="rounded"
-              sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}
-            >
-              <ForumRoundedIcon />
-            </Avatar>
-          }
-          sx={{ px: spacing.section, py: spacing.section }}
-        />
-        <Divider sx={{ borderStyle: "dashed" }} />
-        <CardContent
-          sx={{
+      <FeatureCard
+        title="Conversations"
+        subheader="Stay in touch with people you've connected with"
+        icon={ForumRoundedIcon}
+        contentProps={{
+          sx: {
             flexGrow: 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             textAlign: "center",
-            px: spacing.section,
-            py: spacing.section,
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            {viewListDeniedMessage}
-          </Typography>
-        </CardContent>
-      </Card>
+          },
+        }}
+        sx={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          {viewListDeniedMessage}
+        </Typography>
+      </FeatureCard>
     );
   }
 
   return (
-    <Card
-      elevation={3}
-      sx={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        borderRadius: 3,
-        overflow: "hidden",
-      }}
-    >
-      <CardHeader
-        title="Conversations"
-        subheader="Stay in touch with people you've connected with"
-        avatar={
-          <Avatar
-            variant="rounded"
-            sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}
-          >
-            <ForumRoundedIcon />
-          </Avatar>
-        }
-        sx={{ px: spacing.section, py: spacing.section }}
-      />
-      <Divider sx={{ borderStyle: "dashed" }} />
-      <CardContent
-        sx={{
+    <FeatureCard
+      title="Conversations"
+      subheader="Stay in touch with people you've connected with"
+      icon={ForumRoundedIcon}
+      contentProps={{
+        sx: {
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
           p: 0,
           minHeight: 0,
-        }}
-      >
-        <Box
-          sx={{
-            flexGrow: 1,
-            minHeight: 0,
-            overflowY: "auto",
+        },
+      }}
+      sx={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Box
+        sx={{
+          flexGrow: 1,
+          minHeight: 0,
+          overflowY: "auto",
             px: spacing.section,
             py: spacing.section,
             display: "flex",
@@ -287,8 +246,7 @@ function ConversationListPane({
             </Stack>
           )}
         </Box>
-      </CardContent>
-    </Card>
+    </FeatureCard>
   );
 }
 
