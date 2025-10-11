@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchRequestStatusApi, fetchUserProfileApi } from "@/features/home/api/home.api";
-import { isAbortError } from "@/utils/http";
-import { normalizeUserId } from "@/features/home/utils/normalizeUserId";
+import { fetchRequestStatusApi, fetchUserProfileApi } from "../api/home.api";
+import { isAbortError } from "../../../utils/http";
+import { normalizeUserId } from "../utils/normalizeUserId";
 
 export function useActiveUserProfile({
   canExpandUserPreview,

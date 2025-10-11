@@ -55,7 +55,7 @@ export const removeAccount = (token) =>
     headers: { Authorization: `${token}` },
   });
 
-export default {
+const profileApi = {
   signOut,
   fetchAccountStatus,
   fetchProfileEnums,
@@ -65,3 +65,5 @@ export default {
   reactivateAccount,
   removeAccount,
 };
+
+export default profileApi;

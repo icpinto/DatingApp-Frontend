@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { FILTER_DEFAULTS } from "@/features/home/model/constants";
+import { FILTER_DEFAULTS } from "../model/constants";
 
 function buildFilterParams(filters) {
   const params = {};

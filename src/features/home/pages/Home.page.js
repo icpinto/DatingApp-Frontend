@@ -13,17 +13,17 @@ import {
   Typography,
 } from "@mui/material";
 import { Group } from "@mui/icons-material";
-import { spacing } from "@/styles";
-import MatchRecommendations from "@/features/home/ui/MatchRecommendations";
-import { useTranslation } from "@/i18n";
-import { useAccountLifecycle } from "@/shared/context/AccountLifecycleContext";
-import { CAPABILITIES } from "@/domain/capabilities";
-import Guard from "@/features/home/ui/Guard";
-import FiltersPanel from "@/features/home/ui/FiltersPanel";
-import ActiveUserCard from "@/features/home/ui/ActiveUserCard";
-import { useHome } from "@/features/home/hooks/useHome";
-import { FILTER_FIELDS } from "@/features/home/model/constants";
-import { getUserIdentifier } from "@/features/home/utils/normalizeUserId";
+import { spacing } from "../../../styles";
+import MatchRecommendations from "../ui/MatchRecommendations";
+import { useTranslation } from "../../../i18n";
+import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
+import { CAPABILITIES } from "../../../domain/capabilities";
+import Guard from "../ui/Guard";
+import FiltersPanel from "../ui/FiltersPanel";
+import ActiveUserCard from "../ui/ActiveUserCard";
+import { useHome } from "../hooks/useHome";
+import { FILTER_FIELDS } from "../model/constants";
+import { getUserIdentifier } from "../utils/normalizeUserId";
 
 function HomeContent({ accountLifecycle }) {
   const { t } = useTranslation();
@@ -54,7 +54,6 @@ function HomeContent({ accountLifecycle }) {
 
   const {
     canViewHome,
-    canViewActiveUsers,
     canUseFilters,
     canToggleFilterPanel,
     canExpandUserPreview,

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
-import { sendConnectionRequestApi } from "@/features/home/api/home.api";
-import { normalizeUserId } from "@/features/home/utils/normalizeUserId";
-import { isAbortError } from "@/utils/http";
+import { sendConnectionRequestApi } from "../api/home.api";
+import { normalizeUserId } from "../utils/normalizeUserId";
+import { isAbortError } from "../../../utils/http";
 
 const REQUEST_MESSAGE_ERROR_KEY = "home.validation.requestMessageRequired";
 
