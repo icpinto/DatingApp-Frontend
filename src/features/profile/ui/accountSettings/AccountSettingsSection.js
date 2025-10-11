@@ -16,6 +16,7 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import LanguageIcon from "@mui/icons-material/Language";
 import SettingsIcon from "@mui/icons-material/Settings";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import FeatureCard from "../../../../shared/components/FeatureCard";
@@ -107,28 +108,53 @@ function AccountSettingsSection({
           alignItems={{ xs: "flex-start", sm: "center" }}
           justifyContent="space-between"
         >
-          <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="h6"
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="flex-start"
+            sx={{ flex: 1, minWidth: 0 }}
+          >
+            <Box
+              component="span"
+              aria-hidden
+              data-account-action-icon="true"
               sx={{
-                fontWeight: 600,
-                letterSpacing: 0.2,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pt: 0.5,
+                borderRadius: "999px",
+                padding: 0.75,
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
+                transition:
+                  "transform 0.3s ease, filter 0.3s ease, background 0.3s ease",
               }}
             >
-              {t("app.language.label", { defaultValue: "Language" })}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: SECTION_SUBTEXT_COLOR,
-                fontSize: "0.875rem",
-                lineHeight: 1.5,
-              }}
-            >
-              {t("profile.preferences.languageDescription", {
-                defaultValue: "Select the language you want to see in the app.",
-              })}
-            </Typography>
+              <LanguageIcon color={canChangeLanguage ? "primary" : "disabled"} />
+            </Box>
+            <Stack spacing={0.75} sx={{ flex: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  letterSpacing: 0.2,
+                }}
+              >
+                {t("app.language.label", { defaultValue: "Language" })}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: SECTION_SUBTEXT_COLOR,
+                  fontSize: "0.875rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("profile.preferences.languageDescription", {
+                  defaultValue: "Select the language you want to see in the app.",
+                })}
+              </Typography>
+            </Stack>
           </Stack>
           <FormControl
             size="small"
