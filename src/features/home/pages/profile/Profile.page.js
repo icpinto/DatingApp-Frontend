@@ -13,19 +13,19 @@ import {
   Typography,
 } from "@mui/material";
 import { ArrowBack, PersonOff, Verified as VerifiedIcon, ErrorOutline } from "@mui/icons-material";
-import api from "../../../shared/services/api";
-import { spacing } from "../../../styles";
+import api from "../../../../shared/services/api";
+import { spacing } from "../../../../styles";
 import {
   ProfileHeaderCard,
   ProfileDetailsCard,
   ProfileRequestCard,
 } from "./components";
-import { useTranslation } from "../../../i18n";
+import { useTranslation } from "../../../../i18n";
 import { formatProfileData } from "./utils/profileUtils";
-import { CAPABILITIES } from "../../../domain/capabilities";
-import Guard from "../../../shared/components/Guard";
-import { useUserCapabilities } from "../../../shared/context/UserContext";
-import { isAbortError } from "../../../utils/http";
+import { CAPABILITIES } from "../../../../domain/capabilities";
+import Guard from "../../../../shared/components/Guard";
+import { useUserCapabilities } from "../../../../shared/context/UserContext";
+import { isAbortError } from "../../../../utils/http";
 
 const STATUS_LABEL_MAP = {
   verified: "profile.status.verified",
@@ -420,8 +420,8 @@ function ProfileContent() {
   );
 }
 
-function Profile() {
+function ProfilePage() {
   return <ProfileContent />;
 }
 
-export default Profile;
+export default ProfilePage;
