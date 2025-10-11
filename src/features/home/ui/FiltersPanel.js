@@ -1,17 +1,7 @@
 import React from "react";
-import {
-  Button,
-  Collapse,
-  Grid,
-  MenuItem,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import { Button, Collapse, Grid, MenuItem, Stack, TextField, Typography } from "@mui/material";
 
 import { spacing } from "../../../styles";
-import FeatureCard from "../../../shared/components/FeatureCard";
 
 const FiltersPanel = ({
   filters,
@@ -19,12 +9,9 @@ const FiltersPanel = ({
   onFilterChange,
   onApplyFilters,
   onClearFilters,
-  onToggleFilters,
   loadingUsers,
   canUseFilters,
-  canToggleFilterPanel,
   filterPanelOpen,
-  showFilters,
   t,
 }) => {
   if (!canUseFilters) {
@@ -32,31 +19,7 @@ const FiltersPanel = ({
   }
 
   return (
-    <FeatureCard
-      title={t("home.headers.filterTitle")}
-      icon={FilterAltIcon}
-      headerAction={
-        <Button
-          size="small"
-          variant="text"
-          onClick={() => {
-            if (!canToggleFilterPanel) {
-              return;
-            }
-            onToggleFilters((prev) => !prev);
-          }}
-          disabled={!canToggleFilterPanel}
-        >
-          {showFilters ? t("home.filters.hide") : t("home.filters.show")}
-        </Button>
-      }
-      divider={filterPanelOpen}
-      contentProps={{
-        sx: {
-          pt: filterPanelOpen ? spacing.section : spacing.section / 2,
-        },
-      }}
-    >
+    <Stack spacing={spacing.section}>
       <Collapse in={filterPanelOpen} timeout="auto" unmountOnExit>
         <Stack spacing={spacing.section}>
           <Grid container spacing={2}>
@@ -133,7 +96,7 @@ const FiltersPanel = ({
           })}
         </Typography>
       )}
-    </FeatureCard>
+    </Stack>
   );
 };
 
