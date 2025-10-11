@@ -1,4 +1,4 @@
-import { pickFirst, toNumberOrUndefined } from "../../utils/conversationUtils";
+import { pickFirst, toNumberOrUndefined } from "../../../utils/conversationUtils";
 
 const toTrimmedStringOrUndefined = (value) => {
   if (value === undefined || value === null) {

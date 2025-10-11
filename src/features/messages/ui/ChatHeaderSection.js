@@ -9,8 +9,8 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { spacing } from "../../styles";
-import { useUserCapabilities } from "../../shared/context/UserContext";
+import { spacing } from "../../../styles";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
 
 function ChatHeaderSection({
   title,

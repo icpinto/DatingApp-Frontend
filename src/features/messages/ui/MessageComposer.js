@@ -1,7 +1,7 @@
 import React from "react";
 import { Button, Stack, TextField, Typography } from "@mui/material";
-import { spacing } from "../../styles";
-import { useUserCapabilities } from "../../shared/context/UserContext";
+import { spacing } from "../../../styles";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
 
 function MessageComposer({
   value,

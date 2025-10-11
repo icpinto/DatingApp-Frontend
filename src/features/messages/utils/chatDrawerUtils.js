@@ -1,4 +1,4 @@
-import { pickFirst, toNumberOrUndefined } from "../../utils/conversationUtils";
+import { pickFirst, toNumberOrUndefined } from "../../../utils/conversationUtils";
 
 const formatMessageTimestamp = (message) => {
   if (!message) return "";

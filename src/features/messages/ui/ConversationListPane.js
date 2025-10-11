@@ -13,8 +13,8 @@ import {
 } from "@mui/material";
 import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
 import { alpha } from "@mui/material/styles";
-import { spacing } from "../../styles";
-import { useUserCapabilities } from "../../shared/context/UserContext";
+import { spacing } from "../../../styles";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
 
 function ConversationListPane({
   loading,
