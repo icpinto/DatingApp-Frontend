@@ -31,31 +31,41 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PhoneIphoneIcon from "@mui/icons-material/PhoneIphone";
 import PersonIcon from "@mui/icons-material/Person";
 import SettingsIcon from "@mui/icons-material/Settings";
-import api from "../../shared/services/api";
 import {
   ProfileSections,
-  profileSectionDefinitions,
   AccountManagementSection,
   AccountSettingsSection,
   HelpfulInformationSection,
-} from "./components";
-import { spacing } from "../../styles";
-import { useTranslation, languageOptions } from "../../i18n";
+} from "../ui";
+import {
+  signOut as signOutRequest,
+  fetchAccountStatus,
+  fetchProfileEnums,
+  fetchOwnerProfile,
+  saveOwnerProfile,
+  deactivateAccount,
+  reactivateAccount,
+  removeAccount,
+} from "../api";
+import { profileSectionDefinitions } from "../model";
+import { spacing } from "../../../styles";
+import { useTranslation, languageOptions } from "../../../i18n";
 import { useNavigate } from "react-router-dom";
-import { useAccountLifecycle } from "../../shared/context/AccountLifecycleContext";
-import Guard from "./Guard";
-import { useUserCapabilities } from "../../shared/context/UserContext";
-import { CAPABILITIES } from "../../domain/capabilities";
+import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
+import Guard from "../Guard";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
+import { useOwnerProfileCapabilities } from "../hooks";
+import { CAPABILITIES } from "../../../domain/capabilities";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
   ACCOUNT_LIFECYCLE,
   resolveAccountLifecycleStatus,
-} from "../../domain/accountLifecycle";
+} from "../../../domain/accountLifecycle";
 import { alpha } from "@mui/material/styles";
 import {
   SECTION_BACKGROUNDS,
   createSectionCardStyles,
-} from "./components/accountSettings/accountSectionTheme";
+} from "../ui/accountSettings/accountSectionTheme";
 const sectionWrapperStyles = {
   mt: 8,
   mb: 8,
@@ -152,52 +162,27 @@ function OwnerProfileContent({ accountLifecycle }) {
     process.env.REACT_APP_VERIFICATION_SERVICE_URL || "http://localhost:8100";
   const navigate = useNavigate();
   const previousLifecycleStatusRef = useRef(accountLifecycleStatus);
-  const { groups, select } = useUserCapabilities();
-  const ownerProfileCapabilities = groups.ownerProfile;
-  const [changeLanguageCapability, signOutCapability] = useMemo(
-    () =>
-      select([
-        CAPABILITIES.APP_CHANGE_LANGUAGE,
-        CAPABILITIES.APP_SIGN_OUT,
-      ]),
-    [select]
-  );
+  const {
+    capabilityReasons,
+    canEditProfile,
+    canUploadPhoto,
+    canSubmitIdentity,
+    canSendOtp,
+    canVerifyOtp,
+    canManageInterests,
+    canManageLanguages,
+    canSaveProfile,
+    canManagePayments,
+    canToggleVisibility,
+    canRemoveAccount,
+    canChangeLanguage,
+    changeLanguageReason,
+    canSignOut,
+    signOutReason,
+  } = useOwnerProfileCapabilities();
   useEffect(() => {
     hasLoadedProfileRef.current = false;
   }, [userId]);
-
-  const capabilityReasons = useMemo(
-    () => ({
-      edit: ownerProfileCapabilities.edit.reason,
-      uploadPhoto: ownerProfileCapabilities.uploadPhoto.reason,
-      submitIdentity: ownerProfileCapabilities.submitIdentity.reason,
-      sendOtp: ownerProfileCapabilities.sendOtp.reason,
-      verifyOtp: ownerProfileCapabilities.verifyOtp.reason,
-      manageInterests: ownerProfileCapabilities.manageInterests.reason,
-      manageLanguages: ownerProfileCapabilities.manageLanguages.reason,
-      save: ownerProfileCapabilities.save.reason,
-      payments: ownerProfileCapabilities.managePayments.reason,
-      toggleVisibility: ownerProfileCapabilities.toggleVisibility.reason,
-      removeAccount: ownerProfileCapabilities.removeAccount.reason,
-    }),
-    [ownerProfileCapabilities]
-  );
-
-  const canEditProfile = ownerProfileCapabilities.edit.can;
-  const canUploadPhoto = ownerProfileCapabilities.uploadPhoto.can;
-  const canSubmitIdentity = ownerProfileCapabilities.submitIdentity.can;
-  const canSendOtp = ownerProfileCapabilities.sendOtp.can;
-  const canVerifyOtp = ownerProfileCapabilities.verifyOtp.can;
-  const canManageInterests = ownerProfileCapabilities.manageInterests.can;
-  const canManageLanguages = ownerProfileCapabilities.manageLanguages.can;
-  const canSaveProfile = ownerProfileCapabilities.save.can;
-  const canManagePayments = ownerProfileCapabilities.managePayments.can;
-  const canToggleVisibility = ownerProfileCapabilities.toggleVisibility.can;
-  const canRemoveAccount = ownerProfileCapabilities.removeAccount.can;
-  const canChangeLanguage = Boolean(changeLanguageCapability?.can);
-  const changeLanguageReason = changeLanguageCapability?.reason;
-  const canSignOut = Boolean(signOutCapability?.can);
-  const signOutReason = signOutCapability?.reason;
 
   const visibilityStatusText =
     accountStatusLoading || isUpdatingAccountVisibility
@@ -239,9 +224,7 @@ function OwnerProfileContent({ accountLifecycle }) {
 
     setAccountStatusLoading(true);
     try {
-      const response = await api.get(`/user/status`, {
-        headers: { Authorization: `${token}` },
-      });
+      const response = await fetchAccountStatus(token);
       const payload = response?.data;
       const { status: lifecycleStatus, hidden } =
         resolveAccountLifecycleStatus(payload);
@@ -371,15 +354,7 @@ function OwnerProfileContent({ accountLifecycle }) {
 
     setSigningOut(true);
     try {
-      await api.post(
-        "/signout",
-        {},
-        {
-          headers: {
-            Authorization: `${token}`,
-          },
-        }
-      );
+      await signOutRequest(token);
       setSnackbar({
         open: true,
         messageKey: "",
@@ -434,9 +409,7 @@ function OwnerProfileContent({ accountLifecycle }) {
     const fetchEnums = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await api.get(`/user/profile/enums`, {
-          headers: { Authorization: `${token}` },
-        });
+        const res = await fetchProfileEnums(token);
         setEnums(res.data || {});
         hasLoadedEnumsRef.current = true;
       } catch (error) {
@@ -472,9 +445,7 @@ function OwnerProfileContent({ accountLifecycle }) {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await api.get(`/user/profile/${userId}`, {
-          headers: { Authorization: `${token}` },
-        });
+        const response = await fetchOwnerProfile(userId, token);
         if (isCancelled) return;
         const data = response.data;
         setRawProfile(data);
@@ -933,12 +904,8 @@ function OwnerProfileContent({ accountLifecycle }) {
       if (contactVerified && contactVerificationToken) {
         data.append("contact_verification_token", contactVerificationToken);
       }
-      await api.post(`/user/profile`, data, {
-        headers: { Authorization: `${token}`, "Content-Type": "multipart/form-data" },
-      });
-      const profileResponse = await api.get(`/user/profile/${userId}`, {
-        headers: { Authorization: `${token}` },
-      });
+      await saveOwnerProfile(data, token);
+      const profileResponse = await fetchOwnerProfile(userId, token);
       const updated = profileResponse.data;
       setRawProfile(updated);
       populateFormData(updated);
@@ -1109,18 +1076,9 @@ function OwnerProfileContent({ accountLifecycle }) {
     }
 
     try {
-      const headers = { Authorization: `${token}` };
       const response = hidden
-        ? await api.post(
-            `/user/deactivate`,
-            {},
-            { headers }
-          )
-        : await api.post(
-            `/user/reactivate`,
-            {},
-            { headers }
-          );
+        ? await deactivateAccount(token)
+        : await reactivateAccount(token);
 
       const successMessage =
         response?.data?.message ||
@@ -1186,9 +1144,7 @@ function OwnerProfileContent({ accountLifecycle }) {
 
     setIsRemovingAccount(true);
     try {
-      const response = await api.delete(`/user`, {
-        headers: { Authorization: `${token}` },
-      });
+      const response = await removeAccount(token);
 
       const successMessage =
         response?.data?.message ||

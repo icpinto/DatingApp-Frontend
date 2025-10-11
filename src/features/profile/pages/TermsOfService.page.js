@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import StaticPageLayout from "./StaticPageLayout";
+import StaticPageLayout from "../ui/layouts/StaticPageLayout";
 import { useTranslation } from "../../../i18n";
 
 function TermsOfService() {

@@ -2,35 +2,9 @@ import React from "react";
 import { Stack, Typography } from "@mui/material";
 import ProfileSection from "./ProfileSection";
 import { useTranslation } from "../../../../i18n";
+import { profileSectionDefinitions } from "../../model";
 
 const SECTION_SURFACES = ["#181c25", "#1d212c"];
-
-export const profileSectionDefinitions = [
-  {
-    key: "verification",
-    labelKey: "profile.headers.verification",
-  },
-  {
-    key: "personal",
-    labelKey: "profile.headers.personal",
-  },
-  {
-    key: "residency",
-    labelKey: "profile.headers.residency",
-  },
-  {
-    key: "education",
-    labelKey: "profile.headers.education",
-  },
-  {
-    key: "family",
-    labelKey: "profile.headers.family",
-  },
-  {
-    key: "horoscope",
-    labelKey: "profile.headers.horoscope",
-  },
-];
 
 function ProfileSections({ data, onEditSection, disableEditing = false }) {
   const { t } = useTranslation();
