@@ -1234,10 +1234,22 @@ function OwnerProfileContent({ accountLifecycle }) {
                 sx: { color: "inherit", opacity: 0.85 },
               },
             }}
+            contentProps={{
+              sx: {
+                px: { xs: spacing.section, sm: spacing.section + 1 },
+                py: { xs: spacing.section, sm: spacing.section + 1.25 },
+              },
+              ...(shouldShowForm
+                ? {
+                    component: "form",
+                    id: "owner-profile-form",
+                    onSubmit: handleSubmit,
+                  }
+                : {}),
+            }}
           >
             {shouldShowForm ? (
-              <Box component="form" id="owner-profile-form" onSubmit={handleSubmit}>
-                <Stack spacing={spacing.section}>
+              <Stack spacing={spacing.section}>
                   {isSectionActive("verification") && (
                     <Accordion defaultExpanded>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -2025,8 +2037,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                         : t("profile.buttons.save")}
                     </Button>
                   </Stack>
-                </Stack>
-              </Box>
+              </Stack>
             ) : (
               <Stack spacing={3}>
                 <Typography variant="body2" color="text.secondary">
