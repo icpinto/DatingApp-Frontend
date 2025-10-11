@@ -1,20 +1,19 @@
 import React from "react";
 import {
-  Alert,
   Avatar,
   Box,
-  Button,
   Card,
   CardContent,
   CardHeader,
+  Chip,
   Divider,
   Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
-import { HourglassEmpty, PersonAddAlt1 } from "@mui/icons-material";
+import { HourglassEmpty, Send } from "@mui/icons-material";
 
-import Guard from "../Guard";
+import Guard from "./Guard";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import { spacing } from "../../../styles";
 import { useTranslation } from "../../../i18n";
@@ -27,28 +26,33 @@ const renderLoadingState = () => (
   </Stack>
 );
 
-const IncomingRequestsList = ({
-  requests,
-  profiles,
-  loading,
-  error,
-  canRespond,
-  isDeactivated,
-  onAccept,
-  onReject,
-}) => {
+const getStatusColor = (status) => {
+  if (!status) return "default";
+  const normalized = String(status).toLowerCase();
+  if (normalized === "accepted") return "success";
+  if (normalized === "pending") return "warning";
+  if (normalized === "rejected") return "error";
+  return "info";
+};
+
+const SentRequestsList = ({ requests, profiles, loading, error }) => {
   const { t } = useTranslation();
 
   const renderRequestItem = (request, index) => {
-    const profile = profiles[request.sender_id] || {};
+    const profile = profiles[request.receiver_id] || {};
     const username =
-      request.sender_username ||
+      request.receiver_username ||
       profile.username ||
       t("common.placeholders.unknownUser");
     const bio = profile.bio || t("common.placeholders.noBio");
     const description = request.description || t("common.placeholders.noMessage");
     const highlight = index === 0;
     const avatarFallback = username.charAt(0)?.toUpperCase() || "?";
+    const statusLabel = request.status
+      ? t(`requests.status.${String(request.status).toLowerCase()}`, {
+          defaultValue: request.status,
+        })
+      : null;
 
     return (
       <Box
@@ -74,7 +78,7 @@ const IncomingRequestsList = ({
             <Stack spacing={0.5} flexGrow={1} minWidth={0}>
               {highlight && (
                 <Typography variant="subtitle2" color="text.secondary">
-                  {t("requests.labels.newest")}
+                  {t("requests.labels.mostRecent")}
                 </Typography>
               )}
               <Typography
@@ -90,6 +94,16 @@ const IncomingRequestsList = ({
                 </Typography>
               )}
             </Stack>
+            <Guard can={CAPABILITIES.REQUESTS_VIEW_STATUS}>
+              {statusLabel && (
+                <Chip
+                  label={statusLabel}
+                  color={getStatusColor(request.status)}
+                  size="small"
+                  sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                />
+              )}
+            </Guard>
           </Stack>
           <Typography
             variant="body2"
@@ -103,16 +117,6 @@ const IncomingRequestsList = ({
           >
             {description}
           </Typography>
-          <Guard can={CAPABILITIES.REQUESTS_RESPOND}>
-            <Stack direction="row" spacing={1}>
-              <Button variant="contained" color="primary" onClick={() => onAccept(request.id)}>
-                {t("common.actions.accept")}
-              </Button>
-              <Button variant="outlined" color="secondary" onClick={() => onReject(request.id)}>
-                {t("common.actions.reject")}
-              </Button>
-            </Stack>
-          </Guard>
         </Stack>
       </Box>
     );
@@ -136,13 +140,13 @@ const IncomingRequestsList = ({
         <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
           <HourglassEmpty color="disabled" fontSize="large" />
           <Typography variant="body2" color="text.secondary">
-            {t("requests.messages.noPending")}
+            {t("requests.messages.noSent")}
           </Typography>
         </Stack>
       );
     }
 
-    const requestList = (
+    return (
       <Stack
         spacing={spacing.section}
         divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
@@ -150,27 +154,16 @@ const IncomingRequestsList = ({
         {requests.map((request, index) => renderRequestItem(request, index))}
       </Stack>
     );
-
-    if (!canRespond && isDeactivated) {
-      return (
-        <Stack spacing={spacing.section}>
-          <Alert severity="warning">{t("requests.messages.deactivatedReadOnly")}</Alert>
-          {requestList}
-        </Stack>
-      );
-    }
-
-    return requestList;
   };
 
   return (
     <Card elevation={3} sx={{ borderRadius: 3 }}>
       <CardHeader
-        title={t("requests.headers.incoming")}
-        subheader={t("requests.headers.incomingSub")}
+        title={t("requests.headers.sent")}
+        subheader={t("requests.headers.sentSub")}
         avatar={
-          <Avatar sx={{ bgcolor: "primary.main" }}>
-            <PersonAddAlt1 />
+          <Avatar sx={{ bgcolor: "secondary.main" }}>
+            <Send />
           </Avatar>
         }
       />
@@ -180,4 +173,4 @@ const IncomingRequestsList = ({
   );
 };
 
-export default IncomingRequestsList;
+export default SentRequestsList;

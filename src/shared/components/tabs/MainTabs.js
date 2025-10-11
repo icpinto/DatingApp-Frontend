@@ -26,7 +26,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
 import QuizIcon from "@mui/icons-material/Quiz";
 import Home from "../../../features/home/Home";
-import Matches from "../../../features/matches/Matches";
+import Matches from "../../../features/matches/pages/Matches.page";
 import OwnerProfile from "../../../features/profile/pages/OwnerProfile.page";
 import api from "../../services/api";
 import chatService from "../../services/chatService";
