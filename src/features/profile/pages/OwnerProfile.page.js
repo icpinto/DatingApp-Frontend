@@ -2128,6 +2128,7 @@ function OwnerProfileContent({ accountLifecycle }) {
                       disableEditing={
                         isLifecycleReadOnly || !canSaveProfile || saving || isEditing
                       }
+                      useFeatureCard={false}
                     />
                     {profile.created_at && (
                       <Stack spacing={1.5}>
