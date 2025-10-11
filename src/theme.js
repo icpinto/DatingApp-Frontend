@@ -7,37 +7,38 @@ const getTheme = (mode) =>
     palette: {
       mode,
       primary: {
-        light: mode === 'light' ? '#ffffff' : '#cbd5f5',
-        main: mode === 'light' ? '#ffffff' : '#1e293b',
-        dark: mode === 'light' ? '#e2e8f0' : '#0f172a',
-        contrastText: mode === 'light' ? '#0f172a' : '#f8fafc',
+        light: mode === 'light' ? '#4d4d4d' : '#f5f5f5',
+        main: mode === 'light' ? '#000000' : '#ffffff',
+        dark: mode === 'light' ? '#000000' : '#d9d9d9',
+        contrastText: mode === 'light' ? '#ffffff' : '#000000',
       },
       secondary: {
-        light: mode === 'light' ? '#3b82f6' : '#38bdf8',
-        main: mode === 'light' ? '#1d4ed8' : '#60a5fa',
-        dark: mode === 'light' ? '#1e3a8a' : '#1d4ed8',
-        contrastText: '#ffffff',
+        light: mode === 'light' ? '#7a7a7a' : '#d9d9d9',
+        main: mode === 'light' ? '#1f1f1f' : '#e6e6e6',
+        dark: mode === 'light' ? '#0d0d0d' : '#bfbfbf',
+        contrastText: mode === 'light' ? '#ffffff' : '#000000',
       },
       error: {
-        main: mode === 'light' ? '#dc2626' : '#f87171',
+        main: mode === 'light' ? '#333333' : '#cccccc',
       },
       warning: {
-        main: mode === 'light' ? '#facc15' : '#fbbf24',
+        main: mode === 'light' ? '#4d4d4d' : '#d1d1d1',
       },
       info: {
-        main: mode === 'light' ? '#0ea5e9' : '#38bdf8',
+        main: mode === 'light' ? '#262626' : '#e0e0e0',
       },
       success: {
-        main: mode === 'light' ? '#16a34a' : '#4ade80',
+        main: mode === 'light' ? '#3d3d3d' : '#d9d9d9',
       },
       background: {
-        default: mode === 'light' ? '#ffffff' : '#0f172a',
-        paper: mode === 'light' ? '#ffffff' : '#111827',
+        default: mode === 'light' ? '#ffffff' : '#000000',
+        paper: mode === 'light' ? '#f2f2f2' : '#111111',
       },
       text: {
-        primary: mode === 'light' ? '#0f172a' : '#f8fafc',
-        secondary: mode === 'light' ? '#475569' : '#94a3b8',
+        primary: mode === 'light' ? '#000000' : '#f5f5f5',
+        secondary: mode === 'light' ? '#4d4d4d' : '#bfbfbf',
       },
+      divider: mode === 'light' ? '#d0d0d0' : '#333333',
     },
     typography: {
       fontFamily:
