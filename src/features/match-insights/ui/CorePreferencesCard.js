@@ -1,15 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Alert,
-  Avatar,
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  Skeleton,
-  Snackbar,
-  Stack,
-} from "@mui/material";
+import { Alert, Skeleton, Snackbar, Stack } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { spacing } from "../../../styles";
 import { ACCOUNT_DEACTIVATED_MESSAGE } from "../../../domain/accountLifecycle";
@@ -23,6 +13,7 @@ import {
   DEFAULT_PREFERENCES,
 } from "../model/types";
 import { usePreferences } from "../hooks/useMatchInsights";
+import FeatureCard from "../../../shared/components/FeatureCard";
 
 const clampValue = (value, range) =>
   Math.min(Math.max(Number.isFinite(value) ? value : range.min, range.min), range.max);
@@ -293,58 +284,50 @@ function CorePreferencesCard({ onStatusChange, lifecycleLoading = false }) {
 
   return (
     <>
-      <Card elevation={3} sx={{ borderRadius: 3 }}>
-        <CardHeader
-          avatar={
-            <Avatar sx={{ bgcolor: "primary.main" }}>
-              <SettingsIcon />
-            </Avatar>
-          }
-          title="Core Match Preferences"
-          subheader="Set the non-negotiables to filter your matches"
-        />
-        <Divider />
-        <CardContent>
-          {!canEditPreferences ? (
-            <Alert severity="warning">{editRestrictionMessage}</Alert>
-          ) : showLoadingState ? (
-            <Stack spacing={spacing.section}>
-              <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
-              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
-            </Stack>
-          ) : (
-            <Stack spacing={spacing.section}>
-              {!hasSavedPreferences && (
-                <Alert severity="info">
-                  Save your deal-breakers to unlock the full questionnaire.
-                </Alert>
-              )}
+      <FeatureCard
+        title="Core Match Preferences"
+        subheader="Set the non-negotiables to filter your matches"
+        icon={SettingsIcon}
+      >
+        {!canEditPreferences ? (
+          <Alert severity="warning">{editRestrictionMessage}</Alert>
+        ) : showLoadingState ? (
+          <Stack spacing={spacing.section}>
+            <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />
+            <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+          </Stack>
+        ) : (
+          <Stack spacing={spacing.section}>
+            {!hasSavedPreferences && (
+              <Alert severity="info">
+                Save your deal-breakers to unlock the full questionnaire.
+              </Alert>
+            )}
 
-              <PreferenceSliders
-                preferences={preferences}
-                ageRange={AGE_RANGE}
-                heightRange={HEIGHT_RANGE}
-                onAgeSliderChange={setAgeRange}
-                onAgeInputChange={handleAgeInputChange}
-                onHeightSliderChange={setHeightRange}
-                onHeightInputChange={handleHeightInputChange}
-              />
+            <PreferenceSliders
+              preferences={preferences}
+              ageRange={AGE_RANGE}
+              heightRange={HEIGHT_RANGE}
+              onAgeSliderChange={setAgeRange}
+              onAgeInputChange={handleAgeInputChange}
+              onHeightSliderChange={setHeightRange}
+              onHeightInputChange={handleHeightInputChange}
+            />
 
-              <SelectFields
-                preferences={preferences}
-                onChange={handleFieldChange}
-              />
+            <SelectFields
+              preferences={preferences}
+              onChange={handleFieldChange}
+            />
 
-              <SaveBar
-                onSave={handleSave}
-                saving={saving}
-                canSave={canSavePreferences}
-                hasSaved={hasSavedPreferences}
-              />
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
+            <SaveBar
+              onSave={handleSave}
+              saving={saving}
+              canSave={canSavePreferences}
+              hasSaved={hasSavedPreferences}
+            />
+          </Stack>
+        )}
+      </FeatureCard>
 
       <Snackbar
         open={snackbar.open}

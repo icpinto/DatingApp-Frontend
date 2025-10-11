@@ -4,9 +4,6 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   Divider,
   Skeleton,
   Stack,
@@ -18,6 +15,7 @@ import Guard from "./Guard";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import { spacing } from "../../../styles";
 import { useTranslation } from "../../../i18n";
+import FeatureCard from "../../../shared/components/FeatureCard";
 
 const renderLoadingState = () => (
   <Stack spacing={spacing.section}>
@@ -171,19 +169,13 @@ const IncomingRequestsList = ({
   };
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 3 }}>
-      <CardHeader
-        title={t("requests.headers.incoming")}
-        subheader={t("requests.headers.incomingSub")}
-        avatar={
-          <Avatar sx={{ bgcolor: "primary.main" }}>
-            <PersonAddAlt1 />
-          </Avatar>
-        }
-      />
-      <Divider />
-      <CardContent>{renderContent()}</CardContent>
-    </Card>
+    <FeatureCard
+      title={t("requests.headers.incoming")}
+      subheader={t("requests.headers.incomingSub")}
+      icon={PersonAddAlt1}
+    >
+      {renderContent()}
+    </FeatureCard>
   );
 };
 

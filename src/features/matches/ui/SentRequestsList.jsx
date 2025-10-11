@@ -3,9 +3,6 @@ import {
   Alert,
   Avatar,
   Box,
-  Card,
-  CardContent,
-  CardHeader,
   Chip,
   Divider,
   Skeleton,
@@ -18,6 +15,7 @@ import Guard from "./Guard";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import { spacing } from "../../../styles";
 import { useTranslation } from "../../../i18n";
+import FeatureCard from "../../../shared/components/FeatureCard";
 
 const renderLoadingState = () => (
   <Stack spacing={spacing.section}>
@@ -154,19 +152,14 @@ const SentRequestsList = ({ requests, profiles, loading, error }) => {
   };
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 3 }}>
-      <CardHeader
-        title={t("requests.headers.sent")}
-        subheader={t("requests.headers.sentSub")}
-        avatar={
-          <Avatar sx={{ bgcolor: "secondary.main" }}>
-            <Send />
-          </Avatar>
-        }
-      />
-      <Divider />
-      <CardContent>{renderContent()}</CardContent>
-    </Card>
+    <FeatureCard
+      title={t("requests.headers.sent")}
+      subheader={t("requests.headers.sentSub")}
+      icon={Send}
+      avatarProps={{ sx: { bgcolor: "secondary.main" } }}
+    >
+      {renderContent()}
+    </FeatureCard>
   );
 };
 
