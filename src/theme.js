@@ -7,36 +7,36 @@ const getTheme = (mode) =>
     palette: {
       mode,
       primary: {
-        light: '#f48fb1',
-        main: mode === 'light' ? '#c2185b' : '#ff4081',
-        dark: '#8c0032',
-        contrastText: '#ffffff',
+        light: mode === 'light' ? '#5eead4' : '#34d399',
+        main: mode === 'light' ? '#0f766e' : '#2dd4bf',
+        dark: mode === 'light' ? '#0b504a' : '#0f766e',
+        contrastText: '#f0fdfa',
       },
       secondary: {
-        light: '#e1bee7',
-        main: mode === 'light' ? '#9c27b0' : '#ba68c8',
-        dark: '#6a0080',
-        contrastText: '#ffffff',
+        light: mode === 'light' ? '#fbbf75' : '#fb923c',
+        main: mode === 'light' ? '#f97316' : '#fda769',
+        dark: mode === 'light' ? '#c2410c' : '#ea580c',
+        contrastText: '#1f1300',
       },
       error: {
-        main: mode === 'light' ? '#d32f2f' : '#ef5350',
+        main: mode === 'light' ? '#dc2626' : '#f87171',
       },
       warning: {
-        main: mode === 'light' ? '#ed6c02' : '#ffb74d',
+        main: mode === 'light' ? '#facc15' : '#fbbf24',
       },
       info: {
-        main: mode === 'light' ? '#0288d1' : '#4fc3f7',
+        main: mode === 'light' ? '#0ea5e9' : '#38bdf8',
       },
       success: {
-        main: mode === 'light' ? '#2e7d32' : '#81c784',
+        main: mode === 'light' ? '#16a34a' : '#4ade80',
       },
       background: {
-        default: mode === 'light' ? '#fff0f6' : '#121212',
-        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+        default: mode === 'light' ? '#ecfdf5' : '#041615',
+        paper: mode === 'light' ? '#ffffff' : '#0b1f1d',
       },
       text: {
-        primary: mode === 'light' ? '#1e1e1e' : '#ffffff',
-        secondary: mode === 'light' ? '#555555' : '#bbbbbb',
+        primary: mode === 'light' ? '#07211f' : '#f0fdfa',
+        secondary: mode === 'light' ? '#3a4d4a' : '#94c6bd',
       },
     },
     typography: {

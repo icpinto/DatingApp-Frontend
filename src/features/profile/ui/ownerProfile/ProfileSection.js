@@ -146,9 +146,9 @@ function ProfileSection({
     total: totalFields,
   });
 
-  const resolvedSurface = surfaceColor || lighten("#111827", 0.04);
-  const editAccent = "#ff4f87";
-  const completeAccent = "#8fdc97";
+  const resolvedSurface = surfaceColor || lighten("#041615", 0.08);
+  const editAccent = "#2dd4bf";
+  const completeAccent = "#facc15";
 
   return (
     <Accordion
@@ -158,9 +158,9 @@ function ProfileSection({
       sx={{
         width: "100%",
         borderRadius: "10px",
-        border: "1px solid rgba(255, 255, 255, 0.04)",
+        border: "1px solid rgba(45, 212, 191, 0.12)",
         backgroundColor: resolvedSurface,
-        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
+        boxShadow: "0 2px 6px rgba(4, 22, 21, 0.2)",
         borderLeft: isSectionComplete
           ? `3px solid ${alpha(completeAccent, 0.7)}`
           : "3px solid transparent",
@@ -175,16 +175,16 @@ function ProfileSection({
         },
         "&:hover": {
           borderColor: alpha(editAccent, 0.4),
-          backgroundColor: "#1b1e27",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.25)",
+          backgroundColor: "#0d2c29",
+          boxShadow: "0 4px 12px rgba(4, 22, 21, 0.3)",
           transform: "translateY(-2px)",
           borderLeftColor: editAccent,
         },
         "&.Mui-expanded": {
           margin: 0,
           borderColor: alpha(editAccent, 0.45),
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.35)",
-          backgroundColor: "#1b1e27",
+          boxShadow: "0 4px 16px rgba(4, 22, 21, 0.38)",
+          backgroundColor: "#0d2c29",
           borderLeftColor: editAccent,
         },
       }}
@@ -312,16 +312,16 @@ function ProfileSection({
                       variant="determinate"
                       value={completionPercentage}
                       aria-label={completionLabel}
-                      sx={{
-                        height: 8,
-                        borderRadius: 8,
-                        backgroundColor: "rgba(255, 255, 255, 0.08)",
-                        overflow: "hidden",
-                        mb: 0.4,
+                        sx={{
+                          height: 8,
+                          borderRadius: 8,
+                          backgroundColor: "rgba(224, 252, 243, 0.12)",
+                          overflow: "hidden",
+                          mb: 0.4,
                         "& .MuiLinearProgress-bar": {
                           borderRadius: 8,
                           backgroundImage:
-                            "linear-gradient(90deg, #ff4f87 0%, #ff7aa8 100%)",
+                            "linear-gradient(90deg, #2dd4bf 0%, #0f766e 100%)",
                           transition: "width 0.5s ease",
                         },
                       }}
@@ -330,28 +330,28 @@ function ProfileSection({
                   <Typography
                     variant="body2"
                     sx={{
-                      fontFamily: MODERN_FONT_STACK,
-                      fontWeight: 600,
-                      letterSpacing: 0.5,
-                      color: "#ff87a6",
-                      minWidth: 64,
-                      textAlign: "right",
-                    }}
-                  >
-                    {`${completionPercentage}%`}
-                  </Typography>
-                </Stack>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{
                     fontFamily: MODERN_FONT_STACK,
-                    letterSpacing: 0.4,
-                    color: "#a3a7b1",
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                    color: "#2dd4bf",
+                    minWidth: 64,
+                    textAlign: "right",
                   }}
                 >
-                  {completionLabel}
+                  {`${completionPercentage}%`}
                 </Typography>
+              </Stack>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontFamily: MODERN_FONT_STACK,
+                  letterSpacing: 0.4,
+                  color: "#7fbcb3",
+                }}
+              >
+                {completionLabel}
+              </Typography>
               </Stack>
             )}
           </Stack>
