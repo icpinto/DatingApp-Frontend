@@ -23,7 +23,7 @@ import Signup from "./features/auth/Signup";
 import Login from "./features/auth/Login";
 import LandingPage from "./features/landing/LandingPage";
 import MainTabs from "./shared/components/tabs/MainTabs";
-import Profile from "./features/home/profile/Profile";
+import { ProfilePage } from "./features/home";
 import Matches from "./features/matches/pages/Matches.page";
 import CapabilityRoute from "./shared/components/routing/CapabilityRoute";
 import { WebSocketProvider } from "./shared/context/WebSocketProvider";
@@ -79,7 +79,7 @@ function AppLayout() {
           path="/profile/:userId"
           element={
             <CapabilityRoute capability={CAPABILITIES.PROFILE_VIEW_MEMBER}>
-              <Profile />
+              <ProfilePage />
             </CapabilityRoute>
           }
         />
