@@ -1,29 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Alert,
-  Avatar,
-  Card,
-  CardContent,
-  CardHeader,
-  Container,
-  Divider,
-  Skeleton,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { Group } from "@mui/icons-material";
+import { Alert, Container, Stack } from "@mui/material";
 import { spacing } from "../../../styles";
 import MatchRecommendations from "../ui/MatchRecommendations";
 import { useTranslation } from "../../../i18n";
 import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
 import { CAPABILITIES } from "../../../domain/capabilities";
 import Guard from "../ui/Guard";
-import FiltersPanel from "../ui/FiltersPanel";
-import ActiveUserCard from "../ui/ActiveUserCard";
+import ActiveUsersFeatureCard from "../ui/ActiveUsersFeatureCard";
 import { useHome } from "../hooks/useHome";
 import { FILTER_FIELDS } from "../model/constants";
-import { getUserIdentifier } from "../utils/normalizeUserId";
 
 function HomeContent({ accountLifecycle }) {
   const { t } = useTranslation();
@@ -118,96 +104,41 @@ function HomeContent({ accountLifecycle }) {
             </Alert>
           }
         >
-          <Card elevation={3} sx={{ borderRadius: 3 }}>
-            <CardHeader
-              title={t("home.headers.activeUsers")}
-              subheader={t("home.headers.activeUsersSub")}
-              avatar={
-                <Avatar sx={{ bgcolor: "primary.main" }}>
-                  <Group />
-                </Avatar>
+          <ActiveUsersFeatureCard
+            filters={filters}
+            filterFields={FILTER_FIELDS}
+            onFilterChange={handleFilterChange}
+            onApplyFilters={handleApplyFilters}
+            onClearFilters={handleClearFilters}
+            onToggleFilters={setShowFilters}
+            loadingUsers={loadingUsers}
+            canUseFilters={canUseFilters}
+            canToggleFilterPanel={canToggleFilterPanel}
+            filterPanelOpen={filterPanelOpen}
+            showFilters={showFilters}
+            feedback={feedback}
+            orderedUsers={orderedUsers}
+            expandedUserId={expandedUserId}
+            canExpandUserPreview={canExpandUserPreview}
+            canNavigateToProfile={canNavigateToProfile}
+            canComposeRequest={canComposeRequest}
+            canSendRequest={canSendRequest}
+            discoveryDisabled={discoveryDisabled}
+            onToggleExpand={handleToggleExpand}
+            onViewProfile={(viewUserId) => {
+              if (!canNavigateToProfile) {
+                return;
               }
-            />
-            <Divider />
-            <CardContent>
-              <FiltersPanel
-                filters={filters}
-                filterFields={FILTER_FIELDS}
-                onFilterChange={handleFilterChange}
-                onApplyFilters={handleApplyFilters}
-                onClearFilters={handleClearFilters}
-                onToggleFilters={setShowFilters}
-                loadingUsers={loadingUsers}
-                canUseFilters={canUseFilters}
-                canToggleFilterPanel={canToggleFilterPanel}
-                filterPanelOpen={filterPanelOpen}
-                showFilters={showFilters}
-                t={t}
-              />
-              {feedback?.key && !loadingUsers && (
-                <Typography
-                  variant="body2"
-                  color={feedback.type === "error" ? "error.main" : "success.main"}
-                  sx={{ mb: spacing.section }}
-                >
-                  {t(feedback.key)}
-                </Typography>
-              )}
-              {loadingUsers ? (
-                <Stack spacing={spacing.section}>
-                  <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
-                  <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
-                  <Skeleton variant="rectangular" height={72} sx={{ borderRadius: 2 }} />
-                </Stack>
-              ) : orderedUsers.length > 0 ? (
-                <Stack
-                  spacing={spacing.section}
-                  divider={<Divider flexItem sx={{ borderStyle: "dashed" }} />}
-                >
-                  {orderedUsers.map((user, index) => {
-                    const normalizedUserId = getUserIdentifier(user);
-                    const key = normalizedUserId ?? index;
-                    return (
-                      <ActiveUserCard
-                        key={key}
-                        user={user}
-                        userId={normalizedUserId}
-                        index={index}
-                        isExpanded={expandedUserId === normalizedUserId}
-                        canExpand={canExpandUserPreview}
-                        canNavigate={canNavigateToProfile}
-                        canCompose={canComposeRequest}
-                        canSendRequest={canSendRequest}
-                        discoveryDisabled={discoveryDisabled}
-                        onToggleExpand={handleToggleExpand}
-                        onViewProfile={(viewUserId) => {
-                          if (!canNavigateToProfile) {
-                            return;
-                          }
-                          navigate(`/profile/${viewUserId}`);
-                        }}
-                        loadingProfile={loadingProfile}
-                        profileData={profileData}
-                        requestMessage={requestMessage}
-                        requestMessageError={requestMessageError}
-                        onRequestMessageChange={handleRequestMessageChange}
-                        onSendRequest={handleSendRequest}
-                        feedback={feedback}
-                        t={t}
-                      />
-                    );
-                  })}
-                </Stack>
-              ) : (
-                <Stack alignItems="center" spacing={1} sx={{ py: spacing.section }}>
-                  <Group fontSize="large" color="disabled" />
-                  <Typography color="text.secondary">
-                    {t("home.labels.noActiveUsers")}
-                  </Typography>
-                </Stack>
-              )}
-            </CardContent>
-          </Card>
+              navigate(`/profile/${viewUserId}`);
+            }}
+            loadingProfile={loadingProfile}
+            profileData={profileData}
+            requestMessage={requestMessage}
+            requestMessageError={requestMessageError}
+            onRequestMessageChange={handleRequestMessageChange}
+            onSendRequest={handleSendRequest}
+            t={t}
+          />
         </Guard>
       </Stack>
     </Container>
