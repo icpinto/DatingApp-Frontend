@@ -9,7 +9,13 @@ import { QueryClient, QueryClientProvider } from './lib/react-query';
 
 const queryClient = new QueryClient();
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('Root element with id "root" not found');
+}
+
+const root = ReactDOM.createRoot(rootElement);
 root.render(
   <I18nextProvider>
     <QueryClientProvider client={queryClient}>
