@@ -1,12 +1,11 @@
 import React, { useCallback } from "react";
-import { Container, Stack } from "@mui/material";
+import { Alert, Container, Snackbar, Stack } from "@mui/material";
 
 import { CAPABILITIES } from "../../../domain/capabilities";
 import { useTranslation } from "../../../i18n";
 import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
 import { useUserCapabilities } from "../../../shared/context/UserContext";
 import { spacing } from "../../../styles";
-import { acceptMatchRequest, rejectMatchRequest } from "../api/requests.api";
 import { useRequestLists } from "../hooks/useRequestLists";
 import { useRequestProfiles } from "../hooks/useRequestProfiles";
 import Guard from "../ui/Guard";
@@ -29,7 +28,11 @@ function MatchesContent({ onRequestCountChange = () => {}, accountLifecycle }) {
     loading,
     receivedError,
     sentError,
-    removeReceivedRequest,
+    acceptRequest,
+    rejectRequest,
+    actionFeedback,
+    clearActionFeedback,
+    actionInProgress,
   } = useRequestLists({
     canViewReceived,
     canViewSent,
@@ -53,31 +56,37 @@ function MatchesContent({ onRequestCountChange = () => {}, accountLifecycle }) {
     getUserId: getReceiverId,
   });
 
-  const handleAccept = async (id) => {
-    if (!canRespond) {
-      return;
-    }
+  const handleFeedbackClose = useCallback(
+    (_, reason) => {
+      if (reason === "clickaway") {
+        return;
+      }
+      clearActionFeedback();
+    },
+    [clearActionFeedback]
+  );
 
-    try {
-      await acceptMatchRequest(id);
-      removeReceivedRequest(id);
-    } catch (error) {
-      alert(t("requests.messages.acceptFailed"));
-    }
-  };
+  const handleAccept = useCallback(
+    (id) => {
+      if (!canRespond) {
+        return;
+      }
 
-  const handleReject = async (id) => {
-    if (!canRespond) {
-      return;
-    }
+      return acceptRequest(id);
+    },
+    [acceptRequest, canRespond]
+  );
 
-    try {
-      await rejectMatchRequest(id);
-      removeReceivedRequest(id);
-    } catch (error) {
-      alert(t("requests.messages.rejectFailed"));
-    }
-  };
+  const handleReject = useCallback(
+    (id) => {
+      if (!canRespond) {
+        return;
+      }
+
+      return rejectRequest(id);
+    },
+    [canRespond, rejectRequest]
+  );
 
   return (
     <Container sx={{ p: spacing.pagePadding }}>
@@ -92,6 +101,7 @@ function MatchesContent({ onRequestCountChange = () => {}, accountLifecycle }) {
             isDeactivated={isDeactivated}
             onAccept={handleAccept}
             onReject={handleReject}
+            actionInProgress={actionInProgress}
           />
         </Guard>
         <Guard can={CAPABILITIES.REQUESTS_VIEW_SENT}>
@@ -103,6 +113,22 @@ function MatchesContent({ onRequestCountChange = () => {}, accountLifecycle }) {
           />
         </Guard>
       </Stack>
+      <Snackbar
+        open={Boolean(actionFeedback)}
+        autoHideDuration={5000}
+        onClose={handleFeedbackClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        {actionFeedback ? (
+          <Alert
+            onClose={handleFeedbackClose}
+            severity={actionFeedback.severity}
+            sx={{ width: "100%" }}
+          >
+            {t(actionFeedback.messageKey)}
+          </Alert>
+        ) : null}
+      </Snackbar>
     </Container>
   );
 }

@@ -4,7 +4,12 @@ import { CAPABILITIES } from "../../../domain/capabilities";
 import useCapabilityEffect from "../../../shared/hooks/useCapabilityEffect";
 import { trackExternalRequest } from "../../../shared/services/api";
 import { isAbortError } from "../../../utils/http";
-import { fetchReceivedRequests, fetchSentRequests } from "../api/requests.api";
+import {
+  acceptMatchRequest,
+  fetchReceivedRequests,
+  fetchSentRequests,
+  rejectMatchRequest,
+} from "../api/requests.api";
 import { normalizeRequests } from "../model/requests";
 
 export const useRequestLists = ({
@@ -17,6 +22,8 @@ export const useRequestLists = ({
   const [loading, setLoading] = useState(true);
   const [receivedError, setReceivedError] = useState(null);
   const [sentError, setSentError] = useState(null);
+  const [actionFeedback, setActionFeedback] = useState(null);
+  const [actionInProgress, setActionInProgress] = useState(false);
 
   useCapabilityEffect(
     [
@@ -115,6 +122,54 @@ export const useRequestLists = ({
     setRequests((prev) => prev.filter((request) => request.id !== id));
   }, []);
 
+  const clearActionFeedback = useCallback(() => {
+    setActionFeedback(null);
+  }, []);
+
+  const handleRequestMutation = useCallback(
+    async (id, mutation, successMessage, errorMessage) => {
+      if (!id) {
+        return;
+      }
+
+      setActionInProgress(true);
+      try {
+        await mutation(id);
+        removeReceivedRequest(id);
+        setActionFeedback({ severity: "success", messageKey: successMessage });
+      } catch (error) {
+        if (!isAbortError(error)) {
+          setActionFeedback({ severity: "error", messageKey: errorMessage });
+        }
+      } finally {
+        setActionInProgress(false);
+      }
+    },
+    [removeReceivedRequest]
+  );
+
+  const acceptRequest = useCallback(
+    (id) =>
+      handleRequestMutation(
+        id,
+        acceptMatchRequest,
+        "requests.messages.acceptSuccess",
+        "requests.messages.acceptFailed"
+      ),
+    [handleRequestMutation]
+  );
+
+  const rejectRequest = useCallback(
+    (id) =>
+      handleRequestMutation(
+        id,
+        rejectMatchRequest,
+        "requests.messages.rejectSuccess",
+        "requests.messages.rejectFailed"
+      ),
+    [handleRequestMutation]
+  );
+
   return {
     requests,
     sentRequests,
@@ -122,5 +177,10 @@ export const useRequestLists = ({
     receivedError,
     sentError,
     removeReceivedRequest,
+    acceptRequest,
+    rejectRequest,
+    actionFeedback,
+    clearActionFeedback,
+    actionInProgress,
   };
 };
