@@ -7,21 +7,21 @@ import React, {
 } from "react";
 import { Box, Divider, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import chatService from "../../shared/services/chatService";
-import { useWebSocket } from "../../shared/context/WebSocketProvider";
-import { spacing } from "../../styles";
-import { toNumberOrUndefined } from "../../utils/conversationUtils";
+import chatService from "../../../shared/services/chatService";
+import { useWebSocket } from "../../../shared/context/WebSocketProvider";
+import { spacing } from "../../../styles";
+import { toNumberOrUndefined } from "../../../utils/conversationUtils";
 import ChatHeaderSection from "./ChatHeaderSection";
 import ChatMessageList from "./ChatMessageList";
 import MessageComposerSection from "./MessageComposer";
-import { useUserCapabilities } from "../../shared/context/UserContext";
+import { useUserCapabilities } from "../../../shared/context/UserContext";
 import {
   formatMessageTimestamp,
   resolveMessageBody,
   resolveMessageId,
   resolveMessageSenderId,
-} from "./chatDrawerUtils";
-import { isAbortError } from "../../utils/http";
+} from "../utils/chatDrawerUtils";
+import { isAbortError } from "../../../utils/http";
 
 function ChatDrawer({
   conversationId,

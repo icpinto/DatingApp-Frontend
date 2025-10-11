@@ -14,17 +14,17 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
-import ConversationListPane from "./ConversationListPane";
-import ChatDrawer from "./ChatDrawer";
-import api from "../../shared/services/api";
-import chatService from "../../shared/services/chatService";
-import { spacing } from "../../styles";
-import { useWebSocket } from "../../shared/context/WebSocketProvider";
-import { useTranslation } from "../../i18n";
-import { useAccountLifecycle } from "../../shared/context/AccountLifecycleContext";
-import { CAPABILITIES } from "../../domain/capabilities";
+import ConversationListPane from "../ui/ConversationListPane";
+import ChatDrawer from "../ui/ChatDrawer";
+import api from "../../../shared/services/api";
+import chatService from "../../../shared/services/chatService";
+import { spacing } from "../../../styles";
+import { useWebSocket } from "../../../shared/context/WebSocketProvider";
+import { useTranslation } from "../../../i18n";
+import { useAccountLifecycle } from "../../../shared/context/AccountLifecycleContext";
+import { CAPABILITIES } from "../../../domain/capabilities";
 import Guard from "./Guard";
-import { useUserCapabilities, useUserContext } from "../../shared/context/UserContext";
+import { useUserCapabilities, useUserContext } from "../../../shared/context/UserContext";
 import {
   pickFirst,
   toNumberOrUndefined,
@@ -34,12 +34,12 @@ import {
   getLatestMessageSnapshot,
   extractLastMessageId,
   extractLastReadMessageId,
-} from "../../utils/conversationUtils";
+} from "../../../utils/conversationUtils";
 import {
   ACCOUNT_DEACTIVATED_MESSAGE,
   ACCOUNT_DEACTIVATED_MESSAGING_DISABLED_MESSAGE,
-} from "../../domain/accountLifecycle";
-import { isAbortError } from "../../utils/http";
+} from "../../../domain/accountLifecycle";
+import { isAbortError } from "../../../utils/http";
 import {
   buildMessagePreview,
   extractLastMessageInfo,
@@ -47,7 +47,7 @@ import {
   getConversationPartnerDetails,
   getConversationUsers,
   getCurrentUserId,
-} from "./conversationDisplayHelpers";
+} from "../utils/conversationDisplayHelpers";
 
 const buildRealtimePatch = ({
   conversation,
@@ -935,10 +935,10 @@ function MessagesContent({
   );
 }
 
-function Messages(props) {
+function MessagesPage(props) {
   const accountLifecycle = useAccountLifecycle();
 
   return <MessagesContent {...props} accountLifecycle={accountLifecycle} />;
 }
 
-export default Messages;
+export default MessagesPage;
