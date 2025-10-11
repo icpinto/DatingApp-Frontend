@@ -26,7 +26,7 @@ function ProfileDetailsCard({ profile, t, viewSectionsReason }) {
             </Alert>
           }
         >
-          <ProfileSections data={profile} />
+          <ProfileSections data={profile} useFeatureCard={false} />
         </Guard>
       </CardContent>
     </Card>
